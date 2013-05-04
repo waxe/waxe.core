@@ -5,13 +5,13 @@ from sqlalchemy.exc import DBAPIError
 
 from .models import (
     DBSession,
-    MyModel,
+    User,
     )
 
 @view_config(route_name='home', renderer='templates/mytemplate.pt')
 def my_view(request):
     try:
-        one = DBSession.query(MyModel).filter(MyModel.name=='one').first()
+        one = DBSession.query(User).filter(User.login=='admin').first()
     except DBAPIError:
         return Response(conn_err_msg, content_type='text/plain', status_int=500)
     return {'one':one, 'project':'waxe'}
