@@ -1,10 +1,22 @@
 from pyramid.config import Configurator
 from sqlalchemy import engine_from_config
+from pyramid.authentication import AuthTktAuthenticationPolicy
+from pyramid.authorization import ACLAuthorizationPolicy
+from pyramid.session import UnencryptedCookieSessionFactoryConfig
 
 from .models import (
     DBSession,
     Base,
     )
+from .security import (
+    get_user_permissions,
+    RootFactory
+)
+
+# Add the modules you want to be include in the config
+views_modules = [
+    'waxe.views.index',
+]
 
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
@@ -12,9 +24,25 @@ def main(global_config, **settings):
     engine = engine_from_config(settings, 'sqlalchemy.')
     DBSession.configure(bind=engine)
     Base.metadata.bind = engine
-    config = Configurator(settings=settings)
+    session_key = settings['session.key']
+    session_factory = UnencryptedCookieSessionFactoryConfig(session_key)
+    config = Configurator(settings=settings,
+                          session_factory=session_factory,
+                          root_factory=RootFactory)
     config.add_static_view('static', 'static', cache_max_age=3600)
-    config.add_route('home', '/')
+
+    # Authentification
+    authentication_policy = AuthTktAuthenticationPolicy(
+        settings['authentication.key'],
+        callback=get_user_permissions,
+        debug=settings['authentication.debug'],
+        hashalg='sha512',
+        )
+    authorization_policy = ACLAuthorizationPolicy()
+    config.set_authentication_policy(authentication_policy)
+    config.set_authorization_policy(authorization_policy)
+    for module in views_modules:
+        config.include(module)
     config.scan()
     return config.make_wsgi_app()
 

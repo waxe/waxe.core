@@ -12,6 +12,7 @@ requires = [
     'transaction',
     'pyramid_tm',
     'pyramid_debugtoolbar',
+    # 'pyramid_auth',
     'zope.sqlalchemy',
     'waitress',
     'sqla_declarative',
@@ -36,6 +37,12 @@ setup(name='waxe',
       zip_safe=False,
       test_suite='waxe',
       install_requires=requires,
+      tests_require=[
+          'nose',
+          'nose-cov',
+          'WebTest',
+          'mock',
+      ],
       entry_points="""\
       [paste.app_factory]
       main = waxe:main
