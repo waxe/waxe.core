@@ -1,6 +1,7 @@
 from pyramid import testing
-from ..testing import WaxeTestCase, DBSession, User
 from waxe import security
+from ..testing import WaxeTestCase, DBSession, User
+from ..models import UserConfig
 import logging
 
 
@@ -66,4 +67,28 @@ class TestSecurity(WaxeTestCase):
         expected = ['role:admin', 'group:group1']
         perms = security.get_user_permissions('Bob', request)
         self.assertEqual(perms, expected)
+
+    def test_get_user_from_request(self):
+        DBSession.add(self.user_bob)
+        request = testing.DummyRequest()
+        self.assertEqual(security.get_user_from_request(request), None)
+        config = testing.setUp()
+        config.testing_securitypolicy(userid=self.user_bob.login,
+                                           permissive=False)
+        self.assertEqual(security.get_user_from_request(request), self.user_bob)
+        config.testing_securitypolicy(userid='nonexisting',
+                                           permissive=False)
+        self.assertEqual(security.get_user_from_request(request), None)
+
+    def test_get_root_path_from_request(self):
+        DBSession.add(self.user_bob)
+        request = testing.DummyRequest()
+        request.user = None
+        self.assertEqual(security.get_root_path_from_request(request),
+                         None)
+        request.user = self.user_bob
+        self.assertEqual(security.get_root_path_from_request(request),
+                         None)
+        request.user.config = UserConfig(root_path='/path')
+        self.assertEqual(security.get_root_path_from_request(request), '/path')
 

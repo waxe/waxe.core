@@ -14,7 +14,10 @@ from ..models import (
     Base,
     Role,
     User,
-    UserConfig
+    UserConfig,
+    ROLE_EDITOR,
+    ROLE_CONTRIBUTOR,
+    ROLE_ADMIN
     )
 
 def usage(argv):
@@ -33,7 +36,11 @@ def main(argv=sys.argv):
     DBSession.configure(bind=engine)
     Base.metadata.create_all(engine)
     with transaction.manager:
-        admin_role = Role(name='admin')
+        for role in [ROLE_EDITOR, ROLE_CONTRIBUTOR]:
+            r = Role(name=role)
+            DBSession.add(r)
+
+        admin_role = Role(name=ROLE_ADMIN)
         admin_user = User(login='admin', password='admin')
         admin_user.roles = [admin_role]
         config = UserConfig(root_path=os.path.normpath(

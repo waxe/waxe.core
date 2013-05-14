@@ -12,6 +12,8 @@ from .models import (
     Base,
     User,
     Role,
+    ROLE_EDITOR,
+    ROLE_CONTRIBUTOR,
 )
 
 
@@ -47,6 +49,9 @@ class WaxeTestCase(unittest.TestCase):
         DBSession.configure(bind=engine)
         Base.metadata.create_all(engine)
         with transaction.manager:
+            for role in [ROLE_EDITOR, ROLE_CONTRIBUTOR]:
+                r = Role(name=role)
+                DBSession.add(r)
             admin = Role(name="admin")
             self.user_bob = User(login="Bob", password='secret')
             self.user_bob.roles = [admin]

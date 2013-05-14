@@ -1,4 +1,4 @@
-from pyramid.security import Everyone, Allow
+from pyramid.security import Everyone, Allow, unauthenticated_userid
 import sqlalchemy.orm.exc as sqla_exc
 import logging
 
@@ -42,4 +42,23 @@ def get_user_permissions(login, request):
     permissions = ['role:%s' % role.name for role in user.roles]
     permissions += ['group:%s' % group.name for group in user.groups]
     return permissions
+
+
+def get_user_from_request(request):
+    login = unauthenticated_userid(request)
+    return get_user(login)
+
+
+def get_root_path_from_request(request):
+    if not request.user:
+        return None
+
+    if request.user.multiple_account():
+        if 'root_path' in request.session:
+            return request.session['root_path']
+
+    if not request.user.config:
+        return None
+
+    return request.user.config.root_path
 

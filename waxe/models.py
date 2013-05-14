@@ -20,6 +20,10 @@ from sqla_declarative import extended_declarative_base
 DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 Base = extended_declarative_base(DBSession)
 
+ROLE_ADMIN = 'admin'
+ROLE_EDITOR = 'editor'
+ROLE_CONTRIBUTOR = 'contributor'
+
 
 user_role = Table(
     'user_role',
@@ -82,6 +86,39 @@ class User(Base):
                           backref=backref("user", uselist=False))
 
 
+    def has_role(self, name):
+        for role in self.roles:
+            if role.name == name:
+                return True
+        return False
+
+    def multiple_account(self):
+        editors = get_editors()
+        contributors = get_contributors()
+        if self.has_role(ROLE_ADMIN):
+            if editors or contributors:
+                return True
+        if self.has_role(ROLE_EDITOR):
+            if contributors:
+                return True
+        return False
+
+    def get_editable_logins(self):
+        lis = []
+        if self.config and self.config.root_path:
+            lis += [self.login]
+
+        editors = get_editors()
+        contributors = get_contributors()
+        if self.has_role(ROLE_ADMIN):
+            for user in (editors + contributors):
+                lis += [user.login]
+        elif self.has_role(ROLE_EDITOR):
+            for user in contributors:
+                lis += [user.login]
+        return lis
+
+
 class UserConfig(Base):
     __tablename__ = 'user_config'
 
@@ -90,3 +127,14 @@ class UserConfig(Base):
                       primary_key=True)
     root_path = Column(String(255),
                        nullable=False)
+
+
+def get_editors():
+    role = DBSession.query(Role).filter_by(name=ROLE_EDITOR).one()
+    return [u for u in role.users if u.config and u.config.root_path]
+
+
+def get_contributors():
+    role = DBSession.query(Role).filter_by(name=ROLE_CONTRIBUTOR).one()
+    return [u for u in role.users if u.config and u.config.root_path]
+

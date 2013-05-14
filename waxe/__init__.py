@@ -10,7 +10,9 @@ from .models import (
     )
 from .security import (
     get_user_permissions,
-    RootFactory
+    RootFactory,
+    get_user_from_request,
+    get_root_path_from_request,
 )
 
 # Add the modules you want to be include in the config
@@ -41,8 +43,10 @@ def main(global_config, **settings):
     authorization_policy = ACLAuthorizationPolicy()
     config.set_authentication_policy(authentication_policy)
     config.set_authorization_policy(authorization_policy)
+    config.set_request_property(get_user_from_request, 'user', reify=True)
+    config.set_request_property(get_root_path_from_request,
+                                'root_path', reify=True)
     for module in views_modules:
         config.include(module)
-    config.scan()
     return config.make_wsgi_app()
 
