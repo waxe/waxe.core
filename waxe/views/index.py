@@ -10,22 +10,37 @@ class JSONHTTPBadRequest(HTTPBadRequest): pass
 @view_defaults(renderer='index.mak')
 class Views(object):
 
-    def _is_json(self):
-        return self.request.matched_route.name.endswith('_json')
-
     def __init__(self, request):
         self.request = request
         if (not request.root_path
             and request.matched_route.name != 'login_selection'):
             if self._is_json():
-                raise JSONHTTPBadRequest('root path not given')
-            raise HTTPBadRequest('root path not given')
+                raise JSONHTTPBadRequest('root path not defined')
+            raise HTTPBadRequest('root path not defined')
+
+    def _is_json(self):
+        return self.request.matched_route.name.endswith('_json')
+
+    def _response(self, dic):
+        if self._is_json():
+            return dic
+
+        editor_login = None
+        if self.request.session.get('editor_login'):
+            editor_login = self.request.session.get('editor_login')
+        elif self.request.root_path:
+            editor_login = self.request.user.login
+
+        if self.request.user.multiple_account():
+            dic['logins'] = self.request.user.get_editable_logins(editor_login)
+        dic['editor_login'] = editor_login or 'Account'
+        return dic
 
     @view_config(route_name='home', renderer='index.mak', permission='edit')
     @view_config(route_name='home_json', renderer='json', permission='edit')
     def home(self):
-        return {'content': 'home content<br/>Root path: %s' %
-                self.request.root_path}
+        return self._response({'content': 'home content<br/>Root path: %s' %
+                self.request.root_path})
 
     @view_config(route_name='login_selection', renderer='index.mak',
                  permission='edit')
@@ -36,6 +51,7 @@ class Views(object):
             raise HTTPBadRequest('Invalid login')
 
         user = User.query.filter_by(login=login).one()
+        self.request.session['editor_login'] = user.login
         self.request.session['root_path'] = user.config.root_path
         return HTTPFound(location='/')
 

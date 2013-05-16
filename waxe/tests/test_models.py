@@ -114,8 +114,6 @@ class TestUser(WaxeTestCase):
         expected = [contributor.login]
         self.assertEqual(result, expected)
 
-
-
-
-
+        result = editor.get_editable_logins(contributor.login)
+        self.assertEqual(result, [])
 

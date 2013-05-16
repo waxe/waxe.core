@@ -103,7 +103,7 @@ class User(Base):
                 return True
         return False
 
-    def get_editable_logins(self):
+    def get_editable_logins(self, exclude=None):
         lis = []
         if self.config and self.config.root_path:
             lis += [self.login]
@@ -116,6 +116,9 @@ class User(Base):
         elif self.has_role(ROLE_EDITOR):
             for user in contributors:
                 lis += [user.login]
+
+        if exclude:
+            return [l for l in lis if l != exclude]
         return lis
 
 

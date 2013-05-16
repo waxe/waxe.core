@@ -2,7 +2,15 @@ import unittest
 from pyramid import testing
 from ..testing import WaxeTestCase, login_user
 from mock import patch
-from ..models import DBSession, User, UserConfig, Role, ROLE_EDITOR
+from ..models import (
+    DBSession,
+    User,
+    UserConfig,
+    Role,
+    ROLE_EDITOR,
+    ROLE_CONTRIBUTOR
+)
+
 from ..views.index import (
     Views,
     HTTPBadRequest,
@@ -29,23 +37,73 @@ class TestViews(WaxeTestCase):
             Views(request)
             assert 0
         except HTTPBadRequest, e:
-            self.assertEqual(str(e), 'root path not given')
+            self.assertEqual(str(e), 'root path not defined')
 
         request.matched_route.name = 'route_json'
         try:
             Views(request)
             assert 0
         except JSONHTTPBadRequest, e:
-            self.assertEqual(str(e), 'root path not given')
+            self.assertEqual(str(e), 'root path not defined')
 
         request.matched_route.name = 'login_selection'
         o = Views(request)
         self.assertEqual(o.request, request)
 
+    def test__is_json(self):
+        request = testing.DummyRequest(root_path='/path', user=self.user_bob)
+        class C(object): pass
+        request.matched_route = C()
+        request.matched_route.name = 'route'
+        self.assertFalse(Views(request)._is_json())
+
+        request.matched_route.name = 'route_json'
+        self.assertTrue(Views(request)._is_json())
+
+    def test__response(self):
+        DBSession.add(self.user_bob)
+        request = testing.DummyRequest(root_path='/path', user=self.user_bob)
+        with patch('waxe.views.index.Views._is_json', return_value=True):
+            res = Views(request)._response({})
+            self.assertEqual(res, {})
+
+        with patch('waxe.views.index.Views._is_json', return_value=False):
+            res = Views(request)._response({})
+            self.assertEqual(res, {'editor_login': self.user_bob.login})
+            request.session = {'editor_login': 'Fred'}
+
+            res = Views(request)._response({})
+            self.assertEqual(res, {'editor_login': 'Fred'})
+
+            contributor = User(login='contributor', password='pass1')
+            contributor.roles = [Role.query.filter_by(name=ROLE_CONTRIBUTOR).one()]
+            contributor.config = UserConfig(root_path='/path')
+            DBSession.add(contributor)
+            res = Views(request)._response({})
+            self.assertEqual(res, {'editor_login': 'Fred',
+                                   'logins': ['contributor']})
+
+            request.session = {}
+            request.root_path = None
+            class C(object): pass
+            request.matched_route = C()
+            request.matched_route.name = 'login_selection'
+            res = Views(request)._response({})
+            self.assertEqual(res, {'editor_login': 'Account',
+                                   'logins': ['contributor']})
+
     def test_home(self):
-        request = testing.DummyRequest(root_path='/path')
-        res = Views(request).home()
-        self.assertEqual(res,
+        DBSession.add(self.user_bob)
+        request = testing.DummyRequest(root_path='/path', user=self.user_bob)
+        with patch('waxe.views.index.Views._is_json', return_value=False):
+            res = Views(request).home()
+            self.assertEqual(res,
+                         {'content': 'home content<br/>Root path: /path',
+                          'editor_login': 'Bob'})
+
+        with patch('waxe.views.index.Views._is_json', return_value=True):
+            res = Views(request).home()
+            self.assertEqual(res,
                          {'content': 'home content<br/>Root path: /path'})
 
     def test_login_selection(self):
@@ -73,6 +131,8 @@ class TestViews(WaxeTestCase):
         res = Views(request).login_selection()
         self.assertEqual(res.status, "302 Found")
         self.assertEqual(res.location, '/')
+        expected = {'editor_login': 'editor', 'root_path': '/path'}
+        self.assertEqual(request.session, expected)
 
     def test_bad_request(self):
         DBSession.add(self.user_bob)

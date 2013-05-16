@@ -1,6 +1,3 @@
-<!DOCTYPE HTML>
-<html>
-  <body>
-    ${content|n}
-  </body>
-</html>
+<%inherit file="base.mak" />
+
+${content|n}
