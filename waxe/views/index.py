@@ -1,7 +1,9 @@
+import os
 from pyramid.view import view_config, view_defaults
 from pyramid.httpexceptions import HTTPBadRequest, HTTPFound
 from pyramid.renderers import render
 from ..models import User
+from .. import browser
 
 
 class JSONHTTPBadRequest(HTTPBadRequest): pass
@@ -36,11 +38,39 @@ class Views(object):
         dic['editor_login'] = editor_login or 'Account'
         return dic
 
+    def _get_navigation(self):
+
+        def get_href(path, key):
+            return self.request.route_path(
+                'home_json', _query=[(key, path)])
+
+        relpath = self.request.GET.get('path') or ''
+        root_path = self.request.root_path
+        abspath = browser.absolute_path(relpath, root_path)
+        folders, filenames = browser.get_files(abspath)
+        data = []
+        if root_path != abspath:
+            data += [('previous', '..', get_href(os.path.dirname(relpath), 'path'))]
+
+        for folder in folders:
+            data += [('folder',
+                      folder,
+                      get_href(os.path.join(relpath, folder), 'path'))]
+
+        for filename in filenames:
+            data += [('file',
+                      filename,
+                      get_href(os.path.join(relpath, filename), 'filename'))]
+
+        return render('blocks/file_navigation.mak',
+                      {'data': data, 'path': relpath},
+                      self.request)
+
     @view_config(route_name='home', renderer='index.mak', permission='edit')
     @view_config(route_name='home_json', renderer='json', permission='edit')
     def home(self):
-        return self._response({'content': 'home content<br/>Root path: %s' %
-                self.request.root_path})
+
+        return self._response({'content': self._get_navigation()})
 
     @view_config(route_name='login_selection', renderer='index.mak',
                  permission='edit')

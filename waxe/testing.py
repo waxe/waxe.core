@@ -33,7 +33,7 @@ def login_user(login):
 class WaxeTestCase(unittest.TestCase):
 
     def setUp(self):
-        settings = {
+        self.settings = {
             'sqlalchemy.url': 'sqlite://',
             'authentication.key': 'secret',
             'authentication.debug': True,
@@ -42,7 +42,7 @@ class WaxeTestCase(unittest.TestCase):
             'pyramid.includes': ['pyramid_auth'],
             'pyramid_auth.validate_function': 'waxe.security.validate_password',
         }
-        app = main({}, **settings)
+        app = main({}, **self.settings)
         app = twc.middleware.TwMiddleware(app)
         self.testapp = TestApp(app)
         engine = create_engine('sqlite://')

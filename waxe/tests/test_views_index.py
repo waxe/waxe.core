@@ -1,4 +1,4 @@
-import unittest
+import os
 from pyramid import testing
 from ..testing import WaxeTestCase, login_user
 from mock import patch
@@ -22,7 +22,7 @@ class TestViews(WaxeTestCase):
 
     def setUp(self):
         super(TestViews, self).setUp()
-        self.config = testing.setUp()
+        self.config = testing.setUp(settings=self.settings)
 
     def tearDown(self):
         testing.tearDown()
@@ -92,19 +92,53 @@ class TestViews(WaxeTestCase):
             self.assertEqual(res, {'editor_login': 'Account',
                                    'logins': ['contributor']})
 
+    def test__get_navigation(self):
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        request = testing.DummyRequest(root_path=path)
+        request.route_path = lambda *args, **kw: '/filepath'
+        res = Views(request)._get_navigation()
+        expected = ('<ul id="file-navigation" data-path="">\n'
+                    '    <li>'
+                    '<a data-href="/filepath" class="folder">folder1</a>'
+                    '</li>\n'
+                    '    <li>'
+                    '<a data-href="/filepath" class="file">file1.xml</a>'
+                    '</li>\n'
+                    '</ul>\n')
+        self.assertEqual(res, expected)
+
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        request = testing.DummyRequest(root_path=path,
+                                       params={'path': 'folder1'})
+        request.route_path = lambda *args, **kw: '/filepath'
+        res = Views(request)._get_navigation()
+        expected = ('<ul id="file-navigation" data-path="folder1">\n'
+                    '    <li>'
+                    '<a data-href="/filepath" class="previous">..</a>'
+                    '</li>\n'
+                    '    <li>'
+                    '<a data-href="/filepath" class="file">file2.xml</a>'
+                    '</li>\n'
+                    '</ul>\n')
+        self.assertEqual(res, expected)
+
     def test_home(self):
         DBSession.add(self.user_bob)
         request = testing.DummyRequest(root_path='/path', user=self.user_bob)
+        expected = {
+            'content': u'<ul id="file-navigation" data-path="">\n</ul>\n',
+            'editor_login': u'Bob'
+        }
         with patch('waxe.views.index.Views._is_json', return_value=False):
             res = Views(request).home()
-            self.assertEqual(res,
-                         {'content': 'home content<br/>Root path: /path',
-                          'editor_login': 'Bob'})
+            self.assertEqual(res, expected)
 
+        expected = {
+            'content': u'<ul id="file-navigation" data-path="">\n</ul>\n',
+        }
         with patch('waxe.views.index.Views._is_json', return_value=True):
             res = Views(request).home()
-            self.assertEqual(res,
-                         {'content': 'home content<br/>Root path: /path'})
+            self.assertEqual(res, expected)
 
     def test_login_selection(self):
         DBSession.add(self.user_bob)
@@ -147,9 +181,10 @@ class TestViews(WaxeTestCase):
         editor.config = UserConfig(root_path='/path')
         DBSession.add(editor)
 
-        # TODO: try to find why there is TopLevelLookupException
-        # dic = bad_request(request)
-
+        request.route_path = lambda *args, **kw: '/editorpath'
+        dic = bad_request(request)
+        expected = {'content': u'  <a href="/editorpath">editor</a>\n'}
+        self.assertEqual(dic, expected)
 
 class FunctionalTestViews(WaxeTestCase):
 
@@ -181,7 +216,7 @@ class FunctionalTestViews(WaxeTestCase):
         DBSession.add(self.user_bob)
         self.user_bob.config = UserConfig(root_path='/path')
         res = self.testapp.get('/', status=200)
-        self.assertTrue('home content' in res.body)
+        self.assertTrue('<ul id="file-navigation" data-path="">\n</ul>' in res.body)
         self.assertTrue(('Content-Type', 'text/html; charset=UTF-8') in
                         res._headerlist)
 
@@ -197,7 +232,8 @@ class FunctionalTestViews(WaxeTestCase):
         DBSession.add(self.user_bob)
         self.user_bob.config = UserConfig(root_path='/path')
         res = self.testapp.get('/home.json', status=200)
-        self.assertTrue('home content' in res.body)
+        expected = '{"content": "<ul id=\\"file-navigation\\" data-path=\\"\\">\\n</ul>\\n"}'
+        self.assertEqual(res.body,  expected)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
 
