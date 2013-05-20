@@ -45,13 +45,21 @@ class Views(object):
 
     def _get_navigation(self):
 
-        def get_href(path, key):
+        def get_data_href(path, key):
             return self.request.route_path(
                 'home_json', _query=[(key, path)])
 
-        def get_file_href(path, key):
+        def get_href(path, key):
+            return self.request.route_path(
+                'home', _query=[(key, path)])
+
+        def get_file_data_href(path, key):
             return self.request.route_path(
                 'edit_json', _query=[(key, path)])
+
+        def get_file_href(path, key):
+            return self.request.route_path(
+                'edit', _query=[(key, path)])
 
         relpath = self.request.GET.get('path') or ''
         root_path = self.request.root_path
@@ -59,27 +67,42 @@ class Views(object):
         folders, filenames = browser.get_files(abspath)
         data = []
         if root_path != abspath:
-            data += [('previous', '..', get_href(os.path.dirname(relpath), 'path'))]
+            data += [(
+                'previous',
+                '..',
+                get_data_href(os.path.dirname(relpath), 'path'),
+                get_href(os.path.dirname(relpath), 'path')
+            )]
 
         for folder in folders:
-            data += [('folder',
-                      folder,
-                      get_href(os.path.join(relpath, folder), 'path'))]
+            data += [(
+                'folder',
+                folder,
+                get_data_href(os.path.join(relpath, folder), 'path'),
+                get_href(os.path.join(relpath, folder), 'path')
+            )]
 
         for filename in filenames:
-            data += [('file',
-                      filename,
-                      get_file_href(os.path.join(relpath, filename), 'filename')
-                     )]
+            data += [(
+                'file',
+                filename,
+                get_file_data_href(os.path.join(relpath, filename),
+                                   'filename'),
+                get_file_href(os.path.join(relpath, filename), 'filename')
+            )]
 
         return render('blocks/file_navigation.mak',
                       {'data': data, 'path': relpath},
                       self.request)
 
     def _get_breadcrumb(self, relpath, force_link=False):
-        def get_href(path, key):
+        def get_data_href(path, key):
             return self.request.route_path(
                 'home_json', _query=[(key, path)])
+
+        def get_href(path, key):
+            return self.request.route_path(
+                'home', _query=[(key, path)])
 
         tple = []
         while relpath:
@@ -98,9 +121,10 @@ class Views(object):
                     divider = '<span class="divider">/</span>'
                 html += [(
                     '<li>'
-                    '<a data-href="%s">%s</a> '
+                    '<a data-href="%s" href="%s">%s</a> '
                     '%s'
                     '</li>') % (
+                        get_data_href(relpath, relpath),
                         get_href(relpath, relpath),
                         name,
                         divider
@@ -129,6 +153,7 @@ class Views(object):
         self.request.session['root_path'] = user.config.root_path
         return HTTPFound(location='/')
 
+    @view_config(route_name='edit', renderer='index.mak', permission='edit')
     @view_config(route_name='edit_json', renderer='json', permission='edit')
     def edit(self):
         filename = self.request.GET.get('filename') or ''
@@ -173,8 +198,8 @@ def bad_request(request):
 
 def includeme(config):
     config.add_route('home', '/')
-    # TODO: Only used to make the test. Remove this when we have more routes!
     config.add_route('home_json', '/home.json')
     config.add_route('login_selection', '/login-selection')
+    config.add_route('edit', '/edit')
     config.add_route('edit_json', '/edit.json')
     config.scan(__name__)

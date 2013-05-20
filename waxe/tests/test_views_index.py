@@ -100,14 +100,19 @@ class TestViews(WaxeTestCase):
         request = testing.DummyRequest(root_path=path)
         request.route_path = lambda *args, **kw: '/filepath'
         res = Views(request)._get_navigation()
-        expected = ('<ul id="file-navigation" data-path="">\n'
-                    '    <li>'
-                    '<a data-href="/filepath" class="folder">folder1</a>'
-                    '</li>\n'
-                    '    <li>'
-                    '<a data-href="/filepath" class="file">file1.xml</a>'
-                    '</li>\n'
-                    '</ul>\n')
+        expected = (
+            '<ul id="file-navigation" data-path="">\n'
+            '    <li>'
+            '<a data-href="/filepath" href="/filepath" class="folder">'
+            'folder1'
+            '</a>'
+            '</li>\n'
+            '    <li>'
+            '<a data-href="/filepath" href="/filepath" class="file">'
+            'file1.xml'
+            '</a>'
+            '</li>\n'
+            '</ul>\n')
         self.assertEqual(res, expected)
 
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
@@ -115,14 +120,19 @@ class TestViews(WaxeTestCase):
                                        params={'path': 'folder1'})
         request.route_path = lambda *args, **kw: '/filepath'
         res = Views(request)._get_navigation()
-        expected = ('<ul id="file-navigation" data-path="folder1">\n'
-                    '    <li>'
-                    '<a data-href="/filepath" class="previous">..</a>'
-                    '</li>\n'
-                    '    <li>'
-                    '<a data-href="/filepath" class="file">file2.xml</a>'
-                    '</li>\n'
-                    '</ul>\n')
+        expected = (
+            '<ul id="file-navigation" data-path="folder1">\n'
+            '    <li>'
+            '<a data-href="/filepath" href="/filepath" class="previous">'
+            '..'
+            '</a>'
+            '</li>\n'
+            '    <li>'
+            '<a data-href="/filepath" href="/filepath" class="file">'
+            'file2.xml'
+            '</a>'
+            '</li>\n'
+            '</ul>\n')
         self.assertEqual(res, expected)
 
     def test__get_breadcrumb(self):
@@ -132,7 +142,7 @@ class TestViews(WaxeTestCase):
         res = Views(request)._get_breadcrumb('folder1')
         expected = (
             '<li>'
-            '<a data-href="/filepath">root</a> '
+            '<a data-href="/filepath" href="/filepath">root</a> '
             '<span class="divider">/</span>'
             '</li>'
             '<li class="active">folder1</li>'
@@ -148,7 +158,7 @@ class TestViews(WaxeTestCase):
         res = Views(request)._get_breadcrumb('', force_link=True)
         expected = (
             '<li>'
-            '<a data-href="/filepath">root</a> '
+            '<a data-href="/filepath" href="/filepath">root</a> '
             '</li>'
         )
         self.assertEqual(res, expected)
@@ -232,9 +242,10 @@ class TestViews(WaxeTestCase):
         with patch('xmltool.generate_form', return_value='My form content'):
             expected = {
                 'content': 'My form content',
-                'breadcrumb': ('<li><a data-href="/filepath">root</a> '
-                               '<span class="divider">/</span></li>'
-                               '<li class="active">file1.xml</li>')
+                'breadcrumb': (
+                    '<li><a data-href="/filepath" href="/filepath">root</a> '
+                    '<span class="divider">/</span></li>'
+                    '<li class="active">file1.xml</li>')
             }
             request = testing.DummyRequest(root_path=path,
                                            user=self.user_bob,
