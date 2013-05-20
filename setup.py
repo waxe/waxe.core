@@ -16,6 +16,7 @@ requires = [
     'zope.sqlalchemy',
     'waitress',
     'sqla_declarative',
+    'xmltool',
     ]
 
 setup(name='waxe',

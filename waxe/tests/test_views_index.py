@@ -1,4 +1,5 @@
 import os
+import simplejson
 from pyramid import testing
 from ..testing import WaxeTestCase, login_user
 from mock import patch
@@ -17,6 +18,8 @@ from ..views.index import (
     JSONHTTPBadRequest,
     bad_request
 )
+from urllib2 import HTTPError
+
 
 class TestViews(WaxeTestCase):
 
@@ -186,6 +189,55 @@ class TestViews(WaxeTestCase):
         expected = {'content': u'  <a href="/editorpath">editor</a>\n'}
         self.assertEqual(dic, expected)
 
+    def test_edit(self):
+        DBSession.add(self.user_bob)
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        request = testing.DummyRequest(root_path=path, user=self.user_bob)
+        expected = {
+            'error_msg': 'A filename should be provided',
+        }
+        res = Views(request).edit()
+        self.assertEqual(res, expected)
+
+        with patch('xmltool.generate_form', return_value='My form content'):
+            expected = {
+                'content': 'My form content',
+            }
+            request = testing.DummyRequest(root_path=path,
+                                           user=self.user_bob,
+                                           params={'filename': 'file1.xml'})
+            res = Views(request).edit()
+            self.assertEqual(res, expected)
+
+        def raise_func(*args, **kw):
+            raise Exception('My error')
+
+        with patch('xmltool.generate_form') as m:
+            m.side_effect = raise_func
+            expected = {
+                'error_msg': 'My error',
+            }
+            request = testing.DummyRequest(root_path=path,
+                                           user=self.user_bob,
+                                           params={'filename': 'file1.xml'})
+            res = Views(request).edit()
+            self.assertEqual(res, expected)
+
+        def raise_http_func(*args, **kw):
+            raise HTTPError('http://url', 404, 'Not found', [], None)
+
+        with patch('xmltool.generate_form') as m:
+            m.side_effect = raise_http_func
+            expected = {
+                'error_msg': 'The dtd of file1.xml can\'t be loaded.',
+            }
+            request = testing.DummyRequest(root_path=path,
+                                           user=self.user_bob,
+                                           params={'filename': 'file1.xml'})
+            res = Views(request).edit()
+            self.assertEqual(res, expected)
+
+
 class FunctionalTestViews(WaxeTestCase):
 
     def test_home_forbidden(self):
@@ -252,3 +304,32 @@ class FunctionalTestViews(WaxeTestCase):
         res = self.testapp.get('/login-selection', status=200)
         self.assertTrue('There is a problem with your configuration' in
                         res.body)
+
+    def test_edit_forbidden(self):
+        res = self.testapp.get('/edit.json', status=302)
+        self.assertEqual(
+            res.location,
+            'http://localhost/login?next=http%3A%2F%2Flocalhost%2Fedit.json')
+        res = res.follow()
+        self.assertEqual(res.status, "200 OK")
+        self.assertTrue('<form' in res.body)
+        self.assertTrue('Login' in res.body)
+
+    @login_user('Bob')
+    def test_edit(self):
+        DBSession.add(self.user_bob)
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        self.user_bob.config = UserConfig(root_path=path)
+        res = self.testapp.get('/edit.json', status=200)
+        expected = '{"error_msg": "A filename should be provided"}'
+        self.assertEqual(res.body,  expected)
+        self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
+                        res._headerlist)
+
+        res = self.testapp.get('/edit.json',
+                               status=200,
+                               params={'filename': 'file1.xml'})
+        dic = simplejson.loads(res.body)
+        self.assertEqual(len(dic), 1)
+        self.assertTrue('<form method="POST" id="xmltool-form">' in
+                        dic['content'])

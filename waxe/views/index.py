@@ -1,9 +1,14 @@
 import os
+import logging
 from pyramid.view import view_config, view_defaults
 from pyramid.httpexceptions import HTTPBadRequest, HTTPFound
 from pyramid.renderers import render
 from ..models import User
 from .. import browser
+import xmltool
+from urllib2 import HTTPError
+
+log = logging.getLogger(__name__)
 
 
 class JSONHTTPBadRequest(HTTPBadRequest): pass
@@ -44,6 +49,10 @@ class Views(object):
             return self.request.route_path(
                 'home_json', _query=[(key, path)])
 
+        def get_file_href(path, key):
+            return self.request.route_path(
+                'edit_json', _query=[(key, path)])
+
         relpath = self.request.GET.get('path') or ''
         root_path = self.request.root_path
         abspath = browser.absolute_path(relpath, root_path)
@@ -60,7 +69,7 @@ class Views(object):
         for filename in filenames:
             data += [('file',
                       filename,
-                      get_href(os.path.join(relpath, filename), 'filename'))]
+                      get_file_href(os.path.join(relpath, filename), 'filename'))]
 
         return render('blocks/file_navigation.mak',
                       {'data': data, 'path': relpath},
@@ -69,7 +78,6 @@ class Views(object):
     @view_config(route_name='home', renderer='index.mak', permission='edit')
     @view_config(route_name='home_json', renderer='json', permission='edit')
     def home(self):
-
         return self._response({'content': self._get_navigation()})
 
     @view_config(route_name='login_selection', renderer='index.mak',
@@ -84,6 +92,31 @@ class Views(object):
         self.request.session['editor_login'] = user.login
         self.request.session['root_path'] = user.config.root_path
         return HTTPFound(location='/')
+
+    @view_config(route_name='edit_json', renderer='json', permission='edit')
+    def edit(self):
+        filename = self.request.GET.get('filename') or ''
+        if not filename:
+            return {
+                'error_msg': 'A filename should be provided',
+            }
+        root_path = self.request.root_path
+        absfilename = browser.absolute_path(filename, root_path)
+        try:
+            html = xmltool.generate_form(absfilename, form_filename=filename)
+        except HTTPError, e:
+            log.exception(e)
+            return {
+                'error_msg': 'The dtd of %s can\'t be loaded.' % filename
+            }
+        except Exception, e:
+            log.exception(e)
+            return {
+                'error_msg': str(e)
+            }
+        return {
+            'content': html,
+        }
 
 
 @view_config(context=JSONHTTPBadRequest, renderer='json', route_name=None)
@@ -105,4 +138,5 @@ def includeme(config):
     # TODO: Only used to make the test. Remove this when we have more routes!
     config.add_route('home_json', '/home.json')
     config.add_route('login_selection', '/login-selection')
+    config.add_route('edit_json', '/edit.json')
     config.scan(__name__)
