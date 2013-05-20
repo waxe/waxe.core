@@ -69,16 +69,52 @@ class Views(object):
         for filename in filenames:
             data += [('file',
                       filename,
-                      get_file_href(os.path.join(relpath, filename), 'filename'))]
+                      get_file_href(os.path.join(relpath, filename), 'filename')
+                     )]
 
         return render('blocks/file_navigation.mak',
                       {'data': data, 'path': relpath},
                       self.request)
 
+    def _get_breadcrumb(self, relpath, force_link=False):
+        def get_href(path, key):
+            return self.request.route_path(
+                'home_json', _query=[(key, path)])
+
+        tple = []
+        while relpath:
+            name = os.path.basename(relpath)
+            tple += [(name, relpath)]
+            relpath = os.path.dirname(relpath)
+
+        tple += [('root', '')]
+        html = []
+        for index, (name, relpath) in enumerate(reversed(tple)):
+            if index == len(tple) - 1 and not force_link:
+                html += ['<li class="active">%s</li>' % (name)]
+            else:
+                divider = ''
+                if len(tple) > 1:
+                    divider = '<span class="divider">/</span>'
+                html += [(
+                    '<li>'
+                    '<a data-href="%s">%s</a> '
+                    '%s'
+                    '</li>') % (
+                        get_href(relpath, relpath),
+                        name,
+                        divider
+                    )]
+        return ''.join(html)
+
     @view_config(route_name='home', renderer='index.mak', permission='edit')
     @view_config(route_name='home_json', renderer='json', permission='edit')
     def home(self):
-        return self._response({'content': self._get_navigation()})
+        path = self.request.GET.get('path') or ''
+        return self._response({
+            'content': self._get_navigation(),
+            'breadcrumb': self._get_breadcrumb(path)
+        })
 
     @view_config(route_name='login_selection', renderer='index.mak',
                  permission='edit')
@@ -114,8 +150,10 @@ class Views(object):
             return {
                 'error_msg': str(e)
             }
+        breadcrumb = self._get_breadcrumb(filename)
         return {
             'content': html,
+            'breadcrumb': breadcrumb
         }
 
 

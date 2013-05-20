@@ -125,10 +125,39 @@ class TestViews(WaxeTestCase):
                     '</ul>\n')
         self.assertEqual(res, expected)
 
+    def test__get_breadcrumb(self):
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        request = testing.DummyRequest(root_path=path)
+        request.route_path = lambda *args, **kw: '/filepath'
+        res = Views(request)._get_breadcrumb('folder1')
+        expected = (
+            '<li>'
+            '<a data-href="/filepath">root</a> '
+            '<span class="divider">/</span>'
+            '</li>'
+            '<li class="active">folder1</li>'
+        )
+        self.assertEqual(res, expected)
+
+        res = Views(request)._get_breadcrumb('')
+        expected = (
+            '<li class="active">root</li>'
+        )
+        self.assertEqual(res, expected)
+
+        res = Views(request)._get_breadcrumb('', force_link=True)
+        expected = (
+            '<li>'
+            '<a data-href="/filepath">root</a> '
+            '</li>'
+        )
+        self.assertEqual(res, expected)
+
     def test_home(self):
         DBSession.add(self.user_bob)
         request = testing.DummyRequest(root_path='/path', user=self.user_bob)
         expected = {
+            'breadcrumb': '<li class="active">root</li>',
             'content': u'<ul id="file-navigation" data-path="">\n</ul>\n',
             'editor_login': u'Bob'
         }
@@ -137,6 +166,7 @@ class TestViews(WaxeTestCase):
             self.assertEqual(res, expected)
 
         expected = {
+            'breadcrumb': '<li class="active">root</li>',
             'content': u'<ul id="file-navigation" data-path="">\n</ul>\n',
         }
         with patch('waxe.views.index.Views._is_json', return_value=True):
@@ -202,10 +232,14 @@ class TestViews(WaxeTestCase):
         with patch('xmltool.generate_form', return_value='My form content'):
             expected = {
                 'content': 'My form content',
+                'breadcrumb': ('<li><a data-href="/filepath">root</a> '
+                               '<span class="divider">/</span></li>'
+                               '<li class="active">file1.xml</li>')
             }
             request = testing.DummyRequest(root_path=path,
                                            user=self.user_bob,
                                            params={'filename': 'file1.xml'})
+            request.route_path = lambda *args, **kw: '/filepath'
             res = Views(request).edit()
             self.assertEqual(res, expected)
 
@@ -284,7 +318,12 @@ class FunctionalTestViews(WaxeTestCase):
         DBSession.add(self.user_bob)
         self.user_bob.config = UserConfig(root_path='/path')
         res = self.testapp.get('/home.json', status=200)
-        expected = '{"content": "<ul id=\\"file-navigation\\" data-path=\\"\\">\\n</ul>\\n"}'
+        expected = (
+            '{"content": '
+            '"<ul id=\\"file-navigation\\" data-path=\\"\\">\\n</ul>\\n", '
+            '"breadcrumb": "<li class=\\"active\\">root</li>"'
+            '}'
+        )
         self.assertEqual(res.body,  expected)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
@@ -330,6 +369,8 @@ class FunctionalTestViews(WaxeTestCase):
                                status=200,
                                params={'filename': 'file1.xml'})
         dic = simplejson.loads(res.body)
-        self.assertEqual(len(dic), 1)
+        self.assertEqual(len(dic), 2)
         self.assertTrue('<form method="POST" id="xmltool-form">' in
                         dic['content'])
+        self.assertTrue(dic['breadcrumb'])
+

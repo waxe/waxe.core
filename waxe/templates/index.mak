@@ -1,3 +1,13 @@
 <%inherit file="base.mak" />
 
-${content|n}
+<section id="section-content">
+  <ul class="breadcrumb navbar-fixed-top" style="top:40px; z-index: 999;">
+	% if breadcrumb:
+	  ${breadcrumb|n}
+	% endif
+  </ul>
+
+  <div class="content">
+    ${content|n}
+  </div>
+</section>
