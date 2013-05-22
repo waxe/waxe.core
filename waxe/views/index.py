@@ -14,6 +14,17 @@ log = logging.getLogger(__name__)
 class JSONHTTPBadRequest(HTTPBadRequest): pass
 
 
+def _get_tags(dtd_url):
+    dic = xmltool.dtd_parser.parse(dtd_url=dtd_url)
+    lis = []
+    for k, v in dic.items():
+        if issubclass(v, xmltool.elements.TextElement):
+            continue
+        lis += [k]
+    lis.sort()
+    return lis
+
+
 @view_defaults(renderer='index.mak')
 class Views(object):
 
@@ -181,6 +192,34 @@ class Views(object):
             'breadcrumb': breadcrumb
         }
 
+    @view_config(route_name='get_tags_json', renderer='json', permission='edit')
+    def get_tags(self):
+        dtd_url = self.request.GET.get('dtd_url', None)
+
+        if not dtd_url:
+            return {}
+
+        return {'tags': _get_tags(dtd_url)}
+
+    @view_config(route_name='new_json', renderer='json', permission='edit')
+    def new(self):
+        dtd_url = self.request.GET.get('dtd_url') or None
+        dtd_tag = self.request.GET.get('dtd_tag') or None
+
+        if dtd_tag and dtd_url:
+            html = xmltool.new(dtd_url, dtd_tag)
+            return {
+                'content': html,
+                'breadcrumb': self._get_breadcrumb(None, force_link=True),
+            }
+
+        content = render('blocks/new.mak',
+                         {'dtd_urls': self.request.dtd_urls,
+                          'tags': _get_tags(self.request.dtd_urls[0]),
+                         },
+                         self.request)
+        return {'content': content}
+
 
 @view_config(context=JSONHTTPBadRequest, renderer='json', route_name=None)
 @view_config(context=HTTPBadRequest, renderer='index.mak', route_name=None)
@@ -202,4 +241,6 @@ def includeme(config):
     config.add_route('login_selection', '/login-selection')
     config.add_route('edit', '/edit')
     config.add_route('edit_json', '/edit.json')
+    config.add_route('get_tags_json', '/get-tags.json')
+    config.add_route('new_json', '/new.json')
     config.scan(__name__)

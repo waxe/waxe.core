@@ -41,6 +41,7 @@ class WaxeTestCase(unittest.TestCase):
             'session.key': 'session_key',
             'pyramid.includes': ['pyramid_auth'],
             'pyramid_auth.validate_function': 'waxe.security.validate_password',
+            'dtd_urls': 'http://xmltool.lereskp.fr/static/exercise.dtd'
         }
         app = main({}, **self.settings)
         app = twc.middleware.TwMiddleware(app)

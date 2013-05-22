@@ -20,6 +20,13 @@ views_modules = [
     'waxe.views.index',
 ]
 
+
+def get_dtd_urls(request):
+    if 'dtd_urls' not in request.registry.settings:
+        raise AttributeError, 'No dtd_urls defined in the ini file.'
+    return filter(bool, request.registry.settings['dtd_urls'].split('\n'))
+
+
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
     """
@@ -46,6 +53,8 @@ def main(global_config, **settings):
     config.set_request_property(get_user_from_request, 'user', reify=True)
     config.set_request_property(get_root_path_from_request,
                                 'root_path', reify=True)
+    config.set_request_property(get_dtd_urls, 'dtd_urls', reify=True)
+
     for module in views_modules:
         config.include(module)
     return config.make_wsgi_app()

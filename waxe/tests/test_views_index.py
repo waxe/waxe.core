@@ -16,7 +16,8 @@ from ..views.index import (
     Views,
     HTTPBadRequest,
     JSONHTTPBadRequest,
-    bad_request
+    bad_request,
+    _get_tags
 )
 from urllib2 import HTTPError
 
@@ -30,6 +31,12 @@ class TestViews(WaxeTestCase):
     def tearDown(self):
         testing.tearDown()
         super(TestViews, self).tearDown()
+
+    def test__get_tags(self):
+        dtd_url = 'http://xmltool.lereskp.fr/static/exercise.dtd'
+        res = _get_tags(dtd_url)
+        expected = ['Exercise', 'comments', 'mqm', 'qcm', 'test']
+        self.assertEqual(res, expected)
 
     def test_class_init(self):
         request = testing.DummyRequest(root_path=None)
@@ -282,6 +289,45 @@ class TestViews(WaxeTestCase):
             res = Views(request).edit()
             self.assertEqual(res, expected)
 
+    def test_get_tags(self):
+        DBSession.add(self.user_bob)
+        request = testing.DummyRequest(root_path='/path',
+                                       user=self.user_bob)
+        res = Views(request).get_tags()
+        self.assertEqual(res, {})
+
+        dtd_url = 'http://xmltool.lereskp.fr/static/exercise.dtd'
+        request = testing.DummyRequest(root_path='/path',
+                                       user=self.user_bob,
+                                       params={'dtd_url': dtd_url})
+        res = Views(request).get_tags()
+        expected = {'tags': ['Exercise', 'comments', 'mqm', 'qcm', 'test']}
+        self.assertEqual(res, expected)
+
+    def test_new(self):
+        dtd_url = 'http://xmltool.lereskp.fr/static/exercise.dtd'
+        DBSession.add(self.user_bob)
+        request = testing.DummyRequest(root_path='/path',
+                                       user=self.user_bob)
+        request.dtd_urls = [dtd_url]
+        res = Views(request).new()
+        self.assertEqual(len(res), 1)
+        self.assertTrue('<h3>New file</h3>' in res['content'])
+
+        request = testing.DummyRequest(root_path='/path',
+                                       user=self.user_bob,
+                                       params={
+                                           'dtd_url': dtd_url,
+                                           'dtd_tag': 'Exercise'
+                                       })
+        request.route_path = lambda *args, **kw: '/filepath'
+        res = Views(request).new()
+        self.assertEqual(len(res), 2)
+        self.assertTrue('<form method="POST" id="xmltool-form">'
+                        in res['content'])
+        self.assertTrue('<a data-href="/filepath" href="/filepath">root</a>'
+                        in res['breadcrumb'])
+
 
 class FunctionalTestViews(WaxeTestCase):
 
@@ -384,4 +430,65 @@ class FunctionalTestViews(WaxeTestCase):
         self.assertTrue('<form method="POST" id="xmltool-form">' in
                         dic['content'])
         self.assertTrue(dic['breadcrumb'])
+
+    def test_get_tags_forbidden(self):
+        res = self.testapp.get('/get-tags.json', status=302)
+        self.assertEqual(
+            res.location,
+            'http://localhost/login?next=http%3A%2F%2Flocalhost%2Fget-tags.json')
+        res = res.follow()
+        self.assertEqual(res.status, "200 OK")
+        self.assertTrue('<form' in res.body)
+        self.assertTrue('Login' in res.body)
+
+    @login_user('Bob')
+    def test_get_tags(self):
+        dtd_url = 'http://xmltool.lereskp.fr/static/exercise.dtd'
+        DBSession.add(self.user_bob)
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        self.user_bob.config = UserConfig(root_path=path)
+        res = self.testapp.get('/get-tags.json', status=200)
+        self.assertEqual(simplejson.loads(res.body), {})
+
+        res = self.testapp.get('/get-tags.json',
+                               status=200,
+                               params={'dtd_url': dtd_url})
+        expected = {'tags': ['Exercise', 'comments', 'mqm', 'qcm', 'test']}
+        self.assertEqual(simplejson.loads(res.body), expected)
+
+    def test_new_forbidden(self):
+        res = self.testapp.get('/new.json', status=302)
+        self.assertEqual(
+            res.location,
+            'http://localhost/login?next=http%3A%2F%2Flocalhost%2Fnew.json')
+        res = res.follow()
+        self.assertEqual(res.status, "200 OK")
+        self.assertTrue('<form' in res.body)
+        self.assertTrue('Login' in res.body)
+
+    @login_user('Bob')
+    def test_new(self):
+        DBSession.add(self.user_bob)
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        self.user_bob.config = UserConfig(root_path=path)
+        res = self.testapp.get('/new.json', status=200)
+        self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
+                        res._headerlist)
+        dic = simplejson.loads(res.body)
+        self.assertEqual(len(dic), 1)
+        self.assertTrue('<h3>New file</h3>' in dic['content'])
+
+        dtd_url = 'http://xmltool.lereskp.fr/static/exercise.dtd'
+        dtd_tag = 'Exercise'
+        res = self.testapp.get('/new.json',
+                               status=200,
+                               params={'dtd_url': dtd_url,
+                                       'dtd_tag': dtd_tag})
+        dic = simplejson.loads(res.body)
+        self.assertEqual(len(dic), 2)
+        self.assertTrue('<form method="POST" id="xmltool-form">' in
+                        dic['content'])
+        self.assertTrue(dic['breadcrumb'])
+        self.assertTrue('data-href="/home.json?="' in dic['breadcrumb'])
+
 
