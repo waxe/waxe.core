@@ -102,6 +102,55 @@ class TestViews(WaxeTestCase):
             self.assertEqual(res, {'editor_login': 'Account',
                                    'logins': ['contributor']})
 
+    def test__get_navigation_data(self):
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        request = testing.DummyRequest(root_path=path)
+        request.route_path = lambda *args, **kw: '/%s/filepath' % args[0]
+        res = Views(request)._get_navigation_data()
+        expected = {
+            'folders': [
+                {'data_href': '/home_json/filepath',
+                 'href': '/home/filepath',
+                 'name': 'folder1'}],
+            'path': '',
+            'previous': None,
+            'filenames': [
+                {'data_href': '/edit_json/filepath',
+                 'href': '/edit/filepath', 'name': 'file1.xml'}]
+        }
+        self.assertEqual(res, expected)
+
+        request = testing.DummyRequest(
+            root_path=path, params={'path': 'folder1'})
+        request.route_path = lambda *args, **kw: '/%s/filepath' % args[0]
+        res = Views(request)._get_navigation_data()
+        expected = {
+            'folders': [],
+            'path': 'folder1',
+            'previous': None,
+            'filenames': [
+                {'data_href': '/edit_json/filepath',
+                 'href': '/edit/filepath',
+                 'name': 'file2.xml'}]
+        }
+        self.assertEqual(res, expected)
+
+        res = Views(request)._get_navigation_data(add_previous=True,
+                                                  folder_route='folder_route',
+                                                  file_route='file_route',
+                                                  only_json=True)
+        expected = {
+            'folders': [],
+            'path': 'folder1',
+            'previous': {
+                'data_href': '/folder_route_json/filepath', 'name': '..'
+            },
+            'filenames': [{
+                'data_href': '/file_route_json/filepath',
+                'name': 'file2.xml'}]
+        }
+        self.assertTrue(res, expected)
+
     def test__get_navigation(self):
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
         request = testing.DummyRequest(root_path=path)
@@ -140,6 +189,17 @@ class TestViews(WaxeTestCase):
             '</a>'
             '</li>\n'
             '</ul>\n')
+        self.assertEqual(res, expected)
+
+    def test__get_breadcrumb_data(self):
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        request = testing.DummyRequest(root_path=path)
+        res = Views(request)._get_breadcrumb_data('')
+        expected = [('root', '')]
+        self.assertEqual(res, expected)
+
+        res = Views(request)._get_breadcrumb_data('folder1')
+        expected = [('root', ''), ('folder1', 'folder1')]
         self.assertEqual(res, expected)
 
     def test__get_breadcrumb(self):
@@ -328,6 +388,97 @@ class TestViews(WaxeTestCase):
         self.assertTrue('<a data-href="/filepath" href="/filepath">root</a>'
                         in res['breadcrumb'])
 
+    def test_open(self):
+        DBSession.add(self.user_bob)
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        request = testing.DummyRequest(root_path=path,
+                                       user=self.user_bob)
+        request.route_path = lambda *args, **kw: '/filepath'
+        res = Views(request).open()
+        expected = {
+            'folders': [
+                {'data_href': '/filepath',
+                 'name': 'folder1'}
+            ],
+            'path': '',
+            'previous': None,
+            'nav_btns': [{'data_href': '/filepath', 'name': 'root'}],
+            'filenames': [{'data_href': '/filepath', 'name': 'file1.xml'}]
+        }
+        self.assertEqual(res, expected)
+
+    def test_create_folder(self):
+        try:
+            DBSession.add(self.user_bob)
+            path = os.path.join(os.getcwd(), 'waxe/tests/files')
+            request = testing.DummyRequest(root_path=path,
+                                           user=self.user_bob)
+            res = Views(request).create_folder()
+            expected = {'status': False, 'error_msg': 'No path given'}
+            self.assertEqual(res, expected)
+            request = testing.DummyRequest(root_path=path,
+                                           user=self.user_bob,
+                                           params={'path': 'new_folder'})
+            res = Views(request).create_folder()
+            expected = {'status': True}
+            self.assertTrue(os.path.isdir(os.path.join(path, 'new_folder')))
+            self.assertEqual(res, expected)
+
+            res = Views(request).create_folder()
+            expected = {
+                'status': False,
+                'error_msg': ("mkdir: cannot create directory `%s'"
+                              ": File exists\n") % (
+                                  os.path.join(path, 'new_folder'))
+            }
+            self.assertEqual(res, expected)
+        finally:
+            os.rmdir(os.path.join(path, 'new_folder'))
+
+    def test_update(self):
+        DBSession.add(self.user_bob)
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        request = testing.DummyRequest(root_path=path,
+                                       user=self.user_bob,
+                                       params={},
+                                      )
+        res = Views(request).update()
+        expected = {'status': False, 'error_msg': 'No filename given'}
+        self.assertEqual(res, expected)
+
+        with patch('xmltool.update', return_value=False):
+            request = testing.DummyRequest(root_path=path,
+                                           user=self.user_bob,
+                                           params={'_xml_filename': 'test.xml'},
+                                          )
+            request.route_path = lambda *args, **kw: '/filepath'
+            res = Views(request).update()
+            expected = {
+                'status': True,
+                'breadcrumb': (
+                    '<li><a data-href="/filepath" href="/filepath">root</a> '
+                    '<span class="divider">/</span></li>'
+                    '<li class="active">test.xml</li>')
+            }
+            self.assertEqual(res, expected)
+
+        def raise_func(*args, **kw):
+            raise Exception('My error')
+
+        with patch('xmltool.update') as m:
+            m.side_effect = raise_func
+            request = testing.DummyRequest(root_path=path,
+                                           user=self.user_bob,
+                                           params={'_xml_filename': 'test.xml'},
+                                          )
+            request.route_path = lambda *args, **kw: '/filepath'
+            expected = {
+                'status': False,
+                'error_msg': 'My error',
+            }
+            res = Views(request).update()
+            self.assertEqual(res, expected)
+
 
 class FunctionalTestViews(WaxeTestCase):
 
@@ -491,4 +642,98 @@ class FunctionalTestViews(WaxeTestCase):
         self.assertTrue(dic['breadcrumb'])
         self.assertTrue('data-href="/home.json?="' in dic['breadcrumb'])
 
+    def test_open_forbidden(self):
+        res = self.testapp.get('/open.json', status=302)
+        self.assertEqual(
+            res.location,
+            'http://localhost/login?next=http%3A%2F%2Flocalhost%2Fopen.json')
+        res = res.follow()
+        self.assertEqual(res.status, "200 OK")
+        self.assertTrue('<form' in res.body)
+        self.assertTrue('Login' in res.body)
 
+    @login_user('Bob')
+    def test_open(self):
+        DBSession.add(self.user_bob)
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        self.user_bob.config = UserConfig(root_path=path)
+        res = self.testapp.get('/open.json', status=200)
+        self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
+                        res._headerlist)
+        expected = {"folders": [{"data_href": "/open.json?path=folder1", "name": "folder1"}], "path": "", "previous": None, "nav_btns": [{"data_href": "/open.json?path=", "name": "root"}], "filenames": [{"data_href": "/edit.json?filename=file1.xml", "name": "file1.xml"}]}
+        self.assertEqual(simplejson.loads(res.body), expected)
+
+    def test_create_folder_forbidden(self):
+        res = self.testapp.get('/create-folder.json', status=302)
+        self.assertEqual(
+            res.location,
+            'http://localhost/login?next=http%3A%2F%2Flocalhost%2Fcreate-folder.json')
+        res = res.follow()
+        self.assertEqual(res.status, "200 OK")
+        self.assertTrue('<form' in res.body)
+        self.assertTrue('Login' in res.body)
+
+    @login_user('Bob')
+    def test_create_folder(self):
+        DBSession.add(self.user_bob)
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        self.user_bob.config = UserConfig(root_path=path)
+        res = self.testapp.get('/create-folder.json', status=200)
+        self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
+                        res._headerlist)
+        expected = {"status": False, "error_msg": "No path given"}
+        self.assertEqual(simplejson.loads(res.body), expected)
+
+        try:
+            res = self.testapp.get('/create-folder.json',
+                                   status=200,
+                                   params={'path': 'new_folder'})
+            self.assertTrue(os.path.isdir(os.path.join(path, 'new_folder')))
+            expected = {'status': True}
+            self.assertEqual(simplejson.loads(res.body), expected)
+
+            res = self.testapp.get('/create-folder.json',
+                                   status=200,
+                                   params={'path': 'new_folder'})
+            expected = {
+                'status': False,
+                'error_msg': ("mkdir: cannot create directory `%s'"
+                              ": File exists\n") % (
+                                  os.path.join(path, 'new_folder'))
+            }
+            self.assertEqual(simplejson.loads(res.body), expected)
+        finally:
+            os.rmdir(os.path.join(path, 'new_folder'))
+
+    def test_update_forbidden(self):
+        res = self.testapp.get('/update.json', status=302)
+        self.assertEqual(
+            res.location,
+            'http://localhost/login?next=http%3A%2F%2Flocalhost%2Fupdate.json')
+        res = res.follow()
+        self.assertEqual(res.status, "200 OK")
+        self.assertTrue('<form' in res.body)
+        self.assertTrue('Login' in res.body)
+
+    @login_user('Bob')
+    def test_update(self):
+        DBSession.add(self.user_bob)
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        self.user_bob.config = UserConfig(root_path=path)
+        res = self.testapp.post('/update.json', status=200)
+        self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
+                        res._headerlist)
+        expected = {"status": False, "error_msg": "No filename given"}
+        self.assertEqual(simplejson.loads(res.body), expected)
+
+        with patch('xmltool.update', return_value=False):
+            res = self.testapp.post('/update.json',
+                                    status=200,
+                                    params={'_xml_filename': 'test.xml'})
+            expected = {
+                "status": True,
+                "breadcrumb": (
+                    "<li><a data-href=\"/home.json?=\" href=\"/?=\">root</a> "
+                    "<span class=\"divider\">/</span></li>"
+                    "<li class=\"active\">test.xml</li>")}
+        self.assertEqual(simplejson.loads(res.body), expected)

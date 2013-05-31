@@ -1,6 +1,7 @@
 import unittest
 import transaction
 from webtest import TestApp
+from functools import wraps
 
 from mock import patch
 import tw2.core as twc
@@ -21,6 +22,7 @@ def login_user(login):
     """Decorator to log the user
     """
     def deco(func):
+        @wraps(func)
         def wrapper(*args, **kw):
             with patch('pyramid.authentication.'
                        'AuthTktAuthenticationPolicy.unauthenticated_userid',

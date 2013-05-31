@@ -7,6 +7,7 @@ from ..models import User
 from .. import browser
 import xmltool
 from urllib2 import HTTPError
+from subprocess import Popen, PIPE
 
 log = logging.getLogger(__name__)
 
@@ -54,57 +55,79 @@ class Views(object):
         dic['editor_login'] = editor_login or 'Account'
         return dic
 
-    def _get_navigation(self):
+    def _get_navigation_data(self, add_previous=False, folder_route='home',
+                             file_route='edit', only_json=False):
 
         def get_data_href(path, key):
             return self.request.route_path(
-                'home_json', _query=[(key, path)])
+                '%s_json' % folder_route, _query=[(key, path)])
 
         def get_href(path, key):
             return self.request.route_path(
-                'home', _query=[(key, path)])
+                folder_route, _query=[(key, path)])
 
         def get_file_data_href(path, key):
             return self.request.route_path(
-                'edit_json', _query=[(key, path)])
+                '%s_json' % file_route, _query=[(key, path)])
 
         def get_file_href(path, key):
             return self.request.route_path(
-                'edit', _query=[(key, path)])
+                file_route, _query=[(key, path)])
 
         relpath = self.request.GET.get('path') or ''
         root_path = self.request.root_path
         abspath = browser.absolute_path(relpath, root_path)
         folders, filenames = browser.get_files(abspath)
-        data = []
-        if root_path != abspath:
-            data += [(
-                'previous',
-                '..',
-                get_data_href(os.path.dirname(relpath), 'path'),
-                get_href(os.path.dirname(relpath), 'path')
-            )]
+        data = {
+            'folders': [],
+            'filenames': [],
+            'previous': None,
+            'path': relpath,
+        }
+        if add_previous and root_path != abspath:
+            data['previous'] = {
+                'name': '..',
+                'data_href': get_data_href(os.path.dirname(relpath), 'path'),
+            }
+            if not only_json:
+                data['previous']['href'] = get_href(os.path.dirname(relpath), 'path')
+
 
         for folder in folders:
-            data += [(
-                'folder',
-                folder,
-                get_data_href(os.path.join(relpath, folder), 'path'),
-                get_href(os.path.join(relpath, folder), 'path')
-            )]
+            dic = {
+                'name': folder,
+                'data_href': get_data_href(os.path.join(relpath, folder), 'path'),
+            }
+            if not only_json:
+                dic['href'] = get_href(os.path.join(relpath, folder), 'path')
+            data['folders'] += [dic]
 
         for filename in filenames:
-            data += [(
-                'file',
-                filename,
-                get_file_data_href(os.path.join(relpath, filename),
+            dic = {
+                'name': filename,
+                'data_href': get_file_data_href(os.path.join(relpath, filename),
                                    'filename'),
-                get_file_href(os.path.join(relpath, filename), 'filename')
-            )]
+            }
+            if not only_json:
+                dic['href'] = get_file_href(os.path.join(relpath, filename), 'filename')
+            data['filenames'] += [dic]
+        return data
 
+    def _get_navigation(self):
+        data = self._get_navigation_data(add_previous=True)
         return render('blocks/file_navigation.mak',
-                      {'data': data, 'path': relpath},
-                      self.request)
+                      {'data': data}, self.request)
+
+    def _get_breadcrumb_data(self, relpath):
+        tple = []
+        while relpath:
+            name = os.path.basename(relpath)
+            tple += [(name, relpath)]
+            relpath = os.path.dirname(relpath)
+
+        tple += [('root', '')]
+        tple.reverse()
+        return tple
 
     def _get_breadcrumb(self, relpath, force_link=False):
         def get_data_href(path, key):
@@ -115,15 +138,9 @@ class Views(object):
             return self.request.route_path(
                 'home', _query=[(key, path)])
 
-        tple = []
-        while relpath:
-            name = os.path.basename(relpath)
-            tple += [(name, relpath)]
-            relpath = os.path.dirname(relpath)
-
-        tple += [('root', '')]
+        tple = self._get_breadcrumb_data(relpath)
         html = []
-        for index, (name, relpath) in enumerate(reversed(tple)):
+        for index, (name, relpath) in enumerate(tple):
             if index == len(tple) - 1 and not force_link:
                 html += ['<li class="active">%s</li>' % (name)]
             else:
@@ -220,6 +237,58 @@ class Views(object):
                          self.request)
         return {'content': content}
 
+    @view_config(route_name='open_json', renderer='json', permission='edit')
+    def open(self):
+        data = self._get_navigation_data(folder_route='open', only_json=True)
+        relpath = self.request.GET.get('path') or ''
+        bdata = self._get_breadcrumb_data(relpath)
+        lis = []
+
+        def get_data_href(path, key):
+            return self.request.route_path(
+                'open_json', _query=[(key, path)])
+        for name, path in bdata:
+            lis += [{
+                'name': name,
+                'data_href': get_data_href(path, 'path')
+            }]
+        data['nav_btns'] = lis
+        return data
+
+    @view_config(route_name='create_folder_json', renderer='json', permission='edit')
+    def create_folder(self):
+        path = self.request.GET.get('path', None)
+
+        if not path:
+            return {'status': False, 'error_msg': 'No path given'}
+
+        root_path = self.request.root_path
+        abspath = browser.absolute_path(path, root_path)
+        process = Popen(['mkdir', abspath], stdout=PIPE, stderr=PIPE)
+        error = process.stderr.read()
+        if error:
+            return {'status': False, 'error_msg': error}
+        return {'status': True}
+
+    @view_config(route_name='update_json', renderer='json', permission='edit')
+    def update(self):
+        filename = self.request.POST.pop('_xml_filename', None)
+        if not filename:
+            return {'status': False, 'error_msg': 'No filename given'}
+
+        root_path = self.request.root_path
+        absfilename = browser.absolute_path(filename, root_path)
+        try:
+            xmltool.update(absfilename, self.request.POST)
+        except Exception, e:
+            log.exception(e)
+            return {'status': False, 'error_msg': str(e)}
+
+        return {
+            'status': True,
+            'breadcrumb': self._get_breadcrumb(filename)
+        }
+
 
 @view_config(context=JSONHTTPBadRequest, renderer='json', route_name=None)
 @view_config(context=HTTPBadRequest, renderer='index.mak', route_name=None)
@@ -243,4 +312,7 @@ def includeme(config):
     config.add_route('edit_json', '/edit.json')
     config.add_route('get_tags_json', '/get-tags.json')
     config.add_route('new_json', '/new.json')
+    config.add_route('open_json', '/open.json')
+    config.add_route('create_folder_json', '/create-folder.json')
+    config.add_route('update_json', '/update.json')
     config.scan(__name__)
