@@ -10,12 +10,32 @@
     .navfile li a{
     padding-left: 5px;
     }
+
+  .ui-layout-east{
+    padding: 0 !important;
+  }
+
+  #tree{
+    overflow: auto;
+    height: 400px;
+    font-size: 12px;
+  }
+
+  #tree ._tree_text{
+      font-size: 11px;
+      color: #999;
+    }
   </style>
   <script type="text/javascript" src="/static/js/jquery-1.8.2.min.js"></script>
   <script type="text/javascript" src="/static/js/jquery-ui-1.10.1.custom.min.js"></script>
   <script type="text/javascript" src="/static/bootstrap/js/bootstrap.js"></script>
+  <script type="text/javascript" src="/static/js/jquery.layout-latest.min.js"></script>
+  <script type="text/javascript" src="/static/js/jquery.jstree.js"></script>
   <script type="text/javascript" src="/static/js/jquery.message.js"></script>
   <script type="text/javascript" src="/static/js/jquery.filebrowser.js"></script>
+  <script type="text/javascript" src="/static/js/jquery.autosize.js"></script>
+  <script type="text/javascript" src="/static/js/jquery.togglefieldset.js"></script>
+  <script type="text/javascript" src="/static/js/xmltool.js"></script>
   <script type="text/javascript" src="/static/js/waxe.js"></script>
 </head>
 <body style="padding-top: 76px;">
