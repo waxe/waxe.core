@@ -297,6 +297,7 @@ class TestViews(WaxeTestCase):
         self.assertEqual(dic, expected)
 
     def test_edit(self):
+        class C(object): pass
         DBSession.add(self.user_bob)
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
         request = testing.DummyRequest(root_path=path, user=self.user_bob)
@@ -307,24 +308,39 @@ class TestViews(WaxeTestCase):
         self.assertEqual(res, expected)
 
         with patch('xmltool.generate_form', return_value='My form content'):
-            expected = {
-                'content': 'My form content',
-                'breadcrumb': (
-                    '<li><a data-href="/filepath" href="/filepath">root</a> '
-                    '<span class="divider">/</span></li>'
-                    '<li class="active">file1.xml</li>')
-            }
+            expected_breadcrumb = (
+                '<li><a data-href="/filepath" href="/filepath">root</a> '
+                '<span class="divider">/</span></li>'
+                '<li class="active">file1.xml</li>')
             request = testing.DummyRequest(root_path=path,
                                            user=self.user_bob,
                                            params={'filename': 'file1.xml'})
             request.route_path = lambda *args, **kw: '/filepath'
+            request.matched_route = C()
+            request.matched_route.name = 'route_json'
             res = Views(request).edit()
-            self.assertEqual(res, expected)
+            keys = res.keys()
+            keys.sort()
+            self.assertEqual(keys, ['breadcrumb', 'content', 'jstree_data'])
+            self.assertEqual(res['breadcrumb'],  expected_breadcrumb)
+            self.assertTrue('<form method="POST" id="xmltool-form">' in
+                            res['content'])
+            self.assertTrue(isinstance(res['jstree_data'], dict))
+
+            request.matched_route.name = 'route'
+            res = Views(request).edit()
+            keys = res.keys()
+            keys.sort()
+            self.assertEqual(keys, ['breadcrumb', 'content', 'jstree_data'])
+            self.assertEqual(res['breadcrumb'],  expected_breadcrumb)
+            self.assertTrue('<form method="POST" id="xmltool-form">' in
+                            res['content'])
+            self.assertTrue(isinstance(res['jstree_data'], str))
 
         def raise_func(*args, **kw):
             raise Exception('My error')
 
-        with patch('xmltool.generate_form') as m:
+        with patch('xmltool.load') as m:
             m.side_effect = raise_func
             expected = {
                 'error_msg': 'My error',
@@ -332,13 +348,15 @@ class TestViews(WaxeTestCase):
             request = testing.DummyRequest(root_path=path,
                                            user=self.user_bob,
                                            params={'filename': 'file1.xml'})
+            request.matched_route = C()
+            request.matched_route.name = 'route_json'
             res = Views(request).edit()
             self.assertEqual(res, expected)
 
         def raise_http_func(*args, **kw):
             raise HTTPError('http://url', 404, 'Not found', [], None)
 
-        with patch('xmltool.generate_form') as m:
+        with patch('xmltool.load') as m:
             m.side_effect = raise_http_func
             expected = {
                 'error_msg': 'The dtd of file1.xml can\'t be loaded.',
@@ -346,6 +364,8 @@ class TestViews(WaxeTestCase):
             request = testing.DummyRequest(root_path=path,
                                            user=self.user_bob,
                                            params={'filename': 'file1.xml'})
+            request.matched_route = C()
+            request.matched_route.name = 'route_json'
             res = Views(request).edit()
             self.assertEqual(res, expected)
 
@@ -479,6 +499,25 @@ class TestViews(WaxeTestCase):
             res = Views(request).update()
             self.assertEqual(res, expected)
 
+    def test_add_element_json(self):
+        DBSession.add(self.user_bob)
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        request = testing.DummyRequest(root_path=path,
+                                       user=self.user_bob,
+                                       params={})
+        expected = {'status': False, 'error_msg': 'Bad parameter'}
+        res = Views(request).add_element_json()
+        self.assertEqual(res, expected)
+
+        dtd_url = os.path.join(path, 'exercise.dtd')
+        request = testing.DummyRequest(root_path=path,
+                                       user=self.user_bob,
+                                       params={'dtd_url': dtd_url,
+                                               'elt_id': 'Exercise'})
+        res = Views(request).add_element_json()
+        self.assertTrue(res)
+        self.assertTrue(isinstance(res, dict))
+
 
 class FunctionalTestViews(WaxeTestCase):
 
@@ -577,10 +616,10 @@ class FunctionalTestViews(WaxeTestCase):
                                status=200,
                                params={'filename': 'file1.xml'})
         dic = simplejson.loads(res.body)
-        self.assertEqual(len(dic), 2)
+        self.assertEqual(len(dic), 3)
         self.assertTrue('<form method="POST" id="xmltool-form">' in
                         dic['content'])
-        self.assertTrue(dic['breadcrumb'])
+        self.assertTrue(isinstance(dic['jstree_data'], dict))
 
     def test_get_tags_forbidden(self):
         res = self.testapp.get('/get-tags.json', status=302)
@@ -737,3 +776,32 @@ class FunctionalTestViews(WaxeTestCase):
                     "<span class=\"divider\">/</span></li>"
                     "<li class=\"active\">test.xml</li>")}
         self.assertEqual(simplejson.loads(res.body), expected)
+
+    def test_add_element_json_forbidden(self):
+        res = self.testapp.get('/add-element.json', status=302)
+        self.assertEqual(
+            res.location,
+            'http://localhost/login?next=http%3A%2F%2Flocalhost%2Fadd-element.json')
+        res = res.follow()
+        self.assertEqual(res.status, "200 OK")
+        self.assertTrue('<form' in res.body)
+        self.assertTrue('Login' in res.body)
+
+    @login_user('Bob')
+    def test_add_element_json(self):
+        DBSession.add(self.user_bob)
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        self.user_bob.config = UserConfig(root_path=path)
+        res = self.testapp.get('/add-element.json', status=200)
+        self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
+                        res._headerlist)
+        expected = {"status": False, "error_msg": "Bad parameter"}
+        self.assertEqual(simplejson.loads(res.body), expected)
+
+        dtd_url = os.path.join(path, 'exercise.dtd')
+        res = self.testapp.get('/add-element.json', status=200,
+                               params={'dtd_url': dtd_url,
+                                       'elt_id': 'Exercise'})
+
+        dic = simplejson.loads(res.body)
+        self.assertTrue(dic['status'])

@@ -6,8 +6,10 @@ from pyramid.renderers import render
 from ..models import User
 from .. import browser
 import xmltool
+from xmltool import elements
 from urllib2 import HTTPError
 from subprocess import Popen, PIPE
+import json
 
 log = logging.getLogger(__name__)
 
@@ -192,7 +194,11 @@ class Views(object):
         root_path = self.request.root_path
         absfilename = browser.absolute_path(filename, root_path)
         try:
-            html = xmltool.generate_form(absfilename, form_filename=filename)
+            obj = xmltool.load(absfilename)
+            html = xmltool.generate_form_from_obj(obj, form_filename=filename)
+            jstree_data = obj.to_jstree_dict([])
+            if not self._is_json():
+                jstree_data = json.dumps(jstree_data)
         except HTTPError, e:
             log.exception(e)
             return {
@@ -206,7 +212,8 @@ class Views(object):
         breadcrumb = self._get_breadcrumb(filename)
         return {
             'content': html,
-            'breadcrumb': breadcrumb
+            'breadcrumb': breadcrumb,
+            'jstree_data': jstree_data,
         }
 
     @view_config(route_name='get_tags_json', renderer='json', permission='edit')
@@ -289,6 +296,17 @@ class Views(object):
             'breadcrumb': self._get_breadcrumb(filename)
         }
 
+    @view_config(route_name='add_element_json', renderer='json',
+                 permission='edit')
+    def add_element_json(self):
+        elt_id = self.request.GET.get('elt_id')
+        dtd_url = self.request.GET.get('dtd_url')
+        if not elt_id or not dtd_url:
+            return {'status': False, 'error_msg': 'Bad parameter'}
+        dic = elements.get_jstree_json_from_str_id(elt_id, dtd_url=dtd_url)
+        dic['status'] = True
+        return dic
+
 
 @view_config(context=JSONHTTPBadRequest, renderer='json', route_name=None)
 @view_config(context=HTTPBadRequest, renderer='index.mak', route_name=None)
@@ -315,4 +333,5 @@ def includeme(config):
     config.add_route('open_json', '/open.json')
     config.add_route('create_folder_json', '/create-folder.json')
     config.add_route('update_json', '/update.json')
+    config.add_route('add_element_json', '/add-element.json')
     config.scan(__name__)
