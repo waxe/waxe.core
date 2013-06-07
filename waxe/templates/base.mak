@@ -3,27 +3,13 @@
   <title>Waxe</title>
   <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/>
   <link rel="stylesheet" type="text/css" href="/static/bootstrap/css/bootstrap.css" />
+  <link rel="stylesheet" type="text/css" href="/static/css/style.css" />
   <style>
   .navfile .selected{
       background-color: #D9EDF7;
     }
     .navfile li a{
     padding-left: 5px;
-    }
-
-  .ui-layout-east{
-    padding: 0 !important;
-  }
-
-  #tree{
-    overflow: auto;
-    height: 400px;
-    font-size: 12px;
-  }
-
-  #tree ._tree_text{
-      font-size: 11px;
-      color: #999;
     }
   </style>
   <script type="text/javascript" src="/static/js/jquery-1.8.2.min.js"></script>

@@ -1,0 +1,106 @@
+.ui-layout-east {
+  padding: 0 !important; }
+
+#tree {
+  overflow: auto;
+  height: 400px;
+  font-size: 12px; }
+  #tree ._tree_text {
+    font-size: 11px;
+    color: #999; }
+
+form#xmltool-form label {
+  float: left;
+  margin-top: 5px;
+  font-size: 12px;
+  font-weight: bolder; }
+form#xmltool-form textarea {
+  width: 99%;
+  display: block; }
+form#xmltool-form ._comment {
+  display: none; }
+form#xmltool-form .btn-comment {
+  display: inline-block;
+  margin: 4px 0 0 5px;
+  font-size: 11px;
+  cursor: pointer;
+  color: #999;
+  float: right;
+  font-weight: normal; }
+  form#xmltool-form .btn-comment.has-comment {
+    color: orange; }
+form#xmltool-form fieldset legend .comment-button {
+  margin-top: 2px; }
+form#xmltool-form fieldset {
+  margin-top: 30px;
+  position: relative;
+  background-color: white;
+  border: 1px dotted #CCC;
+  padding: 5px; }
+  form#xmltool-form fieldset legend {
+    width: auto;
+    display: block;
+    padding: 0px 10px;
+    border: 1px solid #CCC;
+    border-width: 1px 1px 0 1px;
+    position: absolute;
+    top: -20px;
+    background-color: inherit;
+    font-size: 14px;
+    font-weight: bolder;
+    color: #333;
+    height: 19px;
+    margin: 0px;
+    line-height: 16px; }
+form#xmltool-form .btn-delete,
+form#xmltool-form .btn-delete-list,
+form#xmltool-form .btn-delete-fieldset,
+form#xmltool-form .delete-button,
+form#xmltool-form .fieldset-delete-button,
+form#xmltool-form .growing-delete-button,
+form#xmltool-form .growing-fieldset-delete-button {
+  background: url(/static/images/edit-delete.png) no-repeat;
+  text-indent: -5000px;
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: none;
+  margin: 2px 0 0 5px;
+  cursor: pointer;
+  float: right; }
+form#xmltool-form .delete-button,
+form#xmltool-form .growing-delete-button {
+  margin-top: 5px; }
+form#xmltool-form fieldset legend .btn-comment {
+  margin-left: 20px;
+  float: none; }
+form#xmltool-form fieldset legend .btn-delete,
+form#xmltool-form fieldset legend .btn-delete-list,
+form#xmltool-form fieldset legend .btn-delete-fieldset,
+form#xmltool-form fieldset legend .delete-button,
+form#xmltool-form fieldset legend .fieldset-delete-button,
+form#xmltool-form fieldset legend .growing-delete-button,
+form#xmltool-form fieldset legend .growing-fieldset-delete-button {
+  float: none;
+  margin-left: 10px; }
+form#xmltool-form .container.inline,
+form#xmltool-form .container.growing-source {
+  display: inline; }
+form#xmltool-form ._attrs {
+  display: none !important; }
+form#xmltool-form .hidden {
+  display: none; }
+form#xmltool-form .deleted {
+  display: none; }
+form#xmltool-form .empty {
+  display: none; }
+form#xmltool-form .growing-source > :not(.growing-add-button) {
+  display: none; }
+form#xmltool-form input[type="submit"] {
+  display: none; }
+form#xmltool-form .btn {
+  padding: 1px 4px;
+  font-size: 11px;
+  line-height: 15px;
+  width: auto;
+  height: auto; }
