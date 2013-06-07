@@ -21,4 +21,4 @@
     <a href="#" class="btn" data-dismiss="modal">Cancel</a>
     <a data-href="/new.json" class="btn btn-primary submit">Create</a>
   </div>
-</div>'
+</div>
