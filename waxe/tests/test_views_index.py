@@ -805,3 +805,26 @@ class FunctionalTestViews(WaxeTestCase):
 
         dic = simplejson.loads(res.body)
         self.assertTrue(dic['status'])
+
+    def test_get_comment_modal_json_forbidden(self):
+        res = self.testapp.get('/get-comment-modal.json', status=302)
+        self.assertEqual(
+            res.location,
+            ('http://localhost/login?next=http%3A%2F%2Flocalhost%2F'
+             'get-comment-modal.json'))
+        res = res.follow()
+        self.assertEqual(res.status, "200 OK")
+        self.assertTrue('<form' in res.body)
+        self.assertTrue('Login' in res.body)
+
+    @login_user('Bob')
+    def test_get_comment_modal_json(self):
+        DBSession.add(self.user_bob)
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        self.user_bob.config = UserConfig(root_path=path)
+        res = self.testapp.get('/get-comment-modal.json', status=200)
+        self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
+                        res._headerlist)
+        body = simplejson.loads(res.body)
+        self.assertEqual(len(body), 1)
+        self.assertTrue('<div class="modal ' in body['content'])

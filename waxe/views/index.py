@@ -307,6 +307,14 @@ class Views(object):
         dic['status'] = True
         return dic
 
+    @view_config(route_name='get_comment_modal_json', renderer='json',
+                 permission='edit')
+    def get_comment_modal_json(self):
+        comment = self.request.GET.get('comment') or ''
+        content = render('blocks/comment_modal.mak',
+                         {'comment': comment}, self.request)
+        return {'content': content}
+
 
 @view_config(context=JSONHTTPBadRequest, renderer='json', route_name=None)
 @view_config(context=HTTPBadRequest, renderer='index.mak', route_name=None)
@@ -334,4 +342,5 @@ def includeme(config):
     config.add_route('create_folder_json', '/create-folder.json')
     config.add_route('update_json', '/update.json')
     config.add_route('add_element_json', '/add-element.json')
+    config.add_route('get_comment_modal_json', '/get-comment-modal.json')
     config.scan(__name__)
