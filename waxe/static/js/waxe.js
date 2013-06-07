@@ -207,7 +207,8 @@ $.fn.message.defaults.css.top = '76px';
             var form = $(form_selector);
             if (form.length){
                 form.xmltool({
-                    jstree_url: '/jstree_node.json'
+                    add_element_url: '/add-element.json',
+                    comment_modal_url: '/get-comment-modal.json',
                 }).submit(waxe.on_submit_form);
             }
             else{
