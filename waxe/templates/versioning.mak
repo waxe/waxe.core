@@ -3,10 +3,10 @@
   <ul>
   % for status, label_class, f, link in files_data:
      <li>
-	  <span class="label ${label_class}">${status}</span>
-	  <a data-href="${link}">
-       ${f}
-	  </a>
+       <span class="label ${label_class}">${status}</span>
+       <a data-href="${link}">
+         ${f}
+       </a>
      </li>
   % endfor
   </ul>
