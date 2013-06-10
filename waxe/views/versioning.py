@@ -1,5 +1,6 @@
 from base import BaseViews
 from pyramid.view import view_config
+from pyramid.renderers import render
 from .. import browser
 from .. import diff
 
@@ -20,8 +21,8 @@ class Views(BaseViews):
         client = pysvn.Client()
         return client
 
-    @view_config(route_name='svn_status', renderer='versioning.mak', permission='edit')
-    def svn_status(self):
+    @view_config(route_name='svn_status_json', renderer='json', permission='edit')
+    def svn_status_json(self):
         root_path = self.request.root_path
         relpath = self.request.GET.get('path', '')
         abspath = browser.absolute_path(relpath, root_path)
@@ -34,14 +35,16 @@ class Views(BaseViews):
             p = browser.relative_path(f.path, root_path)
             label_class = labels_mapping.get(f.text_status) or None
             link = self.request.route_path(
-                'svn_diff', _query=[('filename', p)])
+                'svn_diff_json', _query=[('filename', p)])
             lis += [(f.text_status, label_class, p, link)]
 
+        content = render('versioning.mak',
+                         {'files_data': lis}, self.request)
         return {
-            'files_data': lis,
+            'content': content,
         }
 
-    @view_config(route_name='svn_diff', renderer='index.mak', permission='edit')
+    @view_config(route_name='svn_diff_json', renderer='json', permission='edit')
     def svn_diff(self):
         filename = self.request.GET.get('filename') or ''
         if not filename:
@@ -70,10 +73,10 @@ class Views(BaseViews):
             old_content.decode('utf-8').splitlines(),
             new_content.decode('utf-8').splitlines())
 
-        html += u'<input type="submit" class="diff-submit" value="Submit" />'
+        html += u'<input type="submit" class="diff-submit" value="Save and commit" />'
         return {'content': html}
 
-    @view_config(route_name='svn_update', renderer='index.mak', permission='edit')
+    @view_config(route_name='svn_update_json', renderer='json', permission='edit')
     def svn_update(self):
         # We don't use pysvn to make the repository update since it's very slow
         # on big repo. Also the output is better from the command line.
@@ -89,7 +92,7 @@ class Views(BaseViews):
 
 
 def includeme(config):
-    config.add_route('svn_status', '/versioning/status')
-    config.add_route('svn_diff', '/versioning/diff')
-    config.add_route('svn_update', '/versioning/update')
+    config.add_route('svn_status_json', '/versioning/status.json')
+    config.add_route('svn_diff_json', '/versioning/diff.json')
+    config.add_route('svn_update_json', '/versioning/update.json')
     config.scan(__name__)

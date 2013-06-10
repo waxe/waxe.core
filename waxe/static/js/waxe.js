@@ -179,6 +179,14 @@ $.fn.message.defaults.css.top = '76px';
                 if(exist_form())
                     $(form_selector).submit();
             });
+            $('.navbar .dropdown-versioning li a').click(function(e){
+                e.preventDefault();
+                var url = $(this).data('href');
+                if (url !== undefined){
+                    waxe.update_page(url);
+                }
+            });
+
         },
         on_submit_form: function(e){
             e.preventDefault();
