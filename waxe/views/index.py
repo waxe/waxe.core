@@ -42,6 +42,8 @@ class Views(BaseViews):
         if self.request.user.multiple_account():
             dic['logins'] = self.request.user.get_editable_logins(editor_login)
         dic['editor_login'] = editor_login or 'Account'
+        if self.request.registry.settings.get('versioning'):
+            dic['versioning'] = True
         return dic
 
     def _get_navigation_data(self, add_previous=False, folder_route='home',

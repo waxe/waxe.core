@@ -7,7 +7,7 @@ from pyramid.session import UnencryptedCookieSessionFactoryConfig
 from .models import (
     DBSession,
     Base,
-    )
+)
 from .security import (
     get_user_permissions,
     RootFactory,
@@ -16,16 +16,21 @@ from .security import (
 )
 
 # Add the modules you want to be include in the config
-# TODO: only load versioning if we want to use it!
 views_modules = [
     'waxe.views.index',
-    'waxe.views.versioning',
 ]
+
+
+def get_views_modules(settings):
+    lis = list(views_modules)
+    if 'versioning' in settings and settings['versioning'] == 'true':
+        lis += ['waxe.views.versioning']
+    return lis
 
 
 def get_dtd_urls(request):
     if 'dtd_urls' not in request.registry.settings:
-        raise AttributeError, 'No dtd_urls defined in the ini file.'
+        raise AttributeError('No dtd_urls defined in the ini file.')
     return filter(bool, request.registry.settings['dtd_urls'].split('\n'))
 
 
@@ -48,7 +53,7 @@ def main(global_config, **settings):
         callback=get_user_permissions,
         debug=settings['authentication.debug'],
         hashalg='sha512',
-        )
+    )
     authorization_policy = ACLAuthorizationPolicy()
     config.set_authentication_policy(authentication_policy)
     config.set_authorization_policy(authorization_policy)
@@ -57,7 +62,6 @@ def main(global_config, **settings):
                                 'root_path', reify=True)
     config.set_request_property(get_dtd_urls, 'dtd_urls', reify=True)
 
-    for module in views_modules:
+    for module in get_views_modules(settings):
         config.include(module)
     return config.make_wsgi_app()
-

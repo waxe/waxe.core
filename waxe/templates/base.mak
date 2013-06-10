@@ -50,6 +50,22 @@
                 </ul>
               </li>
             % endif
+            % if versioning:
+              <li class="dropdown">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                  Versioning
+                  <b class="caret"></b>
+                </a>
+                <ul class="dropdown-menu dropdown-versioning">
+                    <li>
+                      <a data-href="${request.route_path('svn_status_json')}">Status</a>
+                    </i>
+                    <li>
+                      <a data-href="${request.route_path('svn_update_json')}">Update</a>
+                    </li>
+                </ul>
+              </li>
+            % endif
           </ul>
         </div>
       </div>
