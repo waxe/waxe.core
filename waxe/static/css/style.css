@@ -104,3 +104,32 @@ form#xmltool-form .btn {
   line-height: 15px;
   width: auto;
   height: auto; }
+
+table.diff {
+  font-family: Courier;
+  border: medium;
+  /*
+  width: 100%;
+
+  td.diff_from,
+  td.diff_to{
+    vertical-align: top;
+  }
+  */ }
+  table.diff pre {
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none; }
+  table.diff .diff_header {
+    background-color: #e0e0e0; }
+  table.diff td.diff_header {
+    text-align: right; }
+  table.diff .diff_next {
+    background-color: #c0c0c0; }
+  table.diff .diff_add {
+    background-color: #aaffaa; }
+  table.diff .diff_chg {
+    background-color: #ffff77; }
+  table.diff .diff_sub {
+    background-color: #ffaaaa; }

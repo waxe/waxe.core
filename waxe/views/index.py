@@ -10,11 +10,10 @@ from xmltool import elements
 from urllib2 import HTTPError
 from subprocess import Popen, PIPE
 import json
+from base import JSONHTTPBadRequest, BaseViews
+
 
 log = logging.getLogger(__name__)
-
-
-class JSONHTTPBadRequest(HTTPBadRequest): pass
 
 
 def _get_tags(dtd_url):
@@ -28,19 +27,7 @@ def _get_tags(dtd_url):
     return lis
 
 
-@view_defaults(renderer='index.mak')
-class Views(object):
-
-    def __init__(self, request):
-        self.request = request
-        if (not request.root_path
-            and request.matched_route.name != 'login_selection'):
-            if self._is_json():
-                raise JSONHTTPBadRequest('root path not defined')
-            raise HTTPBadRequest('root path not defined')
-
-    def _is_json(self):
-        return self.request.matched_route.name.endswith('_json')
+class Views(BaseViews):
 
     def _response(self, dic):
         if self._is_json():

@@ -16,8 +16,10 @@ from .security import (
 )
 
 # Add the modules you want to be include in the config
+# TODO: only load versioning if we want to use it!
 views_modules = [
     'waxe.views.index',
+    'waxe.views.versioning',
 ]
 
 
