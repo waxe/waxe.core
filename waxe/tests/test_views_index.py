@@ -62,7 +62,9 @@ class TestViews(WaxeTestCase):
 
     def test__is_json(self):
         request = testing.DummyRequest(root_path='/path', user=self.user_bob)
-        class C(object): pass
+
+        class C(object):
+            pass
         request.matched_route = C()
         request.matched_route.name = 'route'
         self.assertFalse(Views(request)._is_json())
@@ -79,11 +81,13 @@ class TestViews(WaxeTestCase):
 
         with patch('waxe.views.index.Views._is_json', return_value=False):
             res = Views(request)._response({})
-            self.assertEqual(res, {'editor_login': self.user_bob.login})
+            self.assertEqual(res, {'editor_login': self.user_bob.login,
+                                   'versioning': True})
             request.session = {'editor_login': 'Fred'}
 
             res = Views(request)._response({})
-            self.assertEqual(res, {'editor_login': 'Fred'})
+            self.assertEqual(res, {'editor_login': 'Fred',
+                                   'versioning': True})
 
             contributor = User(login='contributor', password='pass1')
             contributor.roles = [Role.query.filter_by(name=ROLE_CONTRIBUTOR).one()]
@@ -91,6 +95,7 @@ class TestViews(WaxeTestCase):
             DBSession.add(contributor)
             res = Views(request)._response({})
             self.assertEqual(res, {'editor_login': 'Fred',
+                                   'versioning': True,
                                    'logins': ['contributor']})
 
             request.session = {}
@@ -100,6 +105,7 @@ class TestViews(WaxeTestCase):
             request.matched_route.name = 'login_selection'
             res = Views(request)._response({})
             self.assertEqual(res, {'editor_login': 'Account',
+                                   'versioning': True,
                                    'logins': ['contributor']})
 
     def test__get_navigation_data(self):
@@ -236,7 +242,8 @@ class TestViews(WaxeTestCase):
         expected = {
             'breadcrumb': '<li class="active">root</li>',
             'content': u'<ul id="file-navigation" data-path="">\n</ul>\n',
-            'editor_login': u'Bob'
+            'editor_login': u'Bob',
+            'versioning': True
         }
         with patch('waxe.views.index.Views._is_json', return_value=False):
             res = Views(request).home()
@@ -498,6 +505,51 @@ class TestViews(WaxeTestCase):
             }
             res = Views(request).update()
             self.assertEqual(res, expected)
+
+    def test_update_text(self):
+        DBSession.add(self.user_bob)
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        request = testing.DummyRequest(root_path=path,
+                                       user=self.user_bob,
+                                       params={})
+        res = Views(request).update_text()
+        expected = {'status': False, 'error_msg': 'Missing parameters!'}
+        self.assertEqual(res, expected)
+
+        request = testing.DummyRequest(
+            root_path=path, user=self.user_bob,
+            params={'filecontent': 'content of the file',
+                    'filename': 'thefilename.xml'})
+
+        def raise_func(*args, **kw):
+            raise Exception('My error')
+
+        with patch('xmltool.load_string') as m:
+            m.side_effect = raise_func
+            res = Views(request).update_text()
+            expected = {'status': False, 'error_msg': 'My error'}
+            self.assertEqual(res,  expected)
+
+        filecontent = open(os.path.join(path, 'file1.xml'), 'r').read()
+        # The dtd should be an absolute url!
+        filecontent = filecontent.replace('exercise.dtd',
+                                          os.path.join(path, 'exercise.dtd'))
+        request = testing.DummyRequest(
+            root_path=path, user=self.user_bob,
+            params={'filecontent': filecontent,
+                    'filename': 'thefilename.xml'})
+
+        with patch('xmltool.elements.Element.write', return_value=None):
+            res = Views(request).update_text()
+            expected = {'status': True, 'content': 'File updated'}
+            self.assertEqual(res,  expected)
+
+            request.params['commit'] = True
+            res = Views(request).update_text()
+            self.assertEqual(len(res), 2)
+            self.assertEqual(res['status'], True)
+            self.assertTrue('class="modal' in res['content'])
+            self.assertTrue('Commit message' in res['content'])
 
     def test_add_element_json(self):
         DBSession.add(self.user_bob)
@@ -775,6 +827,27 @@ class FunctionalTestViews(WaxeTestCase):
                     "<li><a data-href=\"/home.json?=\" href=\"/?=\">root</a> "
                     "<span class=\"divider\">/</span></li>"
                     "<li class=\"active\">test.xml</li>")}
+        self.assertEqual(simplejson.loads(res.body), expected)
+
+    def test_update_text_forbidden(self):
+        res = self.testapp.get('/update-text.json', status=302)
+        self.assertEqual(
+            res.location,
+            'http://localhost/login?next=http%3A%2F%2Flocalhost%2Fupdate-text.json')
+        res = res.follow()
+        self.assertEqual(res.status, "200 OK")
+        self.assertTrue('<form' in res.body)
+        self.assertTrue('Login' in res.body)
+
+    @login_user('Bob')
+    def test_update_text(self):
+        DBSession.add(self.user_bob)
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        self.user_bob.config = UserConfig(root_path=path)
+        res = self.testapp.post('/update-text.json', status=200)
+        self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
+                        res._headerlist)
+        expected = {"status": False, "error_msg": "Missing parameters!"}
         self.assertEqual(simplejson.loads(res.body), expected)
 
     def test_add_element_json_forbidden(self):

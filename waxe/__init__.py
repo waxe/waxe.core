@@ -23,7 +23,7 @@ views_modules = [
 
 def get_views_modules(settings):
     lis = list(views_modules)
-    if 'versioning' in settings and settings['versioning'] == 'true':
+    if 'versioning' in settings:
         lis += ['waxe.views.versioning']
     return lis
 

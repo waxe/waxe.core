@@ -42,7 +42,7 @@ class Views(BaseViews):
         if self.request.user.multiple_account():
             dic['logins'] = self.request.user.get_editable_logins(editor_login)
         dic['editor_login'] = editor_login or 'Account'
-        if self.request.registry.settings.get('versioning'):
+        if 'versioning' in self.request.registry.settings:
             dic['versioning'] = True
         return dic
 
@@ -285,6 +285,27 @@ class Views(BaseViews):
             'breadcrumb': self._get_breadcrumb(filename)
         }
 
+    @view_config(route_name='update_text_json', renderer='json', permission='edit')
+    def update_text(self):
+        filecontent = self.request.POST.get('filecontent')
+        filename = self.request.POST.get('filename') or ''
+        if not filecontent or not filename:
+            return {'status': False, 'error_msg': 'Missing parameters!'}
+        root_path = self.request.root_path
+        absfilename = browser.absolute_path(filename, root_path)
+        try:
+            obj = xmltool.load_string(filecontent)
+            obj.write(absfilename)
+        except Exception, e:
+            return {'status': False, 'error_msg': str(e)}
+
+        content = 'File updated'
+        if self.request.POST.get('commit'):
+            content = render('blocks/commit_modal.mak',
+                             {}, self.request)
+
+        return {'status': True, 'content': content}
+
     @view_config(route_name='add_element_json', renderer='json',
                  permission='edit')
     def add_element_json(self):
@@ -330,6 +351,7 @@ def includeme(config):
     config.add_route('open_json', '/open.json')
     config.add_route('create_folder_json', '/create-folder.json')
     config.add_route('update_json', '/update.json')
+    config.add_route('update_text_json', '/update-text.json')
     config.add_route('add_element_json', '/add-element.json')
     config.add_route('get_comment_modal_json', '/get-comment-modal.json')
     config.scan(__name__)
