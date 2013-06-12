@@ -29,7 +29,7 @@
     <div class="navbar navbar-inverse navbar-fixed-top">
       <div class="navbar-inner">
         <div class="container">
-          <a class="brand" href="#">WAXE</a>
+          <a class="brand" href="/">WAXE</a>
           <ul class="nav">
             <li><a class="new" title="New" data-href="/new.json" href="#">New</a></li>
             <li><a class="open" title="Open" href="#">Open</a></li>
