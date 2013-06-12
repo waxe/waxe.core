@@ -99,6 +99,7 @@ $.fn.message.defaults.css.top = '76px';
                     $content.html(data.content);
                     waxe.link_events($content);
                     waxe.init_form();
+                    waxe.init_diff();
                     if(data.jstree_data){
                         waxe.load_jstree(data.jstree_data);
                     }
@@ -179,14 +180,6 @@ $.fn.message.defaults.css.top = '76px';
                 if(exist_form())
                     $(form_selector).submit();
             });
-            $('.navbar .dropdown-versioning li a').click(function(e){
-                e.preventDefault();
-                var url = $(this).data('href');
-                if (url !== undefined){
-                    waxe.update_page(url);
-                }
-            });
-
         },
         on_submit_form: function(e){
             e.preventDefault();
@@ -292,20 +285,89 @@ $.fn.message.defaults.css.top = '76px';
                 var elt = $('#' + id.replace(/:/g,'\\:'));
                 elt.data('togglefieldset').show(false);
             });
+        },
+        init_diff: function(){
+            $('table.diff td.diff_to').attr('contenteditable', 'true');
+            $('input.diff-submit').click(function(){
+                var html = '';
+                $('table.diff td.diff_to pre').each(function(){
+                    $(this).contents().each(function(){
+                        html += $(this).text();
+                    });
+                });
+                var params = {
+                    'filecontent': html,
+                    'filename': $(this).data('filename'),
+                    'commit': true
+                };
+                $.ajax({
+                     type: 'POST',
+                     url: '/update-text.json',
+                     data: params,
+                     dataType: 'json',
+                     success: function(data, textStatus, jqXHR){
+                        if (data.status){
+                            $(document).message('success', 'Saved');
+                            var modal = $(data.content);
+                            modal.find('.submit').click(function(){
+                                var msg = modal.find('textarea').val();
+                                if (msg !== ''){
+                                    waxe.commit(params.filename, msg);
+                                    modal.modal('hide');
+                                }
+                            });
+                            modal.modal('show');
+                            console.log(modal);
+                        }
+                        else{
+                            $(document).message('error', data.error_msg);
+                        }
+                    },
+                    error: function(jqXHR, textStatus, errorThrown){
+                        var msg = jqXHR.status + ' ' + jqXHR.statusText + ': ' + '/update.json';
+                        $(document).message('error', msg);
+                    }
+                });
+            });
+        },
+        commit: function(filename, msg){
+            var params = {
+                'filename': filename,
+                'msg': msg
+            };
+            $.ajax({
+                 type: 'POST',
+                 url: '/versioning/commit.json',
+                 data: params,
+                 dataType: 'json',
+                 success: function(data, textStatus, jqXHR){
+                    if (data.status){
+                        $(document).message('success', 'Commit done');
+                    }
+                    else{
+                        $(document).message('error', data.error_msg);
+                    }
+                },
+                error: function(jqXHR, textStatus, errorThrown){
+                    var msg = jqXHR.status + ' ' + jqXHR.statusText + ': ' + '/versioning/commit.json';
+                    $(document).message('error', msg);
+                }
+            });
         }
     };
 
     window.onpopstate = function(e) {
-        if(e.state != null){
+        if(e.state !== null){
             waxe.update_page(e.state.json_url);
         }
     };
 
     $(document).ready(function(){
-        waxe.link_events($('.content,.breadcrumb'));
+        waxe.link_events($('.content,.breadcrumb,.navbar .dropdown-versioning'));
         waxe.init_navbar();
         waxe.init_form();
         waxe.init_layout();
+        waxe.init_diff();
 
         if(typeof(jstree_data) !== 'undefined'){
             waxe.load_jstree(jstree_data);

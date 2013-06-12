@@ -58,10 +58,10 @@
                 </a>
                 <ul class="dropdown-menu dropdown-versioning">
                     <li>
-                      <a data-href="${request.route_path('svn_status_json')}">Status</a>
+                      <a href="${request.route_path('svn_status')}" data-href="${request.route_path('svn_status_json')}">Status</a>
                     </i>
                     <li>
-                      <a data-href="${request.route_path('svn_update_json')}">Update</a>
+                      <a href="${request.route_path('svn_update')}" data-href="${request.route_path('svn_update_json')}">Update</a>
                     </li>
                 </ul>
               </li>

@@ -32,19 +32,46 @@ def login_user(login):
     return deco
 
 
+
+SETTINGS = {
+    'sqlalchemy.url': 'sqlite://',
+    'authentication.key': 'secret',
+    'authentication.debug': True,
+    'mako.directories': 'waxe:templates',
+    'session.key': 'session_key',
+    'pyramid.includes': ['pyramid_auth'],
+    'pyramid_auth.validate_function': 'waxe.security.validate_password',
+    'dtd_urls': 'http://xmltool.lereskp.fr/static/exercise.dtd'
+}
+
 class WaxeTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.settings = {
-            'sqlalchemy.url': 'sqlite://',
-            'authentication.key': 'secret',
-            'authentication.debug': True,
-            'mako.directories': 'waxe:templates',
-            'session.key': 'session_key',
-            'pyramid.includes': ['pyramid_auth'],
-            'pyramid_auth.validate_function': 'waxe.security.validate_password',
-            'dtd_urls': 'http://xmltool.lereskp.fr/static/exercise.dtd'
-        }
+        self.settings = SETTINGS.copy()
+        app = main({}, **self.settings)
+        app = twc.middleware.TwMiddleware(app)
+        self.testapp = TestApp(app)
+        engine = create_engine('sqlite://')
+        DBSession.configure(bind=engine)
+        Base.metadata.create_all(engine)
+        with transaction.manager:
+            for role in [ROLE_EDITOR, ROLE_CONTRIBUTOR]:
+                r = Role(name=role)
+                DBSession.add(r)
+            admin = Role(name="admin")
+            self.user_bob = User(login="Bob", password='secret')
+            self.user_bob.roles = [admin]
+            DBSession.add(self.user_bob)
+
+    def tearDown(self):
+        DBSession.remove()
+
+
+class WaxeTestCaseVersioning(unittest.TestCase):
+
+    def setUp(self):
+        self.settings = SETTINGS.copy()
+        self.settings['versioning'] = True
         app = main({}, **self.settings)
         app = twc.middleware.TwMiddleware(app)
         self.testapp = TestApp(app)

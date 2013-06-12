@@ -1,7 +1,7 @@
 import os
 import simplejson
 from pyramid import testing
-from ..testing import WaxeTestCase, login_user
+from ..testing import WaxeTestCase, WaxeTestCaseVersioning, login_user
 from mock import patch
 from ..models import (
     DBSession,
@@ -22,7 +22,70 @@ from ..views.index import (
 from urllib2 import HTTPError
 
 
-class TestViews(WaxeTestCase):
+class TestViewsNoVersioning(WaxeTestCase):
+
+    def setUp(self):
+        super(TestViewsNoVersioning, self).setUp()
+        self.config = testing.setUp(settings=self.settings)
+
+    def tearDown(self):
+        testing.tearDown()
+        super(TestViewsNoVersioning, self).tearDown()
+
+    def test__response(self):
+        DBSession.add(self.user_bob)
+        request = testing.DummyRequest(root_path='/path', user=self.user_bob)
+        with patch('waxe.views.index.Views._is_json', return_value=True):
+            res = Views(request)._response({})
+            self.assertEqual(res, {})
+
+        with patch('waxe.views.index.Views._is_json', return_value=False):
+            res = Views(request)._response({})
+            self.assertEqual(res, {'editor_login': self.user_bob.login})
+            request.session = {'editor_login': 'Fred'}
+
+            res = Views(request)._response({})
+            self.assertEqual(res, {'editor_login': 'Fred'})
+
+            contributor = User(login='contributor', password='pass1')
+            contributor.roles = [Role.query.filter_by(name=ROLE_CONTRIBUTOR).one()]
+            contributor.config = UserConfig(root_path='/path')
+            DBSession.add(contributor)
+            res = Views(request)._response({})
+            self.assertEqual(res, {'editor_login': 'Fred',
+                                   'logins': ['contributor']})
+
+            request.session = {}
+            request.root_path = None
+            class C(object): pass
+            request.matched_route = C()
+            request.matched_route.name = 'login_selection'
+            res = Views(request)._response({})
+            self.assertEqual(res, {'editor_login': 'Account',
+                                   'logins': ['contributor']})
+
+    def test_home(self):
+        DBSession.add(self.user_bob)
+        request = testing.DummyRequest(root_path='/path', user=self.user_bob)
+        expected = {
+            'breadcrumb': '<li class="active">root</li>',
+            'content': u'<ul id="file-navigation" data-path="">\n</ul>\n',
+            'editor_login': u'Bob',
+        }
+        with patch('waxe.views.index.Views._is_json', return_value=False):
+            res = Views(request).home()
+            self.assertEqual(res, expected)
+
+        expected = {
+            'breadcrumb': '<li class="active">root</li>',
+            'content': u'<ul id="file-navigation" data-path="">\n</ul>\n',
+        }
+        with patch('waxe.views.index.Views._is_json', return_value=True):
+            res = Views(request).home()
+            self.assertEqual(res, expected)
+
+
+class TestViews(WaxeTestCaseVersioning):
 
     def setUp(self):
         super(TestViews, self).setUp()
