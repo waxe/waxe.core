@@ -179,8 +179,13 @@ $.fn.filebrowser.defaults.template.nav_folder = '<li><i class="icon-folder-close
             });
             $('.navbar .save').click(function(e){
                 e.preventDefault();
-                if(exist_form())
-                    $(form_selector).submit();
+                if(exist_form()){
+                    if (get_filename()){
+                        $(form_selector).submit();
+                    } else {
+                        $('.navbar .saveas').trigger('click');
+                    }
+                }
             });
         },
         on_submit_form: function(e){
