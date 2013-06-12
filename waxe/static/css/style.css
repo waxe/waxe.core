@@ -107,15 +107,7 @@ form#xmltool-form .btn {
 
 table.diff {
   font-family: Courier;
-  border: medium;
-  /*
-  width: 100%;
-
-  td.diff_from,
-  td.diff_to{
-    vertical-align: top;
-  }
-  */ }
+  border: medium; }
   table.diff pre {
     margin: 0;
     padding: 0;
@@ -133,3 +125,18 @@ table.diff {
     background-color: #ffff77; }
   table.diff .diff_sub {
     background-color: #ffaaaa; }
+
+.navfile .selected {
+  background-color: #D9EDF7; }
+
+.navfile li a {
+  padding-left: 5px; }
+
+#file-navigation a, #file-navigation span,
+.navfile a,
+.navfile span {
+  color: #333;
+  margin-left: 5px; }
+
+.modal textarea {
+  width: 516px; }

@@ -1,0 +1,20 @@
+.navfile .selected{
+  background-color: #D9EDF7;
+}
+
+.navfile li a{
+  padding-left: 5px;
+}
+
+#file-navigation,
+.navfile{
+
+  a, span{
+    color: #333;
+    margin-left: 5px;
+  }
+}
+
+.modal textarea{
+  width: 516px;
+}

@@ -1,6 +1,8 @@
 $.fn.message.defaults.css.position = 'fixed';
 $.fn.message.defaults.css.top = '76px';
 
+$.fn.filebrowser.defaults.template.nav_file = '<li><i class="icon-file"></i></li>';
+$.fn.filebrowser.defaults.template.nav_folder = '<li><i class="icon-folder-close"></i></li>';
 
 
 (function($){

@@ -137,13 +137,15 @@
             var container = $(this.settings.template.nav_files);
             for(var i=0; i < data.folders.length; i++){
                 var folder = data.folders[i];
-                var li = $(this.settings.template.nav_file).append(folder.name).on('click', function(e){self.on_click(e, this);}).data('href', folder.data_href).addClass(this.settings.css_class.folder);
+                var span = $('<span />').html(folder.name);
+                var li = $(this.settings.template.nav_folder).append(span).on('click', function(e){self.on_click(e, this);}).data('href', folder.data_href).addClass(this.settings.css_class.folder);
                 container.append(li);
             }
 
             for(var i=0; i < data.filenames.length; i++){
                 var filename = data.filenames[i];
-                var li = $(this.settings.template.nav_file).append(filename.name).data('href', filename.data_href).addClass(this.settings.css_class.file);
+                var span = $('<span />').html(filename.name);
+                var li = $(this.settings.template.nav_file).append(span).data('href', filename.data_href).addClass(this.settings.css_class.file);
                 if(this.settings.type == 'open'){
                     li.on('click', function(){
                         var selected_class = self.settings.css_class.selected_file;
@@ -263,6 +265,7 @@
             nav_btn: '<button class="btn"/>',
             nav_files: '<ul class="unstyled"/>',
             nav_file: '<li/>',
+            nav_folder: '<li/>',
             filename: '<div class="form-inline"><label>Filename:</label><input class="filename" type="text" name="filename" /></div><br />',
             new_folder: '<button class="pull-right">New folder</button>'
         },

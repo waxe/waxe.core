@@ -4,14 +4,6 @@
   <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/>
   <link rel="stylesheet" type="text/css" href="/static/bootstrap/css/bootstrap.css" />
   <link rel="stylesheet" type="text/css" href="/static/css/style.css" />
-  <style>
-  .navfile .selected{
-      background-color: #D9EDF7;
-    }
-    .navfile li a{
-    padding-left: 5px;
-    }
-  </style>
   <script type="text/javascript" src="/static/js/jquery-1.8.2.min.js"></script>
   <script type="text/javascript" src="/static/js/jquery-ui-1.10.1.custom.min.js"></script>
   <script type="text/javascript" src="/static/bootstrap/js/bootstrap.js"></script>
