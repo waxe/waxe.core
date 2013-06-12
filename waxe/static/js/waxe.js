@@ -154,7 +154,7 @@ $.fn.message.defaults.css.top = '76px';
                 if(!exist_form())
                     e.preventDefault();
             }).bind('select', function(e){
-                set_filename(e.path);
+                set_filename(e.href);
                 $(form_selector).submit();
             }).bind('create_folder', function(e){
                 var url = '/create-folder.json?path=' + e.path;
