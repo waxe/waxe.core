@@ -17,12 +17,12 @@ requires = [
     'waitress',
     'sqla_declarative',
     'xmltool',
-    ]
+]
 
 setup(name='waxe',
       version='0.0',
       description='waxe',
-      long_description=README + '\n\n' +  CHANGES,
+      long_description=README + '\n\n' + CHANGES,
       classifiers=[
         "Programming Language :: Python",
         "Framework :: Pyramid",
