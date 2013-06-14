@@ -13,6 +13,8 @@ from ..models import (
 
 from ..views.versioning import (
     Views,
+    get_svn_login,
+    svn_cmd,
 )
 import pysvn
 
@@ -26,6 +28,43 @@ class TestViews(WaxeTestCase):
     def tearDown(self):
         testing.tearDown()
         super(TestViews, self).tearDown()
+
+    def test_svn_cmd(self):
+        DBSession.add(self.user_bob)
+        request = testing.DummyRequest()
+        request.user = self.user_bob
+        res = svn_cmd(request, 'update')
+        expected = 'svn update --non-interactive'
+        self.assertEqual(res, expected)
+
+        request.registry.settings['versioning.auth.active'] = True
+        res = svn_cmd(request, 'update')
+        expected = ('svn update --non-interactive '
+                    '--username Bob --password secret_bob')
+        self.assertEqual(res, expected)
+
+    def test_get_svn_login(self):
+        DBSession.add(self.user_bob)
+        request = testing.DummyRequest()
+        request.user = self.user_bob
+        res = get_svn_login(request)
+        expected = (False, 'Bob', 'secret_bob', False)
+        self.assertEqual(res, expected)
+
+        request.session['editor_login'] = 'Fred'
+        res = get_svn_login(request)
+        expected = (False, 'Fred', 'secret_fred', False)
+        self.assertEqual(res, expected)
+
+        request.registry.settings['versioning.auth.active'] = True
+        res = get_svn_login(request)
+        expected = (True, 'Fred', 'secret_fred', False)
+        self.assertEqual(res, expected)
+
+        request.registry.settings['versioning.auth.pwd'] = 'secret'
+        res = get_svn_login(request)
+        expected = (True, 'Fred', 'secret', False)
+        self.assertEqual(res, expected)
 
     def test_svn_status(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
@@ -97,8 +136,10 @@ class TestViews(WaxeTestCase):
         self.assertTrue('submit' not in res['content'])
 
     def test_svn_update(self):
+        DBSession.add(self.user_bob)
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         request = testing.DummyRequest(root_path=svn_path)
+        request.user = self.user_bob
         res = Views(request).svn_update()
         expected = {'content': 'At revision 1.\n'}
         self.assertEqual(res, expected)
@@ -114,7 +155,9 @@ class TestViews(WaxeTestCase):
             self.assertEqual(res, expected)
 
             mock = MagicMock()
-            mock.status = MagicMock(return_value=[pysvn.wc_status_kind.normal])
+            status_mock = MagicMock()
+            status_mock.text_status = pysvn.wc_status_kind.normal
+            mock.status = MagicMock(return_value=[status_mock])
             request = testing.DummyRequest(
                 root_path=svn_path,
                 params={'filename': 'test.xml',
@@ -130,7 +173,9 @@ class TestViews(WaxeTestCase):
 
             mock = MagicMock(side_effect=Exception('Error'))
             mock.checkin = MagicMock(side_effect=Exception('Error'))
-            mock.status = MagicMock(return_value=[pysvn.wc_status_kind.normal])
+            status_mock = MagicMock()
+            status_mock.text_status = pysvn.wc_status_kind.normal
+            mock.status = MagicMock(return_value=[status_mock])
             with patch('waxe.views.versioning.Views.get_svn_client',
                        return_value=mock):
                 res = Views(request).svn_commit_json()
@@ -140,7 +185,9 @@ class TestViews(WaxeTestCase):
                     os.path.join(svn_path, 'test.xml'),
                     'my commit message')
 
-            mock.status = MagicMock(return_value=[pysvn.wc_status_kind.conflicted])
+            status_mock = MagicMock()
+            status_mock.text_status = pysvn.wc_status_kind.conflicted
+            mock.status = MagicMock(return_value=[status_mock])
             with patch('waxe.views.versioning.Views.get_svn_client', return_value=mock):
                 res = Views(request).svn_commit_json()
                 expected = {
@@ -150,7 +197,9 @@ class TestViews(WaxeTestCase):
                 self.assertEqual(res, expected)
 
             mock = MagicMock()
-            mock.status = MagicMock(return_value=[pysvn.wc_status_kind.unversioned])
+            status_mock = MagicMock()
+            status_mock.text_status = pysvn.wc_status_kind.unversioned
+            mock.status = MagicMock(return_value=[status_mock])
             with patch('waxe.views.versioning.Views.get_svn_client', return_value=mock):
                 res = Views(request).svn_commit_json()
                 mock.add.assert_called_once_with(

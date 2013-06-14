@@ -51,7 +51,7 @@ class TestSecurity(WaxeTestCase):
     def test_validate_password(self):
         self.assertEqual(security.validate_password('nonexisting', ''), False)
         self.assertEqual(security.validate_password('Bob', ''), False)
-        self.assertEqual(security.validate_password('Bob', 'secret'), True)
+        self.assertEqual(security.validate_password('Bob', 'secret_bob'), True)
 
     def test_get_user_permissions(self):
         request = testing.DummyRequest()

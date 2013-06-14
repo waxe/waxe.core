@@ -4,6 +4,7 @@ from pyramid.renderers import render
 from pyramid.exceptions import Forbidden
 from .. import browser
 from .. import diff
+from ..models import User
 
 from subprocess import Popen, PIPE
 import pysvn
@@ -16,10 +17,44 @@ labels_mapping = {
 }
 
 
+def svn_cmd(request, cmd):
+    lis = ['svn', cmd, '--non-interactive']
+    auth, login, pwd, keep = get_svn_login(request)
+    if auth:
+        lis += ['--username', login, '--password', pwd]
+    return ' '.join(lis)
+
+
+def svn_ssl_server_trust_prompt(trust_dict):
+    return True, trust_dict['failures'], False
+
+
+def get_svn_login(request):
+    auth = False
+    if 'versioning.auth.active' in request.registry.settings:
+        auth = True
+
+    pwd = request.registry.settings.get('versioning.auth.pwd')
+    editor_login = request.session.get('editor_login')
+    if not editor_login:
+        editor_login = request.user.login
+        if not pwd:
+            pwd = request.user.password
+    assert editor_login
+    if not pwd:
+        pwd = User.query.filter_by(login=editor_login).one().password
+    assert pwd
+
+    return auth, str(editor_login), pwd, False
+
+
 class Views(BaseViews):
 
     def get_svn_client(self):
         client = pysvn.Client()
+        client.callback_get_login = get_svn_login
+        if self.request.registry.settings.get('versioning.auth.https'):
+            client.callback_ssl_server_trust_prompt = svn_ssl_server_trust_prompt
         return client
 
     @view_config(route_name='svn_status', renderer='index.mak', permission='edit')
@@ -87,7 +122,7 @@ class Views(BaseViews):
     def svn_update(self):
         # We don't use pysvn to make the repository update since it's very slow
         # on big repo. Also the output is better from the command line.
-        p = Popen("svn update --non-interactive %s" % self.request.root_path,
+        p = Popen(svn_cmd(self.request, "update  %s" % self.request.root_path),
                   shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE,
                   close_fds=True)
         (child_stdout, child_stdin) = (p.stdout, p.stdin)
@@ -112,13 +147,13 @@ class Views(BaseViews):
         status = client.status(absfilename)
         assert len(status) == 1, status
         status = status[0]
-        if status == pysvn.wc_status_kind.conflicted:
+        if status.text_status == pysvn.wc_status_kind.conflicted:
             return {
                 'status': False,
                 'error_msg': 'Can\'t commit a conflicted file'
             }
 
-        if status == pysvn.wc_status_kind.unversioned:
+        if status.text_status == pysvn.wc_status_kind.unversioned:
             try:
                 client.add(absfilename)
             except Exception, e:

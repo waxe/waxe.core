@@ -60,9 +60,14 @@ class WaxeTestCase(unittest.TestCase):
                 r = Role(name=role)
                 DBSession.add(r)
             admin = Role(name="admin")
-            self.user_bob = User(login="Bob", password='secret')
+            self.user_bob = User(login="Bob", password='secret_bob')
             self.user_bob.roles = [admin]
             DBSession.add(self.user_bob)
+
+            self.user_fred = User(login='Fred', password='secret_fred')
+            self.user_fred.config = UserConfig(root_path='',
+                                               use_versioning=True)
+            DBSession.add(self.user_fred)
 
     def tearDown(self):
         DBSession.remove()
@@ -84,15 +89,15 @@ class WaxeTestCaseVersioning(unittest.TestCase):
                 r = Role(name=role)
                 DBSession.add(r)
             admin = Role(name="admin")
-            self.user_bob = User(login="Bob", password='secret')
+            self.user_bob = User(login="Bob", password='secret_bob')
             self.user_bob.config = UserConfig(root_path='',
                                               use_versioning=True)
             self.user_bob.roles = [admin]
             DBSession.add(self.user_bob)
 
-            self.user_fred = User(login='Fred', password='secret')
+            self.user_fred = User(login='Fred', password='secret_fred')
             self.user_fred.config = UserConfig(root_path='',
-                                              use_versioning=True)
+                                               use_versioning=True)
             DBSession.add(self.user_fred)
 
     def tearDown(self):
