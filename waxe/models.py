@@ -163,6 +163,7 @@ class UserConfig(Base):
                       primary_key=True)
     root_path = Column(String(255),
                        nullable=False)
+    use_versioning = Column(Boolean, nullable=False, default=False)
 
 
 class VersioningPath(Base):

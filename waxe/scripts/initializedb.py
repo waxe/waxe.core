@@ -15,9 +15,11 @@ from ..models import (
     Role,
     User,
     UserConfig,
+    VersioningPath,
     ROLE_EDITOR,
     ROLE_CONTRIBUTOR,
-    ROLE_ADMIN
+    ROLE_ADMIN,
+    VERSIONING_PATH_STATUS_ALLOWED,
     )
 
 def usage(argv):
@@ -58,4 +60,7 @@ def main(argv=sys.argv):
         config = UserConfig(root_path=os.path.normpath(
             '/home/lereskp/temp/waxe/client1'), use_versioning=True)
         contributor_user.config = config
+        vpath = VersioningPath(status=VERSIONING_PATH_STATUS_ALLOWED,
+                               path='/home/lereskp/temp/waxe/client1/debug')
+        contributor_user.versioning_paths = [vpath]
         DBSession.add(contributor_user)
