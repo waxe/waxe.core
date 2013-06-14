@@ -69,7 +69,7 @@ class TestViewsNoVersioning(WaxeTestCase):
         request = testing.DummyRequest(root_path='/path', user=self.user_bob)
         expected = {
             'breadcrumb': '<li class="active">root</li>',
-            'content': u'<ul id="file-navigation" data-path="">\n</ul>\n',
+            'content': u'<ul id="file-navigation" class="unstyled" data-path="">\n</ul>\n',
             'editor_login': u'Bob',
         }
         with patch('waxe.views.index.Views._is_json', return_value=False):
@@ -78,7 +78,7 @@ class TestViewsNoVersioning(WaxeTestCase):
 
         expected = {
             'breadcrumb': '<li class="active">root</li>',
-            'content': u'<ul id="file-navigation" data-path="">\n</ul>\n',
+            'content': u'<ul id="file-navigation" class="unstyled" data-path="">\n</ul>\n',
         }
         with patch('waxe.views.index.Views._is_json', return_value=True):
             res = Views(request).home()
@@ -137,6 +137,7 @@ class TestViews(WaxeTestCaseVersioning):
 
     def test__response(self):
         DBSession.add(self.user_bob)
+        DBSession.add(self.user_fred)
         request = testing.DummyRequest(root_path='/path', user=self.user_bob)
         with patch('waxe.views.index.Views._is_json', return_value=True):
             res = Views(request)._response({})
@@ -146,10 +147,10 @@ class TestViews(WaxeTestCaseVersioning):
             res = Views(request)._response({})
             self.assertEqual(res, {'editor_login': self.user_bob.login,
                                    'versioning': True})
-            request.session = {'editor_login': 'Fred'}
+            request.session = {'editor_login': self.user_fred.login}
 
             res = Views(request)._response({})
-            self.assertEqual(res, {'editor_login': 'Fred',
+            self.assertEqual(res, {'editor_login': self.user_fred.login,
                                    'versioning': True})
 
             contributor = User(login='contributor', password='pass1')
@@ -157,18 +158,24 @@ class TestViews(WaxeTestCaseVersioning):
             contributor.config = UserConfig(root_path='/path')
             DBSession.add(contributor)
             res = Views(request)._response({})
-            self.assertEqual(res, {'editor_login': 'Fred',
+            self.assertEqual(res, {'editor_login': self.user_fred.login,
                                    'versioning': True,
+                                   'logins': ['contributor']})
+
+            self.user_fred.config.use_versioning = False
+            res = Views(request)._response({})
+            self.assertEqual(res, {'editor_login': self.user_fred.login,
                                    'logins': ['contributor']})
 
             request.session = {}
             request.root_path = None
-            class C(object): pass
+
+            class C(object):
+                pass
             request.matched_route = C()
             request.matched_route.name = 'login_selection'
             res = Views(request)._response({})
             self.assertEqual(res, {'editor_login': 'Account',
-                                   'versioning': True,
                                    'logins': ['contributor']})
 
     def test__get_navigation_data(self):
@@ -226,13 +233,13 @@ class TestViews(WaxeTestCaseVersioning):
         request.route_path = lambda *args, **kw: '/filepath'
         res = Views(request)._get_navigation()
         expected = (
-            '<ul id="file-navigation" data-path="">\n'
-            '    <li>'
+            '<ul id="file-navigation" class="unstyled" data-path="">\n'
+            '    <li><i class="icon-folder-close"></i>'
             '<a data-href="/filepath" href="/filepath" class="folder">'
             'folder1'
             '</a>'
             '</li>\n'
-            '    <li>'
+            '    <li><i class="icon-file"></i>'
             '<a data-href="/filepath" href="/filepath" class="file">'
             'file1.xml'
             '</a>'
@@ -246,13 +253,13 @@ class TestViews(WaxeTestCaseVersioning):
         request.route_path = lambda *args, **kw: '/filepath'
         res = Views(request)._get_navigation()
         expected = (
-            '<ul id="file-navigation" data-path="folder1">\n'
+            '<ul id="file-navigation" class="unstyled" data-path="folder1">\n'
             '    <li>'
             '<a data-href="/filepath" href="/filepath" class="previous">'
             '..'
             '</a>'
             '</li>\n'
-            '    <li>'
+            '    <li><i class="icon-file"></i>'
             '<a data-href="/filepath" href="/filepath" class="file">'
             'file2.xml'
             '</a>'
@@ -304,7 +311,7 @@ class TestViews(WaxeTestCaseVersioning):
         request = testing.DummyRequest(root_path='/path', user=self.user_bob)
         expected = {
             'breadcrumb': '<li class="active">root</li>',
-            'content': u'<ul id="file-navigation" data-path="">\n</ul>\n',
+            'content': u'<ul id="file-navigation" class="unstyled" data-path="">\n</ul>\n',
             'editor_login': u'Bob',
             'versioning': True
         }
@@ -314,7 +321,7 @@ class TestViews(WaxeTestCaseVersioning):
 
         expected = {
             'breadcrumb': '<li class="active">root</li>',
-            'content': u'<ul id="file-navigation" data-path="">\n</ul>\n',
+            'content': u'<ul id="file-navigation" class="unstyled" data-path="">\n</ul>\n',
         }
         with patch('waxe.views.index.Views._is_json', return_value=True):
             res = Views(request).home()
@@ -664,7 +671,7 @@ class FunctionalTestViews(WaxeTestCase):
         DBSession.add(self.user_bob)
         self.user_bob.config = UserConfig(root_path='/path')
         res = self.testapp.get('/', status=200)
-        self.assertTrue('<ul id="file-navigation" data-path="">\n</ul>' in res.body)
+        self.assertTrue('<ul id="file-navigation" class="unstyled" data-path="">\n</ul>' in res.body)
         self.assertTrue(('Content-Type', 'text/html; charset=UTF-8') in
                         res._headerlist)
 
@@ -682,7 +689,7 @@ class FunctionalTestViews(WaxeTestCase):
         res = self.testapp.get('/home.json', status=200)
         expected = (
             '{"content": '
-            '"<ul id=\\"file-navigation\\" data-path=\\"\\">\\n</ul>\\n", '
+            '"<ul id=\\"file-navigation\\" class=\\"unstyled\\" data-path=\\"\\">\\n</ul>\\n", '
             '"breadcrumb": "<li class=\\"active\\">root</li>"'
             '}'
         )
