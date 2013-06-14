@@ -6,8 +6,12 @@ from ..models import (
     Role,
     UserConfig,
     ROLE_EDITOR,
-    ROLE_CONTRIBUTOR
+    ROLE_CONTRIBUTOR,
+    VersioningPath,
+    VERSIONING_PATH_STATUS_ALLOWED,
+    VERSIONING_PATH_STATUS_FORBIDDEN
 )
+from mock import patch
 
 
 class TestFunctions(WaxeTestCase):
@@ -117,3 +121,41 @@ class TestUser(WaxeTestCase):
         result = editor.get_editable_logins(contributor.login)
         self.assertEqual(result, [])
 
+    def test_can_commit(self):
+        user = User(login='user1', password='pass1')
+        DBSession.add(user)
+        # No path, no commit
+        try:
+            res = user.can_commit('/home/test/folder1/myfile.xml')
+            assert 0
+        except Exception, e:
+            self.assertEqual(str(e),
+                             'Invalid path /home/test/folder1/myfile.xml')
+
+        with patch('os.path.exists', return_value=True), patch('os.path.isfile', return_value=True):
+            try:
+                res = user.can_commit('/home/test/folder1/myfile.xml')
+                assert 0
+            except AssertionError, e:
+                self.assertEqual(str(e), 'You are not a contributor')
+
+            # By default a contributor can't commit
+            user.roles = [Role.query.filter_by(name=ROLE_CONTRIBUTOR).one()]
+            res = user.can_commit('/home/test/folder1/myfile.xml')
+            self.assertEqual(res, False)
+
+            user.versioning_paths += [VersioningPath(
+                status=VERSIONING_PATH_STATUS_ALLOWED,
+                path='/home/test/')]
+            res = user.can_commit('/home/test/folder1/myfile.xml')
+            self.assertEqual(res, True)
+
+            user.versioning_paths += [VersioningPath(
+                status=VERSIONING_PATH_STATUS_FORBIDDEN,
+                path='/home/test/folder1')]
+            res = user.can_commit('/home/test/folder1/myfile.xml')
+            self.assertEqual(res, False)
+            res = user.can_commit('/home/test/myfile.xml')
+            self.assertEqual(res, True)
+            res = user.can_commit('/home/test/folder1.xml')
+            self.assertEqual(res, True)

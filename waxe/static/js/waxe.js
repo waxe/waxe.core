@@ -294,7 +294,9 @@ $.fn.filebrowser.defaults.template.nav_folder = '<li><i class="icon-folder-close
             });
         },
         init_diff: function(){
-            $('table.diff td.diff_to').attr('contenteditable', 'true');
+            if ($('table.diff').next('input.diff-submit').length) {
+                $('table.diff td.diff_to').attr('contenteditable', 'true');
+            }
             $('input.diff-submit').click(function(){
                 var html = '';
                 $('table.diff td.diff_to pre').each(function(){

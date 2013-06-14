@@ -1,6 +1,7 @@
 from base import BaseViews
 from pyramid.view import view_config
 from pyramid.renderers import render
+from pyramid.exceptions import Forbidden
 from .. import browser
 from .. import diff
 
@@ -77,7 +78,8 @@ class Views(BaseViews):
             old_content.decode('utf-8').splitlines(),
             new_content.decode('utf-8').splitlines())
 
-        html += u'<input data-filename="%s" type="submit" class="diff-submit" value="Save and commit" />' % filename
+        if self.request.user.can_commit(absfilename):
+            html += u'<input data-filename="%s" type="submit" class="diff-submit" value="Save and commit" />' % filename
         return {'content': html}
 
     @view_config(route_name='svn_update', renderer='index.mak', permission='edit')
@@ -103,6 +105,9 @@ class Views(BaseViews):
             return {'status': False, 'error_msg': 'Bad parameters!'}
         root_path = self.request.root_path
         absfilename = browser.absolute_path(filename, root_path)
+        if not self.request.user.can_commit(absfilename):
+            raise Forbidden('Restricted area')
+
         client = self.get_svn_client()
         status = client.status(absfilename)
         assert len(status) == 1, status

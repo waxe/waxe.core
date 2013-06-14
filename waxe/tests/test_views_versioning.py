@@ -1,11 +1,14 @@
 import os
 import simplejson
 from pyramid import testing
+from pyramid.exceptions import Forbidden
 from ..testing import WaxeTestCase, WaxeTestCaseVersioning, login_user
 from mock import patch, MagicMock
 from ..models import (
     DBSession,
     UserConfig,
+    Role,
+    ROLE_CONTRIBUTOR,
 )
 
 from ..views.versioning import (
@@ -58,6 +61,7 @@ class TestViews(WaxeTestCase):
         self.assertEqual(res, expected)
 
     def test_svn_diff(self):
+        DBSession.add(self.user_bob)
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         request = testing.DummyRequest(root_path=svn_path)
         res = Views(request).svn_diff()
@@ -66,17 +70,31 @@ class TestViews(WaxeTestCase):
 
         request = testing.DummyRequest(root_path=svn_path,
                                        params={'filename': 'file1.xml'})
+        request.user = self.user_bob
         res = Views(request).svn_diff()
         self.assertEqual(len(res), 1)
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 1)
+        self.assertTrue('submit' in res['content'])
 
         request = testing.DummyRequest(root_path=svn_path,
                                        params={'filename': 'file3.xml'})
+        request.user = self.user_bob
         res = Views(request).svn_diff()
         self.assertEqual(len(res), 1)
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 1)
+        self.assertTrue('submit' in res['content'])
+
+        request = testing.DummyRequest(root_path=svn_path,
+                                       params={'filename': 'file3.xml'})
+        request.user = self.user_bob
+        self.user_bob.roles = [Role(name=ROLE_CONTRIBUTOR)]
+        res = Views(request).svn_diff()
+        self.assertEqual(len(res), 1)
+        self.assertTrue('class="diff"' in res['content'])
+        self.assertEqual(res['content'].count('diff_from'), 1)
+        self.assertTrue('submit' not in res['content'])
 
     def test_svn_update(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
@@ -86,58 +104,76 @@ class TestViews(WaxeTestCase):
         self.assertEqual(res, expected)
 
     def test_svn_commit_json(self):
-        svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
-        request = testing.DummyRequest(root_path=svn_path)
-        res = Views(request).svn_commit_json()
-        expected = {"status": False, "error_msg": "Bad parameters!"}
-        self.assertEqual(res, expected)
-
-        mock = MagicMock()
-        mock.status = MagicMock(return_value=[pysvn.wc_status_kind.normal])
-        request = testing.DummyRequest(
-            root_path=svn_path,
-            params={'filename': 'test.xml',
-                    'msg': 'my commit message'})
-        with patch('waxe.views.versioning.Views.get_svn_client', return_value=mock):
+        with patch('os.path.exists', return_value=True), patch('os.path.isfile', return_value=True):
+            DBSession.add(self.user_bob)
+            svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
+            request = testing.DummyRequest(root_path=svn_path)
+            request.user = self.user_bob
             res = Views(request).svn_commit_json()
-            mock.checkin.assert_called_once_with(
-                os.path.join(svn_path, 'test.xml'),
-                'my commit message')
-            expected = {'status': True, 'content': 'Commit done'}
+            expected = {"status": False, "error_msg": "Bad parameters!"}
             self.assertEqual(res, expected)
 
-        mock = MagicMock(side_effect=Exception('Error'))
-        mock.checkin = MagicMock(side_effect=Exception('Error'))
-        mock.status = MagicMock(return_value=[pysvn.wc_status_kind.normal])
-        with patch('waxe.views.versioning.Views.get_svn_client',
-                   return_value=mock):
-            res = Views(request).svn_commit_json()
-            expected = {'status': False, 'error_msg': 'Error'}
-            self.assertEqual(res, expected)
-            mock.checkin.assert_called_once_with(
-                os.path.join(svn_path, 'test.xml'),
-                'my commit message')
+            mock = MagicMock()
+            mock.status = MagicMock(return_value=[pysvn.wc_status_kind.normal])
+            request = testing.DummyRequest(
+                root_path=svn_path,
+                params={'filename': 'test.xml',
+                        'msg': 'my commit message'})
+            request.user = self.user_bob
+            with patch('waxe.views.versioning.Views.get_svn_client', return_value=mock):
+                res = Views(request).svn_commit_json()
+                mock.checkin.assert_called_once_with(
+                    os.path.join(svn_path, 'test.xml'),
+                    'my commit message')
+                expected = {'status': True, 'content': 'Commit done'}
+                self.assertEqual(res, expected)
 
-        mock.status = MagicMock(return_value=[pysvn.wc_status_kind.conflicted])
-        with patch('waxe.views.versioning.Views.get_svn_client', return_value=mock):
-            res = Views(request).svn_commit_json()
-            expected = {
-                'status': False,
-                'error_msg': "Can't commit a conflicted file"
-            }
-            self.assertEqual(res, expected)
+            mock = MagicMock(side_effect=Exception('Error'))
+            mock.checkin = MagicMock(side_effect=Exception('Error'))
+            mock.status = MagicMock(return_value=[pysvn.wc_status_kind.normal])
+            with patch('waxe.views.versioning.Views.get_svn_client',
+                       return_value=mock):
+                res = Views(request).svn_commit_json()
+                expected = {'status': False, 'error_msg': 'Error'}
+                self.assertEqual(res, expected)
+                mock.checkin.assert_called_once_with(
+                    os.path.join(svn_path, 'test.xml'),
+                    'my commit message')
 
-        mock = MagicMock()
-        mock.status = MagicMock(return_value=[pysvn.wc_status_kind.unversioned])
-        with patch('waxe.views.versioning.Views.get_svn_client', return_value=mock):
-            res = Views(request).svn_commit_json()
-            mock.add.assert_called_once_with(
-                os.path.join(svn_path, 'test.xml'))
-            mock.checkin.assert_called_once_with(
-                os.path.join(svn_path, 'test.xml'),
-                'my commit message')
-            expected = {'status': True, 'content': 'Commit done'}
-            self.assertEqual(res, expected)
+            mock.status = MagicMock(return_value=[pysvn.wc_status_kind.conflicted])
+            with patch('waxe.views.versioning.Views.get_svn_client', return_value=mock):
+                res = Views(request).svn_commit_json()
+                expected = {
+                    'status': False,
+                    'error_msg': "Can't commit a conflicted file"
+                }
+                self.assertEqual(res, expected)
+
+            mock = MagicMock()
+            mock.status = MagicMock(return_value=[pysvn.wc_status_kind.unversioned])
+            with patch('waxe.views.versioning.Views.get_svn_client', return_value=mock):
+                res = Views(request).svn_commit_json()
+                mock.add.assert_called_once_with(
+                    os.path.join(svn_path, 'test.xml'))
+                mock.checkin.assert_called_once_with(
+                    os.path.join(svn_path, 'test.xml'),
+                    'my commit message')
+                expected = {'status': True, 'content': 'Commit done'}
+                self.assertEqual(res, expected)
+
+            # No permission
+            self.user_bob.roles = []
+            try:
+                res = Views(request).svn_commit_json()
+                assert 0
+            except Exception, e:
+                self.assertEqual(str(e), 'You are not a contributor')
+
+            self.user_bob.roles = [Role(name=ROLE_CONTRIBUTOR)]
+            try:
+                res = Views(request).svn_commit_json()
+            except Forbidden, e:
+                self.assertEqual(str(e), 'Restricted area')
 
 
 class FunctionalTestViewsNoVersioning(WaxeTestCase):
