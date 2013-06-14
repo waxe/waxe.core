@@ -147,8 +147,8 @@ class Views(BaseViews):
                     '<a data-href="%s" href="%s">%s</a> '
                     '%s'
                     '</li>') % (
-                        get_data_href(relpath, relpath),
-                        get_href(relpath, relpath),
+                        get_data_href(relpath, 'path'),
+                        get_href(relpath, 'path'),
                         name,
                         divider
                     )]
