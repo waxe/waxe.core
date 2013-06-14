@@ -2,7 +2,7 @@ from pyramid.security import Everyone, Allow, unauthenticated_userid
 import sqlalchemy.orm.exc as sqla_exc
 import logging
 
-from .models import User
+from .models import User, ROLE_ADMIN, ROLE_EDITOR, ROLE_CONTRIBUTOR
 
 log = logging.getLogger(__name__)
 
@@ -10,7 +10,9 @@ log = logging.getLogger(__name__)
 class RootFactory(object):
     __acl__ = [
         (Allow, Everyone, 'view'),
-        (Allow, 'role:admin', ['admin', 'edit']),
+        (Allow, 'role:%s' % ROLE_ADMIN, ['admin', 'edit']),
+        (Allow, 'role:%s' % ROLE_EDITOR, ['edit']),
+        (Allow, 'role:%s' % ROLE_CONTRIBUTOR, ['edit']),
     ]
 
     def __init__(self, request):
