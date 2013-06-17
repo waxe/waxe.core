@@ -60,7 +60,7 @@ class Views(BaseViews):
 
     def get_svn_client(self):
         client = pysvn.Client()
-        client.callback_get_login = get_svn_login
+        client.callback_get_login = lambda *args, **kw: get_svn_login(self.request)
         if self.request.registry.settings.get('versioning.auth.https'):
             client.callback_ssl_server_trust_prompt = svn_ssl_server_trust_prompt
         return client
