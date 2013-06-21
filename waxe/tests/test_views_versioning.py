@@ -141,7 +141,7 @@ class TestViews(WaxeTestCase):
         request = testing.DummyRequest(root_path=svn_path)
         request.user = self.user_bob
         res = Views(request).svn_update()
-        expected = {'content': 'At revision 1.\n'}
+        expected = {'content': '<pre>At revision 1.\n</pre>'}
         self.assertEqual(res, expected)
 
     def test_svn_commit_json(self):

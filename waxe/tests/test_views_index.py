@@ -801,7 +801,7 @@ class FunctionalTestViews(WaxeTestCase):
         self.assertTrue('<form method="POST" id="xmltool-form">' in
                         dic['content'])
         self.assertTrue(dic['breadcrumb'])
-        self.assertTrue('data-href="/home.json?="' in dic['breadcrumb'])
+        self.assertTrue('data-href="/home.json?path="' in dic['breadcrumb'])
 
     def test_open_forbidden(self):
         res = self.testapp.get('/open.json', status=302)
@@ -894,7 +894,7 @@ class FunctionalTestViews(WaxeTestCase):
             expected = {
                 "status": True,
                 "breadcrumb": (
-                    "<li><a data-href=\"/home.json?=\" href=\"/?=\">root</a> "
+                    "<li><a data-href=\"/home.json?path=\" href=\"/?path=\">root</a> "
                     "<span class=\"divider\">/</span></li>"
                     "<li class=\"active\">test.xml</li>")}
         self.assertEqual(simplejson.loads(res.body), expected)
