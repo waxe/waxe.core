@@ -77,7 +77,7 @@ class Views(BaseViews):
                 'svn_diff_json', _query=[('filename', p)])
             lis += [(f.text_status, label_class, p, link, json_link)]
 
-        content = render('versioning.mak',
+        content = render('blocks/versioning.mak',
                          {'files_data': lis}, self.request)
         return {
             'content': content,
