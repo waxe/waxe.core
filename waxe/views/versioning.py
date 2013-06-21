@@ -138,7 +138,10 @@ class Views(BaseViews):
         if error:
             return {'error_msg': error}
 
-        return {'content': '<pre>%s</pre>' % p.stdout.read()}
+        res = p.stdout.read()
+        # We want to display relative urls
+        res = res.replace(self.request.root_path + '/', '')
+        return {'content': '<pre>%s</pre>' % res}
 
     @view_config(route_name='svn_commit_json', renderer='json', permission='edit')
     def svn_commit_json(self):
