@@ -130,7 +130,7 @@ class Views(BaseViews):
         if error:
             return {'error_msg': error}
 
-        return {'content': p.stdout.read()}
+        return {'content': '<pre>%s</pre>' % p.stdout.read()}
 
     @view_config(route_name='svn_commit_json', renderer='json', permission='edit')
     def svn_commit_json(self):
