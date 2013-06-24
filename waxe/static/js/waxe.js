@@ -350,6 +350,7 @@ $.fn.filebrowser.defaults.template.nav_folder = '<li><i class="icon-folder-close
             });
         },
         commit: function(filename, msg){
+            $(document).message('info', 'Commit in progress...', {'autohide': false});
             var params = {
                 'filename': filename,
                 'msg': msg
