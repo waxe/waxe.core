@@ -621,6 +621,54 @@ class TestViews(WaxeTestCaseVersioning):
             self.assertTrue('class="modal' in res['content'])
             self.assertTrue('Commit message' in res['content'])
 
+    def test_update_texts(self):
+        DBSession.add(self.user_bob)
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        request = testing.DummyRequest(root_path=path,
+                                       user=self.user_bob,
+                                       params={})
+        res = Views(request).update_texts()
+        expected = {'status': False, 'error_msg': 'Missing parameters!'}
+        self.assertEqual(res, expected)
+
+        request = testing.DummyRequest(
+            root_path=path, user=self.user_bob,
+            params={
+                'data:0:filecontent': 'content of the file 1',
+                'data:0:filename': 'thefilename1.xml',
+                'data:1:filecontent': 'content of the file 2',
+                'data:1:filename': 'thefilename2.xml',
+            })
+
+        def raise_func(*args, **kw):
+            raise Exception('My error')
+
+        with patch('xmltool.load_string') as m:
+            m.side_effect = raise_func
+            res = Views(request).update_texts()
+            expected = {'status': False, 'error_msg': 'thefilename1.xml: My error<br />thefilename2.xml: My error'}
+            self.assertEqual(res,  expected)
+
+        filecontent = open(os.path.join(path, 'file1.xml'), 'r').read()
+        filecontent = filecontent.replace('exercise.dtd',
+                                          os.path.join(path, 'exercise.dtd'))
+        request = testing.DummyRequest(
+            root_path=path, user=self.user_bob,
+            params={'data:0:filecontent': filecontent,
+                    'data:0:filename': 'thefilename.xml'})
+
+        with patch('xmltool.elements.Element.write', return_value=None):
+            res = Views(request).update_texts()
+            expected = {'status': True, 'content': 'Files updated'}
+            self.assertEqual(res,  expected)
+
+            request.params['commit'] = True
+            res = Views(request).update_texts()
+            self.assertEqual(len(res), 2)
+            self.assertEqual(res['status'], True)
+            self.assertTrue('class="modal' in res['content'])
+            self.assertTrue('Commit message' in res['content'])
+
     def test_add_element_json(self):
         DBSession.add(self.user_bob)
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
@@ -915,6 +963,27 @@ class FunctionalTestViews(WaxeTestCase):
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
         self.user_bob.config = UserConfig(root_path=path)
         res = self.testapp.post('/update-text.json', status=200)
+        self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
+                        res._headerlist)
+        expected = {"status": False, "error_msg": "Missing parameters!"}
+        self.assertEqual(simplejson.loads(res.body), expected)
+
+    def test_update_texts_forbidden(self):
+        res = self.testapp.get('/update-texts.json', status=302)
+        self.assertEqual(
+            res.location,
+            'http://localhost/login?next=http%3A%2F%2Flocalhost%2Fupdate-texts.json')
+        res = res.follow()
+        self.assertEqual(res.status, "200 OK")
+        self.assertTrue('<form' in res.body)
+        self.assertTrue('Login' in res.body)
+
+    @login_user('Bob')
+    def test_update_texts(self):
+        DBSession.add(self.user_bob)
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        self.user_bob.config = UserConfig(root_path=path)
+        res = self.testapp.post('/update-texts.json', status=200)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
         expected = {"status": False, "error_msg": "Missing parameters!"}

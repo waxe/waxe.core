@@ -5,6 +5,7 @@ from pyramid.httpexceptions import HTTPBadRequest, HTTPFound
 from pyramid.renderers import render
 from ..models import User
 from .. import browser
+from ..utils import unflatten_params
 import xmltool
 from xmltool import elements
 from urllib2 import HTTPError
@@ -310,6 +311,37 @@ class Views(BaseViews):
 
         return {'status': True, 'content': content}
 
+    @view_config(route_name='update_texts_json', renderer='json', permission='edit')
+    def update_texts(self):
+        params = unflatten_params(self.request.POST)
+
+        if 'data' not in params or not params['data']:
+            return {'status': False, 'error_msg': 'Missing parameters!'}
+
+        root_path = self.request.root_path
+        status = True
+        error_msgs = []
+        for dic in params['data']:
+            filecontent = dic['filecontent']
+            filename = dic['filename']
+            absfilename = browser.absolute_path(filename, root_path)
+            try:
+                obj = xmltool.load_string(filecontent)
+                obj.write(absfilename)
+            except Exception, e:
+                status = False
+                error_msgs += ['%s: %s' % (filename, str(e))]
+
+        if not status:
+            return {'status': False, 'error_msg': '<br />'.join(error_msgs)}
+
+        content = 'Files updated'
+        if self.request.POST.get('commit'):
+            content = render('blocks/commit_modal.mak',
+                             {}, self.request)
+
+        return {'status': True, 'content': content}
+
     @view_config(route_name='add_element_json', renderer='json',
                  permission='edit')
     def add_element_json(self):
@@ -356,6 +388,7 @@ def includeme(config):
     config.add_route('create_folder_json', '/create-folder.json')
     config.add_route('update_json', '/update.json')
     config.add_route('update_text_json', '/update-text.json')
+    config.add_route('update_texts_json', '/update-texts.json')
     config.add_route('add_element_json', '/add-element.json')
     config.add_route('get_comment_modal_json', '/get-comment-modal.json')
     config.scan(__name__)
