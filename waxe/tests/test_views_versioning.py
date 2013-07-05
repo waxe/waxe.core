@@ -2,6 +2,7 @@ import os
 import simplejson
 from pyramid import testing
 from pyramid.exceptions import Forbidden
+from webob.multidict import MultiDict
 from ..testing import WaxeTestCase, WaxeTestCaseVersioning, login_user
 from mock import patch, MagicMock
 from ..models import (
@@ -67,49 +68,32 @@ class TestViews(WaxeTestCase):
         self.assertEqual(res, expected)
 
     def test_svn_status(self):
+        DBSession.add(self.user_bob)
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         request = testing.DummyRequest(root_path=svn_path)
         request.route_path = lambda *args, **kw: '/%s/filepath' % args[0]
+        request.user = self.user_bob
         res = Views(request).svn_status()
-        expected = {'files_data': [
-            (pysvn.wc_status_kind.modified, 'label-info', u'file1.xml', '/svn_diff/filepath'),
-            (pysvn.wc_status_kind.unversioned, 'label-default', u'file3.xml', '/svn_diff/filepath'),
-            (pysvn.wc_status_kind.added, None, u'file4.xml', '/svn_diff/filepath')
-        ]}
-        expected = {'content': (
-            u'<div class="ui-layout-center">\n'
-            u'  <ul>\n'
-            u'    <li>\n'
-            u'      <span class="label label-info">modified</span>\n'
-            u'      <a href="/svn_diff/filepath" '
-            u'data-href="/svn_diff_json/filepath">file1.xml</a>\n'
-            u'    </li>\n'
-            u'    <li>\n'
-            u'      <span class="label label-default">unversioned</span>\n'
-            u'      <a href="/svn_diff/filepath" '
-            u'data-href="/svn_diff_json/filepath">file3.xml</a>\n'
-            u'    </li>\n'
-            u'    <li>\n'
-            u'      <span class="label None">added</span>\n'
-            u'      <a href="/svn_diff/filepath" '
-            u'data-href="/svn_diff_json/filepath">file4.xml</a>\n'
-            u'    </li>\n'
-            u'  </ul>\n'
-            u'</div>\n'
-        )}
-        self.assertEqual(res, expected)
+        self.assertEqual(len(res), 1)
+        self.assertTrue('<form' in res['content'])
+        self.assertTrue('file1.xml' in res['content'])
+        self.assertTrue('file3.xml' in res['content'])
+        self.assertTrue('file4.xml' in res['content'])
 
     def test_svn_diff(self):
         DBSession.add(self.user_bob)
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         request = testing.DummyRequest(root_path=svn_path)
+        request.GET = MultiDict()
         res = Views(request).svn_diff()
-        expected = {'error_msg': 'A filename should be provided'}
+        expected = {'error_msg': 'You should provide at least one filename.'}
         self.assertEqual(res, expected)
 
         request = testing.DummyRequest(root_path=svn_path,
-                                       params={'filename': 'file1.xml'})
+                                       params={'filenames': 'file1.xml'})
         request.user = self.user_bob
+        request.GET = MultiDict({'filenames': 'file1.xml'})
+        request.route_path = lambda *args, **kw: '/%s/filepath' % args[0]
         res = Views(request).svn_diff()
         self.assertEqual(len(res), 1)
         self.assertTrue('class="diff"' in res['content'])
@@ -117,8 +101,10 @@ class TestViews(WaxeTestCase):
         self.assertTrue('submit' in res['content'])
 
         request = testing.DummyRequest(root_path=svn_path,
-                                       params={'filename': 'file3.xml'})
+                                       params={'filenames': 'file3.xml'})
         request.user = self.user_bob
+        request.GET = MultiDict({'filenames': 'file3.xml'})
+        request.route_path = lambda *args, **kw: '/%s/filepath' % args[0]
         res = Views(request).svn_diff()
         self.assertEqual(len(res), 1)
         self.assertTrue('class="diff"' in res['content'])
@@ -126,13 +112,23 @@ class TestViews(WaxeTestCase):
         self.assertTrue('submit' in res['content'])
 
         request = testing.DummyRequest(root_path=svn_path,
-                                       params={'filename': 'file3.xml'})
+                                       params={'filenames': 'file3.xml'})
         request.user = self.user_bob
+        request.GET = MultiDict({'filenames': 'file3.xml'})
+        request.route_path = lambda *args, **kw: '/%s/filepath' % args[0]
         self.user_bob.roles = [Role(name=ROLE_CONTRIBUTOR)]
         res = Views(request).svn_diff()
         self.assertEqual(len(res), 1)
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 1)
+        self.assertTrue('submit' not in res['content'])
+
+        request.GET = MultiDict([('filenames', 'file1.xml'),
+                                 ('filenames', 'file3.xml')])
+        res = Views(request).svn_diff()
+        self.assertEqual(len(res), 1)
+        self.assertTrue('class="diff"' in res['content'])
+        self.assertEqual(res['content'].count('diff_from'), 2)
         self.assertTrue('submit' not in res['content'])
 
     def test_svn_update(self):
@@ -160,13 +156,13 @@ class TestViews(WaxeTestCase):
             mock.status = MagicMock(return_value=[status_mock])
             request = testing.DummyRequest(
                 root_path=svn_path,
-                params={'filename': 'test.xml',
+                params={'data': [{'filename': 'test.xml'}],
                         'msg': 'my commit message'})
             request.user = self.user_bob
             with patch('waxe.views.versioning.Views.get_svn_client', return_value=mock):
                 res = Views(request).svn_commit_json()
                 mock.checkin.assert_called_once_with(
-                    os.path.join(svn_path, 'test.xml'),
+                    [os.path.join(svn_path, 'test.xml')],
                     'my commit message')
                 expected = {'status': True, 'content': 'Commit done'}
                 self.assertEqual(res, expected)
@@ -179,10 +175,11 @@ class TestViews(WaxeTestCase):
             with patch('waxe.views.versioning.Views.get_svn_client',
                        return_value=mock):
                 res = Views(request).svn_commit_json()
-                expected = {'status': False, 'error_msg': 'Error'}
+                expected = {'status': False,
+                            'error_msg': 'Can\'t commit test.xml'}
                 self.assertEqual(res, expected)
                 mock.checkin.assert_called_once_with(
-                    os.path.join(svn_path, 'test.xml'),
+                    [os.path.join(svn_path, 'test.xml')],
                     'my commit message')
 
             status_mock = MagicMock()
@@ -192,7 +189,7 @@ class TestViews(WaxeTestCase):
                 res = Views(request).svn_commit_json()
                 expected = {
                     'status': False,
-                    'error_msg': "Can't commit a conflicted file"
+                    'error_msg': "Can't commit conflicted file: test.xml"
                 }
                 self.assertEqual(res, expected)
 
@@ -205,7 +202,7 @@ class TestViews(WaxeTestCase):
                 mock.add.assert_called_once_with(
                     os.path.join(svn_path, 'test.xml'))
                 mock.checkin.assert_called_once_with(
-                    os.path.join(svn_path, 'test.xml'),
+                    [os.path.join(svn_path, 'test.xml')],
                     'my commit message')
                 expected = {'status': True, 'content': 'Commit done'}
                 self.assertEqual(res, expected)
@@ -298,10 +295,10 @@ class FunctionalTestViews(WaxeTestCaseVersioning):
         DBSession.add(self.user_bob)
         self.user_bob.config = UserConfig(root_path=svn_path)
         res = self.testapp.get('/versioning/diff', status=200)
-        self.assertTrue('Error: A filename should be provided' in res.body)
+        self.assertTrue('Error: You should provide at least one filename' in res.body)
 
         res = self.testapp.get('/versioning/diff', status=200,
-                               params={'filename': 'file1.xml'})
+                               params={'filenames': 'file1.xml'})
         self.assertTrue('diff' in res.body)
 
     def test_svn_diff_json_forbidden(self):
@@ -320,10 +317,10 @@ class FunctionalTestViews(WaxeTestCaseVersioning):
         DBSession.add(self.user_bob)
         self.user_bob.config = UserConfig(root_path=svn_path)
         res = self.testapp.get('/versioning/diff.json', status=200)
-        self.assertTrue('A filename should be provided' in res.body)
+        self.assertTrue('You should provide at least one filename' in res.body)
 
         res = self.testapp.get('/versioning/diff.json', status=200,
-                               params={'filename': 'file1.xml'})
+                               params={'filenames': 'file1.xml'})
         self.assertTrue('diff' in res.body)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)

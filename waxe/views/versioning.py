@@ -1,3 +1,4 @@
+import os.path
 from base import BaseViews
 from pyramid.view import view_config
 from pyramid.renderers import render
@@ -5,6 +6,7 @@ from pyramid.exceptions import Forbidden
 from .. import browser
 from .. import diff
 from ..models import User
+from ..utils import unflatten_params
 
 from subprocess import Popen, PIPE
 import pysvn
@@ -75,35 +77,28 @@ class Views(BaseViews):
         changes = client.status(abspath)
         lis = []
         for f in reversed(changes):
+            if os.path.isdir(f.path):
+                continue
             if f.text_status == pysvn.wc_status_kind.normal:
                 continue
             p = browser.relative_path(f.path, root_path)
             label_class = labels_mapping.get(f.text_status) or None
             link = self.request.route_path(
-                'svn_diff', _query=[('filename', p)])
+                'svn_diff', _query=[('filenames', p)])
             json_link = self.request.route_path(
-                'svn_diff_json', _query=[('filename', p)])
+                'svn_diff_json', _query=[('filenames', p)])
             lis += [(f.text_status, label_class, p, link, json_link)]
 
-        content = render('blocks/versioning.mak',
-                         {'files_data': lis}, self.request)
+        content = render('blocks/versioning.mak', {
+            'files_data': lis,
+        }, self.request)
         return {
             'content': content,
         }
 
-    @view_config(route_name='svn_diff', renderer='index.mak', permission='edit')
-    @view_config(route_name='svn_diff_json', renderer='json', permission='edit')
-    def svn_diff(self):
-        filename = self.request.GET.get('filename') or ''
-        if not filename:
-            return {
-                'error_msg': 'A filename should be provided',
-            }
-
+    def _svn_diff(self, filename, client, index=0, editable=False):
         root_path = self.request.root_path
         absfilename = browser.absolute_path(filename, root_path)
-
-        client = self.get_svn_client()
         info = client.info(root_path)
         old_rev = pysvn.Revision(pysvn.opt_revision_kind.number,
                                  info.revision.number)
@@ -117,12 +112,50 @@ class Views(BaseViews):
             old_content = ''
 
         d = diff.HtmlDiff()
-        html = d.make_table(
+        link = self.request.route_path('edit', _query=[('filename', filename)])
+        json_link = self.request.route_path('edit_json', _query=[('filename', filename)])
+        html = '<h3><a data-href="%s" href="%s">%s</a></h3>' % (json_link, link, filename)
+        if editable:
+            html += '<input type="text" name="data:%i:filename" value="%s" />' % (
+                index,
+                filename
+            )
+            # The content of this textarea will we filled in javascript
+            html += '<textarea name="data:%i:filecontent"></textarea>' % index
+        html += d.make_table(
             old_content.decode('utf-8').splitlines(),
             new_content.decode('utf-8').splitlines())
+        return html
 
-        if self.request.user.can_commit(absfilename):
-            html += u'<input data-filename="%s" type="submit" class="diff-submit" value="Save and commit" />' % filename
+    @view_config(route_name='svn_diff', renderer='index.mak', permission='edit')
+    @view_config(route_name='svn_diff_json', renderer='json', permission='edit')
+    def svn_diff(self):
+        filenames = self.request.GET.getall('filenames') or ''
+        if not filenames:
+            return {
+                'error_msg': 'You should provide at least one filename.',
+            }
+
+        client = self.get_svn_client()
+        html = ''
+        can_commit = True
+        root_path = self.request.root_path
+
+        for index, filename in enumerate(filenames):
+            absfilename = browser.absolute_path(filename, root_path)
+            if not self.request.user.can_commit(absfilename):
+                can_commit = False
+            html += self._svn_diff(filename, client, index=index,
+                                   editable=can_commit)
+
+        if can_commit:
+            html = (
+                '<form data-action="/update-texts.json" '
+                'class="multiple-diff-submit">'
+                '%s'
+                '<input data-filename="%s" type="submit" '
+                'class="diff-submit" value="Save and commit" />'
+                '</form') % (''.join(html), filename)
         return {'content': html}
 
     @view_config(route_name='svn_update', renderer='index.mak', permission='edit')
@@ -145,36 +178,56 @@ class Views(BaseViews):
 
     @view_config(route_name='svn_commit_json', renderer='json', permission='edit')
     def svn_commit_json(self):
-        filename = self.request.POST.get('filename')
         msg = self.request.POST.get('msg')
-        if not filename or not msg:
+        params = unflatten_params(self.request.POST)
+
+        if 'data' not in params or not params['data'] or not msg:
             return {'status': False, 'error_msg': 'Bad parameters!'}
+
+        filenames = []
+        for dic in params['data']:
+            filenames += [dic['filename']]
+
         root_path = self.request.root_path
-        absfilename = browser.absolute_path(filename, root_path)
-        if not self.request.user.can_commit(absfilename):
-            raise Forbidden('Restricted area')
 
-        client = self.get_svn_client()
-        status = client.status(absfilename)
-        assert len(status) == 1, status
-        status = status[0]
-        if status.text_status == pysvn.wc_status_kind.conflicted:
-            return {
-                'status': False,
-                'error_msg': 'Can\'t commit a conflicted file'
-            }
+        error_msg = []
+        ok_filenames = []
 
-        if status.text_status == pysvn.wc_status_kind.unversioned:
+        for filename in filenames:
+            absfilename = browser.absolute_path(filename, root_path)
+            if not self.request.user.can_commit(absfilename):
+                error_msg += ['Can\'t commit: %s' % filename]
+                continue
+
+            client = self.get_svn_client()
+            language_code, encoding = locale.getdefaultlocale()
+            locale.setlocale(locale.LC_ALL, '%s.%s' % (language_code, encoding))
+            status = client.status(absfilename)
+            assert len(status) == 1, status
+            status = status[0]
+            if status.text_status == pysvn.wc_status_kind.conflicted:
+                error_msg += ['Can\'t commit conflicted file: %s' % filename]
+                continue
+
+            if status.text_status == pysvn.wc_status_kind.unversioned:
+                try:
+                    client.add(absfilename)
+                except Exception, e:
+                    # TODO: add logging here
+                    error_msg += ['Can\'t add %s' % filename]
+                    continue
+
+            ok_filenames += [absfilename]
+
+        if ok_filenames:
             try:
-                client.add(absfilename)
+                client.checkin(ok_filenames, msg)
             except Exception, e:
-                return {'status': False, 'error_msg': str(e)}
+                # TODO: add logging here
+                error_msg += ['Can\'t commit %s' % filename]
 
-        try:
-            client.checkin(absfilename, msg)
-        except Exception, e:
-            return {'status': False, 'error_msg': str(e)}
-
+        if error_msg:
+            return {'status': False, 'error_msg': '<br />'.join(error_msg)}
         # TODO: return the content of the status.
         # We should make a redirect!
         return {'status': True, 'content': 'Commit done'}

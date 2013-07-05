@@ -98,36 +98,39 @@ $.fn.filebrowser.defaults.template.nav_folder = '<li><i class="icon-folder-close
                 waxe.update_page($(this).data('href'));
             });
         },
+        update_page_content: function(data){
+            $(document).scrollTop(0);
+            if (data.error_msg){
+                $(document).message('error', data.error_msg);
+                return;
+            }
+            else if(data.content){
+                var $content = $('.content');
+                $content.html(data.content);
+                waxe.link_events($content);
+                waxe.init_form();
+                waxe.init_diff();
+                if(data.jstree_data){
+                    waxe.load_jstree(data.jstree_data);
+                }
+                else{
+                    $('body').data('layout').hide('east');
+                }
+                $(document).message('info', 'Loaded!');
+            }
+            var $breadcrumb = $('.breadcrumb');
+            if (data.breadcrumb){
+                $breadcrumb.html(data.breadcrumb);
+                waxe.link_events($breadcrumb);
+            }
+            else{
+                $breadcrumb.html('');
+            }
+        },
         update_page: function(url){
             $(document).message('info', 'Loading...', {'autohide': false});
             ajax.GET(url, function(data, textStatus, jqXHR){
-                $(document).scrollTop(0);
-                if (data.error_msg){
-                    $(document).message('error', data.error_msg);
-                    return;
-                }
-                else if(data.content){
-                    var $content = $('.content');
-                    $content.html(data.content);
-                    waxe.link_events($content);
-                    waxe.init_form();
-                    waxe.init_diff();
-                    if(data.jstree_data){
-                        waxe.load_jstree(data.jstree_data);
-                    }
-                    else{
-                        $('body').data('layout').hide('east');
-                    }
-                    $(document).message('info', 'Loaded!');
-                }
-                var $breadcrumb = $('.breadcrumb');
-                if (data.breadcrumb){
-                    $breadcrumb.html(data.breadcrumb);
-                    waxe.link_events($breadcrumb);
-                }
-                else{
-                    $breadcrumb.html('');
-                }
+                waxe.update_page_content(data);
             });
         },
         init_navbar: function(){
@@ -304,24 +307,48 @@ $.fn.filebrowser.defaults.template.nav_folder = '<li><i class="icon-folder-close
             });
         },
         init_diff: function(){
+
+            $('a.select-all').click(function(e){
+                e.preventDefault();
+                $(this).parents('form').find('input[type="checkbox"]').attr('checked', true);
+            });
+
+            $('a.select-none').click(function(e){
+                e.preventDefault();
+                $(this).parents('form').find('input[type="checkbox"]').removeAttr('checked');
+            });
+
             if ($('table.diff').next('input.diff-submit').length) {
                 $('table.diff td.diff_to').attr('contenteditable', 'true');
             }
-            $('input.diff-submit').click(function(){
-                var html = '';
-                $('table.diff td.diff_to pre').each(function(){
-                    $(this).contents().each(function(){
-                        html += $(this).text();
+
+            $('form.diff').submit(function(e){
+                var params = $(this).serialize();
+                if (params === ''){
+                    // No file selected
+                    e.preventDefault();
+                }
+            });
+
+            $('form.multiple-diff-submit').submit(function(e){
+                $(document).message('info', 'Loading...', {'autohide': false});
+                e.preventDefault();
+                var url = $(this).data('action');
+                $('table.diff').each(function(){
+                    $(this).prev('textarea').val('');
+                    var html = '';
+                    $(this).find('td.diff_to pre').each(function(){
+                        $(this).contents().each(function(){
+                            html += $(this).text();
+                        });
                     });
+                    $(this).prev('textarea').val(html);
                 });
-                var params = {
-                    'filecontent': html,
-                    'filename': $(this).data('filename'),
-                    'commit': true
-                };
+                var params = $(this).serialize();
+                params = params + '&commit=true';
                 $.ajax({
                      type: 'POST',
-                     url: '/update-text.json',
+                     url: url,
                      data: params,
                      dataType: 'json',
                      success: function(data, textStatus, jqXHR){
@@ -331,12 +358,12 @@ $.fn.filebrowser.defaults.template.nav_folder = '<li><i class="icon-folder-close
                             modal.find('.submit').click(function(){
                                 var msg = modal.find('textarea').val();
                                 if (msg !== ''){
-                                    waxe.commit(params.filename, msg);
+                                    params = params + '&msg=' + msg;
+                                    waxe.commit(params);
                                     modal.modal('hide');
                                 }
                             });
                             modal.modal('show');
-                            console.log(modal);
                         }
                         else{
                             $(document).message('error', data.error_msg);
@@ -348,13 +375,29 @@ $.fn.filebrowser.defaults.template.nav_folder = '<li><i class="icon-folder-close
                     }
                 });
             });
+
+            $('form.multiple-diff').submit(function(e){
+                $(document).message('info', 'Loading...', {'autohide': false});
+                e.preventDefault();
+                var url = $(this).data('action');
+                var params = $(this).serialize();
+                $.ajax({
+                     type: 'POST',
+                     url: url,
+                     data: params,
+                     dataType: 'json',
+                     success: function(data, textStatus, jqXHR){
+                        waxe.update_page_content(data);
+                    },
+                    error: function(jqXHR, textStatus, errorThrown){
+                        var msg = jqXHR.status + ' ' + jqXHR.statusText + ': ' + '/update.json';
+                        $(document).message('error', msg);
+                    }
+                });
+            });
         },
-        commit: function(filename, msg){
+        commit: function(params){
             $(document).message('info', 'Commit in progress...', {'autohide': false});
-            var params = {
-                'filename': filename,
-                'msg': msg
-            };
             $.ajax({
                  type: 'POST',
                  url: '/versioning/commit.json',
