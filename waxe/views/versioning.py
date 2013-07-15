@@ -7,11 +7,14 @@ from .. import browser
 from .. import diff
 from ..models import User
 from ..utils import unflatten_params
+import logging
 
 from subprocess import Popen, PIPE
 import pysvn
 
 import locale
+
+log = logging.getLogger(__name__)
 
 # Use to defined the color we will display the status
 labels_mapping = {
@@ -217,7 +220,7 @@ class Views(BaseViews):
                 try:
                     client.add(absfilename)
                 except Exception, e:
-                    # TODO: add logging here
+                    log.exception(e)
                     error_msg += ['Can\'t add %s' % filename]
                     continue
 
@@ -227,7 +230,7 @@ class Views(BaseViews):
             try:
                 client.checkin(ok_filenames, msg)
             except Exception, e:
-                # TODO: add logging here
+                log.exception(e)
                 error_msg += ['Can\'t commit %s' % filename]
 
         if error_msg:
