@@ -341,6 +341,7 @@ $.fn.filebrowser.defaults.template.nav_folder = '<li><i class="icon-folder-close
                         $(this).contents().each(function(){
                             html += $(this).text();
                         });
+                        html += '\n';
                     });
                     $(this).prev('textarea').val(html);
                 });
