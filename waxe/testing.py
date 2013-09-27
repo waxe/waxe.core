@@ -34,17 +34,17 @@ def login_user(login):
     return deco
 
 
-
 SETTINGS = {
     'sqlalchemy.url': 'sqlite://',
     'authentication.key': 'secret',
     'authentication.debug': True,
     'mako.directories': 'waxe:templates',
     'session.key': 'session_key',
-    'pyramid.includes': ['pyramid_auth'],
+    'pyramid.includes': ['pyramid_auth', 'pyramid_sqladmin'],
     'pyramid_auth.validate_function': 'waxe.security.validate_password',
     'dtd_urls': 'http://xmltool.lereskp.fr/static/exercise.dtd'
 }
+
 
 class WaxeTestCase(unittest.TestCase):
 

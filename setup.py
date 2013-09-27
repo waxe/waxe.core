@@ -12,12 +12,13 @@ requires = [
     'transaction',
     'pyramid_tm',
     'pyramid_debugtoolbar',
-    # 'pyramid_auth',
+    'pyramid_auth',
     'zope.sqlalchemy',
     'waitress',
     'sqla_declarative',
     'xmltool',
     'py-bcrypt',
+    'pyramid_sqladmin',
 ]
 
 setup(name='waxe',

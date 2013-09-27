@@ -67,6 +67,7 @@ class TestViewsNoVersioning(WaxeTestCase):
     def test_home(self):
         DBSession.add(self.user_bob)
         request = testing.DummyRequest(root_path='/path', user=self.user_bob)
+        request.route_path = lambda *args, **kw: '/%s' % args[0]
         expected = {
             'breadcrumb': '<li class="active">root</li>',
             'content': u'<ul id="file-navigation" class="unstyled" data-path="">\n</ul>\n',
@@ -358,10 +359,12 @@ class TestViews(WaxeTestCaseVersioning):
     def test_bad_request(self):
         DBSession.add(self.user_bob)
         request = testing.DummyRequest(user=self.user_bob)
+        request.route_path = lambda *args, **kw: '/%s' % args[0]
         dic = bad_request(request)
         self.assertEqual(len(dic), 1)
-        self.assertTrue('There is a problem with your configuration' in
-                        dic['content'])
+        expected = ('Go to your <a href="/admin_home">'
+                    'admin interface</a> to insert a new user')
+        self.assertEqual(dic['content'], expected)
 
         editor = User(login='editor', password='pass1')
         editor.roles = [Role.query.filter_by(name=ROLE_EDITOR).one()]
@@ -372,6 +375,15 @@ class TestViews(WaxeTestCaseVersioning):
         dic = bad_request(request)
         expected = {'content': u'  <a href="/editorpath">editor</a>\n'}
         self.assertEqual(dic, expected)
+
+    def test_bad_request_not_admin(self):
+        DBSession.add(self.user_fred)
+        request = testing.DummyRequest(user=self.user_fred)
+        request.route_path = lambda *args, **kw: '/%s' % args[0]
+        dic = bad_request(request)
+        self.assertEqual(len(dic), 1)
+        expected = 'There is a problem with your configuration'
+        self.assertTrue(expected in dic['content'])
 
     def test_edit(self):
         class C(object): pass
@@ -710,8 +722,9 @@ class FunctionalTestViews(WaxeTestCase):
     @login_user('Bob')
     def test_home(self):
         res = self.testapp.get('/', status=200)
-        self.assertTrue(
-            'There is a problem with your configuration' in res.body)
+        expected = ('Go to your <a href="/admin">'
+                    'admin interface</a> to insert a new user')
+        self.assertTrue(expected in res.body)
         self.assertTrue(('Content-Type', 'text/html; charset=UTF-8') in
                         res._headerlist)
 
@@ -726,8 +739,9 @@ class FunctionalTestViews(WaxeTestCase):
     @login_user('Bob')
     def test_home_json(self):
         res = self.testapp.get('/home.json', status=200)
-        self.assertTrue(
-            'There is a problem with your configuration' in res.body)
+        expected = ('Go to your <a href=\\"/admin\\">'
+                    'admin interface</a> to insert a new user')
+        self.assertTrue(expected in res.body)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
 
@@ -758,8 +772,9 @@ class FunctionalTestViews(WaxeTestCase):
     @login_user('Bob')
     def test_login_selection(self):
         res = self.testapp.get('/login-selection', status=200)
-        self.assertTrue('There is a problem with your configuration' in
-                        res.body)
+        expected = ('Go to your <a href="/admin">'
+                    'admin interface</a> to insert a new user')
+        self.assertTrue(expected in res.body)
 
     def test_edit_forbidden(self):
         res = self.testapp.get('/edit.json', status=302)

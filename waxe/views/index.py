@@ -366,6 +366,10 @@ class Views(BaseViews):
 @view_config(context=HTTPBadRequest, renderer='index.mak', route_name=None)
 def bad_request(request):
     if not request.user.multiple_account():
+        if request.user.is_admin():
+            link = request.route_path('admin_home')
+            return {'content': 'Go to your <a href="%s">admin interface</a> '
+                               'to insert a new user' % link}
         return {'content': 'There is a problem with your configuration, '
                 'please contact your administrator with '
                 'the following message: Edit the user named \'%s\' '

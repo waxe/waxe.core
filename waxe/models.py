@@ -18,6 +18,10 @@ from sqlalchemy.orm import (
 
 from zope.sqlalchemy import ZopeTransactionExtension
 from sqla_declarative import extended_declarative_base
+import tw2.sqla as tws
+import tw2.forms as twf
+
+from .validator import BCryptValidator
 
 DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 Base = extended_declarative_base(DBSession)
@@ -66,6 +70,9 @@ class Role(Base):
     name = Column(String(255),
                   nullable=False)
 
+    def __unicode__(self):
+        return self.name
+
 
 class User(Base):
 
@@ -77,6 +84,10 @@ class User(Base):
                    nullable=False)
     password = Column(String(255),
                       nullable=True,
+                      info={'edit_widget':
+                            twf.PasswordField(validator=BCryptValidator),
+                            'view_widget': tws.NoWidget,
+                           }
                      )
     idconfig = Column(Integer,
                       ForeignKey('user_config.idconfig'),
@@ -91,13 +102,21 @@ class User(Base):
     config = relationship('UserConfig',
                           backref=backref("user", uselist=False))
     versioning_paths = relationship('VersioningPath',
+                                    info={'view_widget':
+                                          tws.FactoryWidget(separator='<br />')},
                                     backref=backref("user", uselist=False))
+
+    def __unicode__(self):
+        return self.login
 
     def has_role(self, name):
         for role in self.roles:
             if role.name == name:
                 return True
         return False
+
+    def is_admin(self):
+        return self.has_role(ROLE_ADMIN)
 
     def multiple_account(self):
         editors = get_editors()
@@ -169,7 +188,14 @@ class UserConfig(Base):
     versioning_password = Column(
         String(255),
         nullable=True,
+        info={'edit_widget':
+              twf.PasswordField,
+              'view_widget': tws.NoWidget}
     )
+
+    def get_tws_view_html(self):
+        return 'path: %s <br /> Versioning: %s' % (self.root_path,
+                                             self.use_versioning)
 
 
 class VersioningPath(Base):
@@ -179,6 +205,9 @@ class VersioningPath(Base):
     iduser = Column(Integer, ForeignKey('user.iduser'))
     status = Column(String(255), nullable=False)
     path = Column(String(255), nullable=False)
+
+    def __unicode__(self):
+        return '%s: %s' % (self.status, self.path)
 
 
 def get_editors():
