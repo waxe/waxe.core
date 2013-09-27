@@ -31,9 +31,9 @@ class TestViews(WaxeTestCase):
         super(TestViews, self).tearDown()
 
     def test_svn_cmd(self):
-        DBSession.add(self.user_bob)
+        DBSession.add(self.user_fred)
         request = testing.DummyRequest()
-        request.user = self.user_bob
+        request.user = self.user_fred
         res = svn_cmd(request, 'update')
         expected = 'svn update --non-interactive'
         self.assertEqual(res, expected)
@@ -41,13 +41,35 @@ class TestViews(WaxeTestCase):
         request.registry.settings['versioning.auth.active'] = True
         res = svn_cmd(request, 'update')
         expected = ('svn update --non-interactive '
-                    '--username Bob --password secret_bob')
+                    '--username Fred --password secret_fred')
         self.assertEqual(res, expected)
 
-    def test_get_svn_login(self):
+    def test_svn_cmd_failed(self):
         DBSession.add(self.user_bob)
         request = testing.DummyRequest()
         request.user = self.user_bob
+        request.registry.settings['versioning.auth.active'] = True
+        try:
+            svn_cmd(request, 'update')
+            assert(False)
+        except Exception, e:
+            self.assertEqual(str(e), 'No versioning password set for Bob')
+
+    def test_get_svn_login(self):
+        DBSession.add(self.user_bob)
+
+        request = testing.DummyRequest()
+        request.user = self.user_bob
+        try:
+            get_svn_login(request)
+        except Exception, e:
+            self.assertEqual(str(e), 'No versioning password set for Bob')
+
+        self.user_bob.config = UserConfig(
+            root_path='',
+            use_versioning=True,
+            versioning_password='secret_bob',
+        )
         res = get_svn_login(request)
         expected = (False, 'Bob', 'secret_bob', False)
         self.assertEqual(res, expected)
@@ -132,10 +154,10 @@ class TestViews(WaxeTestCase):
         self.assertTrue('submit' not in res['content'])
 
     def test_svn_update(self):
-        DBSession.add(self.user_bob)
+        DBSession.add(self.user_fred)
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         request = testing.DummyRequest(root_path=svn_path)
-        request.user = self.user_bob
+        request.user = self.user_fred
         res = Views(request).svn_update()
         expected = {'content': '<pre>At revision 1.\n</pre>'}
         self.assertEqual(res, expected)
@@ -339,7 +361,8 @@ class FunctionalTestViews(WaxeTestCaseVersioning):
     def test_svn_update(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         DBSession.add(self.user_bob)
-        self.user_bob.config = UserConfig(root_path=svn_path)
+        self.user_bob.config = UserConfig(root_path=svn_path,
+                                          versioning_password='secret_bob')
         res = self.testapp.get('/versioning/update', status=200)
         self.assertTrue('At revision 1.' in res.body)
 
@@ -357,7 +380,8 @@ class FunctionalTestViews(WaxeTestCaseVersioning):
     def test_svn_update_json(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         DBSession.add(self.user_bob)
-        self.user_bob.config = UserConfig(root_path=svn_path)
+        self.user_bob.config = UserConfig(root_path=svn_path,
+                                          versioning_password='secret_bob')
         res = self.testapp.get('/versioning/update.json', status=200)
         self.assertTrue('At revision 1.' in res.body)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in

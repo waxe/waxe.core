@@ -42,12 +42,16 @@ def get_svn_login(request):
     editor_login = request.session.get('editor_login')
     if not editor_login:
         editor_login = request.user.login
-        if not pwd:
-            pwd = request.user.password
+        if not pwd and request.user.config:
+            pwd = request.user.config.versioning_password
     assert editor_login
     if not pwd:
-        pwd = User.query.filter_by(login=editor_login).one().password
-    assert pwd
+        editor = User.query.filter_by(login=editor_login).one()
+        if editor.config:
+            pwd = editor.config.versioning_password
+    if not pwd:
+        # TODO: a good idea should be to ask the password to the user
+        raise Exception('No versioning password set for %s' % editor_login)
 
     return auth, str(editor_login), pwd, False
 

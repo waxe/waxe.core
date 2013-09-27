@@ -76,7 +76,8 @@ class User(Base):
     login = Column(String(255),
                    nullable=False)
     password = Column(String(255),
-                      nullable=False)
+                      nullable=True,
+                     )
     idconfig = Column(Integer,
                       ForeignKey('user_config.idconfig'),
                       nullable=True)
@@ -164,6 +165,11 @@ class UserConfig(Base):
     root_path = Column(String(255),
                        nullable=False)
     use_versioning = Column(Boolean, nullable=False, default=False)
+
+    versioning_password = Column(
+        String(255),
+        nullable=True,
+    )
 
 
 class VersioningPath(Base):

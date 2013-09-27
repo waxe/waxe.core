@@ -17,6 +17,7 @@ requires = [
     'waitress',
     'sqla_declarative',
     'xmltool',
+    'py-bcrypt',
 ]
 
 setup(name='waxe',

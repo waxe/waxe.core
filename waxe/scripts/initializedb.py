@@ -1,32 +1,32 @@
 import os
 import sys
 import transaction
+import bcrypt
 
 from sqlalchemy import engine_from_config
 
 from pyramid.paster import (
     get_appsettings,
     setup_logging,
-    )
+)
 
 from ..models import (
     DBSession,
     Base,
     Role,
     User,
-    UserConfig,
-    VersioningPath,
+    ROLE_ADMIN,
     ROLE_EDITOR,
     ROLE_CONTRIBUTOR,
-    ROLE_ADMIN,
-    VERSIONING_PATH_STATUS_ALLOWED,
-    )
+)
+
 
 def usage(argv):
     cmd = os.path.basename(argv[0])
     print('usage: %s <config_uri>\n'
           '(example: "%s development.ini")' % (cmd, cmd))
     sys.exit(1)
+
 
 def main(argv=sys.argv):
     if len(argv) != 2:
@@ -39,28 +39,13 @@ def main(argv=sys.argv):
     Base.metadata.create_all(engine)
     with transaction.manager:
         admin_role = Role(name=ROLE_ADMIN)
-        admin_user = User(login='admin', password='admin')
+        pwd = bcrypt.hashpw('admin', bcrypt.gensalt())
+        admin_user = User(login='admin',
+                          password=pwd)
         admin_user.roles = [admin_role]
-        config = UserConfig(root_path=os.path.normpath(
-            '/home/lereskp/temp/waxe/client1'))
-        admin_user.config = config
         DBSession.add(admin_user)
 
         editor_role = Role(name=ROLE_EDITOR)
-        editor_user = User(login='editor', password='editor')
-        editor_user.roles = [editor_role]
-        config = UserConfig(root_path=os.path.normpath(
-            '/home/lereskp/temp/waxe/client1'))
-        editor_user.config = config
-        DBSession.add(editor_user)
-
+        DBSession.add(editor_role)
         contributor_role = Role(name=ROLE_CONTRIBUTOR)
-        contributor_user = User(login='contributor', password='contributor')
-        contributor_user.roles = [contributor_role]
-        config = UserConfig(root_path=os.path.normpath(
-            '/home/lereskp/temp/waxe/client1'), use_versioning=True)
-        contributor_user.config = config
-        vpath = VersioningPath(status=VERSIONING_PATH_STATUS_ALLOWED,
-                               path='/home/lereskp/temp/waxe/client1/debug')
-        contributor_user.versioning_paths = [vpath]
-        DBSession.add(contributor_user)
+        DBSession.add(contributor_role)

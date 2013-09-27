@@ -6,6 +6,7 @@ from functools import wraps
 from mock import patch
 import tw2.core as twc
 from sqlalchemy import create_engine
+import bcrypt
 
 from . import main
 from .models import (
@@ -60,13 +61,18 @@ class WaxeTestCase(unittest.TestCase):
                 r = Role(name=role)
                 DBSession.add(r)
             admin = Role(name="admin")
-            self.user_bob = User(login="Bob", password='secret_bob')
+            pwd = bcrypt.hashpw('secret_bob', bcrypt.gensalt())
+            self.user_bob = User(login="Bob", password=pwd)
             self.user_bob.roles = [admin]
             DBSession.add(self.user_bob)
 
-            self.user_fred = User(login='Fred', password='secret_fred')
-            self.user_fred.config = UserConfig(root_path='',
-                                               use_versioning=True)
+            pwd = bcrypt.hashpw('secret_fred', bcrypt.gensalt())
+            self.user_fred = User(login='Fred', password=pwd)
+            self.user_fred.config = UserConfig(
+                root_path='',
+                use_versioning=True,
+                versioning_password='secret_fred',
+            )
             DBSession.add(self.user_fred)
 
     def tearDown(self):
