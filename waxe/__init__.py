@@ -1,7 +1,5 @@
 from pyramid.config import Configurator
 from sqlalchemy import engine_from_config
-from pyramid.authentication import AuthTktAuthenticationPolicy
-from pyramid.authorization import ACLAuthorizationPolicy
 from pyramid.session import UnencryptedCookieSessionFactoryConfig
 
 from .models import (
@@ -47,16 +45,6 @@ def main(global_config, **settings):
                           root_factory=RootFactory)
     config.add_static_view('static', 'static', cache_max_age=3600)
 
-    # Authentification
-    authentication_policy = AuthTktAuthenticationPolicy(
-        settings['authentication.key'],
-        callback=get_user_permissions,
-        debug=settings['authentication.debug'],
-        hashalg='sha512',
-    )
-    authorization_policy = ACLAuthorizationPolicy()
-    config.set_authentication_policy(authentication_policy)
-    config.set_authorization_policy(authorization_policy)
     config.set_request_property(get_user_from_request, 'user', reify=True)
     config.set_request_property(get_root_path_from_request,
                                 'root_path', reify=True)
