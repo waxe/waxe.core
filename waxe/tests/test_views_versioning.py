@@ -25,6 +25,7 @@ class TestViews(WaxeTestCase):
     def setUp(self):
         super(TestViews, self).setUp()
         self.config = testing.setUp(settings=self.settings)
+        self.config.include('pyramid_mako')
 
     def tearDown(self):
         testing.tearDown()

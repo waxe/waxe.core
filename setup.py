@@ -2,11 +2,19 @@ import os
 
 from setuptools import setup, find_packages
 
+# Hack to prevent TypeError: 'NoneType' object is not callable error
+# on exit of python setup.py test
+try:
+    import multiprocessing
+except ImportError:
+    pass
+
 here = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(here, 'README.txt')).read()
 CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
 
 requires = [
+    'pyramid_mako',
     'pyramid',
     'SQLAlchemy',
     'transaction',
@@ -38,7 +46,7 @@ setup(name='waxe',
       packages=find_packages(),
       include_package_data=True,
       zip_safe=False,
-      test_suite='waxe',
+      test_suite='nose.collector',
       install_requires=requires,
       tests_require=[
           'nose',
