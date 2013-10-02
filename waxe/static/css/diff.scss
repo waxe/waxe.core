@@ -32,3 +32,12 @@ table.diff {
     background-color:#ffaaaa;
   }
 }
+
+.multiple-diff-submit textarea,
+.multiple-diff-submit input {
+  display: none;
+}
+
+.multiple-diff-submit input.diff-submit {
+  display: block;
+}

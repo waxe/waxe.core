@@ -126,6 +126,13 @@ table.diff {
   table.diff .diff_sub {
     background-color: #ffaaaa; }
 
+.multiple-diff-submit textarea,
+.multiple-diff-submit input {
+  display: none; }
+
+.multiple-diff-submit input.diff-submit {
+  display: block; }
+
 .navfile .selected {
   background-color: #D9EDF7; }
 
