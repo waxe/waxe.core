@@ -1,27 +1,9 @@
 (function($){
     "use strict";
 
-    var ajax = {
-         GET: function(url, callback){
-             $.ajax({
-                 type: 'GET',
-                 url: url,
-                 dataType: 'json',
-                 success: function(data, textStatus, jqXHR){
-                     callback(data);
-                 },
-                 error: function(jqXHR, textStatus, errorThrown){
-                    var msg = jqXHR.status + ' ' + jqXHR.statusText + ': ' + url;
-                    $(document).message('error', msg);
-                 }
-             });
-         }
-     };
-
-
     var set_tags = function(modal, url, dtd_url){
         // Get the tags for the given dtd_url and update the modal
-        ajax.GET(url + '?dtd_url=' + dtd_url, function(data){
+        waxe.ajax.GET(url + '?dtd_url=' + dtd_url, function(data){
                 var select = modal.find('.dtd-tags');
                 select.html('');
                 for(var index in data.tags){
@@ -95,7 +77,7 @@
         },
         update_page: function(url){
             $(document).message('info', 'Loading...', {'autohide': false});
-            ajax.GET(url, function(data, textStatus, jqXHR){
+            waxe.ajax.GET(url, function(data, textStatus, jqXHR){
                 waxe_old.update_page_content(data);
             });
         },
@@ -108,7 +90,7 @@
                 }
                 else{
                     var url = $self.data('href');
-                    ajax.GET(url, function(data){
+                    waxe.ajax.GET(url, function(data){
                         var modal = $(data.content);
                         set_new_modal_events(modal);
                         $self.data('modal', modal);
