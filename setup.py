@@ -21,6 +21,7 @@ requires = [
     'pyramid_tm',
     'pyramid_debugtoolbar',
     'pyramid_auth',
+    'pyramid_exclog',
     'zope.sqlalchemy',
     'waitress',
     'sqla_declarative',
