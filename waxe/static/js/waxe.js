@@ -445,6 +445,20 @@ $.fn.filebrowser.defaults.template.nav_folder = '<li><i class="icon-folder-close
     };
 
     $(document).ready(function(){
+        window.onbeforeunload = function(event) {
+            var form = $(form_selector);
+            alert(form);
+            if(form.data('status') === 'updated'){
+
+            event = event || window.event;
+            var confirmClose = 'The file has been updated, are you sure you want to exit?';
+            if (event) {
+                event.returnValue = confirmClose;
+            }
+            // For safari
+            return confirmClose;
+            }
+        };
         waxe.link_events($('.content,.breadcrumb,.navbar .dropdown-versioning'));
         waxe.init_navbar();
         waxe.init_form();
