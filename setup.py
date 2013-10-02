@@ -31,7 +31,7 @@ requires = [
 ]
 
 setup(name='waxe',
-      version='0.0',
+      version='0.1',
       description='waxe',
       long_description=README + '\n\n' + CHANGES,
       classifiers=[
