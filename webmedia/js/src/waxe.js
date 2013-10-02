@@ -447,7 +447,6 @@ $.fn.filebrowser.defaults.template.nav_folder = '<li><i class="icon-folder-close
     $(document).ready(function(){
         window.onbeforeunload = function(event) {
             var form = $(form_selector);
-            alert(form);
             if(form.data('status') === 'updated'){
 
             event = event || window.event;
