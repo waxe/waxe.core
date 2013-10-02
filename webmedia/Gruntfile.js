@@ -2,13 +2,14 @@ module.exports = function(grunt) {
     grunt.initConfig({
         pkg: grunt.file.readJSON('package.json'),
         jshint: {
-            files: ['gruntfile.js', 'js/src/*.js'],
+            files: ['Gruntfile.js', 'js/src/*.js'],
             options: {
                 globals: {
                     jQuery: true,
                     console: true,
                     module: true
-                }
+                },
+                multistr: true
             }
         },
         concat: {
