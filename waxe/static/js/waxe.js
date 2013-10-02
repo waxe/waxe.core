@@ -211,6 +211,7 @@ $.fn.filebrowser.defaults.template.nav_folder = '<li><i class="icon-folder-close
                  dataType: 'json',
                  success: function(data, textStatus, jqXHR){
                     if (data.status){
+                        $(form_selector).removeData('status');
                         $(document).message('success', 'Saved');
                         $('.breadcrumb').html(data.breadcrumb);
                     }
@@ -231,10 +232,27 @@ $.fn.filebrowser.defaults.template.nav_folder = '<li><i class="icon-folder-close
                     add_element_url: '/add-element.json',
                     comment_modal_url: '/get-comment-modal.json',
                 }).submit(waxe.on_submit_form);
+                form.on('field_change.xmltool', function(){
+                    form.data('status', 'updated');
+                });
+                waxe.auto_save();
             }
             else{
                 // Add css on the save buttons to be clear that these buttons
                 // are disabled!
+            }
+        },
+        auto_save: function(){
+            var form = $(form_selector);
+            var save = function(){
+                if (form.data('status') === 'updated'){
+                    form.submit();
+                    form.removeData('status');
+                }
+            };
+            // TODO: improve this logic for the new files!
+            if (form.length && get_filename()){
+                setInterval(save, 1000 * 60);
             }
         },
         init_layout: function(){
