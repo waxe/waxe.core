@@ -1,5 +1,5 @@
 import os
-import simplejson
+import json
 from pyramid import testing
 from ..testing import WaxeTestCase, WaxeTestCaseVersioning, login_user
 from mock import patch
@@ -802,7 +802,7 @@ class FunctionalTestViews(WaxeTestCase):
         res = self.testapp.get('/edit.json',
                                status=200,
                                params={'filename': 'file1.xml'})
-        dic = simplejson.loads(res.body)
+        dic = json.loads(res.body)
         self.assertEqual(len(dic), 3)
         self.assertTrue('<form method="POST" id="xmltool-form">' in
                         dic['content'])
@@ -825,13 +825,13 @@ class FunctionalTestViews(WaxeTestCase):
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
         self.user_bob.config = UserConfig(root_path=path)
         res = self.testapp.get('/get-tags.json', status=200)
-        self.assertEqual(simplejson.loads(res.body), {})
+        self.assertEqual(json.loads(res.body), {})
 
         res = self.testapp.get('/get-tags.json',
                                status=200,
                                params={'dtd_url': dtd_url})
         expected = {'tags': ['Exercise', 'comments', 'mqm', 'qcm', 'test']}
-        self.assertEqual(simplejson.loads(res.body), expected)
+        self.assertEqual(json.loads(res.body), expected)
 
     def test_new_forbidden(self):
         res = self.testapp.get('/new.json', status=302)
@@ -851,7 +851,7 @@ class FunctionalTestViews(WaxeTestCase):
         res = self.testapp.get('/new.json', status=200)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
-        dic = simplejson.loads(res.body)
+        dic = json.loads(res.body)
         self.assertEqual(len(dic), 1)
         self.assertTrue('<h3>New file</h3>' in dic['content'])
 
@@ -861,7 +861,7 @@ class FunctionalTestViews(WaxeTestCase):
                                status=200,
                                params={'dtd_url': dtd_url,
                                        'dtd_tag': dtd_tag})
-        dic = simplejson.loads(res.body)
+        dic = json.loads(res.body)
         self.assertEqual(len(dic), 2)
         self.assertTrue('<form method="POST" id="xmltool-form">' in
                         dic['content'])
@@ -887,7 +887,7 @@ class FunctionalTestViews(WaxeTestCase):
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
         expected = {"folders": [{"data_href": "/open.json?path=folder1", "name": "folder1"}], "path": "", "previous": None, "nav_btns": [{"data_href": "/open.json?path=", "name": "root"}], "filenames": [{"data_href": "/edit.json?filename=file1.xml", "name": "file1.xml"}]}
-        self.assertEqual(simplejson.loads(res.body), expected)
+        self.assertEqual(json.loads(res.body), expected)
 
     def test_create_folder_forbidden(self):
         res = self.testapp.get('/create-folder.json', status=302)
@@ -908,7 +908,7 @@ class FunctionalTestViews(WaxeTestCase):
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
         expected = {"status": False, "error_msg": "No path given"}
-        self.assertEqual(simplejson.loads(res.body), expected)
+        self.assertEqual(json.loads(res.body), expected)
 
         try:
             res = self.testapp.get('/create-folder.json',
@@ -916,7 +916,7 @@ class FunctionalTestViews(WaxeTestCase):
                                    params={'path': 'new_folder'})
             self.assertTrue(os.path.isdir(os.path.join(path, 'new_folder')))
             expected = {'status': True}
-            self.assertEqual(simplejson.loads(res.body), expected)
+            self.assertEqual(json.loads(res.body), expected)
 
             res = self.testapp.get('/create-folder.json',
                                    status=200,
@@ -927,7 +927,7 @@ class FunctionalTestViews(WaxeTestCase):
                               ": File exists\n") % (
                                   os.path.join(path, 'new_folder'))
             }
-            self.assertEqual(simplejson.loads(res.body), expected)
+            self.assertEqual(json.loads(res.body), expected)
         finally:
             os.rmdir(os.path.join(path, 'new_folder'))
 
@@ -950,7 +950,7 @@ class FunctionalTestViews(WaxeTestCase):
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
         expected = {"status": False, "error_msg": "No filename given"}
-        self.assertEqual(simplejson.loads(res.body), expected)
+        self.assertEqual(json.loads(res.body), expected)
 
         with patch('xmltool.update', return_value=False):
             res = self.testapp.post('/update.json',
@@ -962,7 +962,7 @@ class FunctionalTestViews(WaxeTestCase):
                     "<li><a data-href=\"/home.json?path=\" href=\"/?path=\">root</a> "
                     "<span class=\"divider\">/</span></li>"
                     "<li class=\"active\">test.xml</li>")}
-        self.assertEqual(simplejson.loads(res.body), expected)
+        self.assertEqual(json.loads(res.body), expected)
 
     def test_update_text_forbidden(self):
         res = self.testapp.get('/update-text.json', status=302)
@@ -983,7 +983,7 @@ class FunctionalTestViews(WaxeTestCase):
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
         expected = {"status": False, "error_msg": "Missing parameters!"}
-        self.assertEqual(simplejson.loads(res.body), expected)
+        self.assertEqual(json.loads(res.body), expected)
 
     def test_update_texts_forbidden(self):
         res = self.testapp.get('/update-texts.json', status=302)
@@ -1004,7 +1004,7 @@ class FunctionalTestViews(WaxeTestCase):
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
         expected = {"status": False, "error_msg": "Missing parameters!"}
-        self.assertEqual(simplejson.loads(res.body), expected)
+        self.assertEqual(json.loads(res.body), expected)
 
     def test_add_element_json_forbidden(self):
         res = self.testapp.get('/add-element.json', status=302)
@@ -1025,14 +1025,14 @@ class FunctionalTestViews(WaxeTestCase):
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
         expected = {"status": False, "error_msg": "Bad parameter"}
-        self.assertEqual(simplejson.loads(res.body), expected)
+        self.assertEqual(json.loads(res.body), expected)
 
         dtd_url = os.path.join(path, 'exercise.dtd')
         res = self.testapp.get('/add-element.json', status=200,
                                params={'dtd_url': dtd_url,
                                        'elt_id': 'Exercise'})
 
-        dic = simplejson.loads(res.body)
+        dic = json.loads(res.body)
         self.assertTrue(dic['status'])
 
     def test_get_comment_modal_json_forbidden(self):
@@ -1054,6 +1054,6 @@ class FunctionalTestViews(WaxeTestCase):
         res = self.testapp.get('/get-comment-modal.json', status=200)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
-        body = simplejson.loads(res.body)
+        body = json.loads(res.body)
         self.assertEqual(len(body), 1)
         self.assertTrue('<div class="modal ' in body['content'])

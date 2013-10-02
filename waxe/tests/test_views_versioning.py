@@ -1,5 +1,5 @@
 import os
-import simplejson
+import json
 from pyramid import testing
 from pyramid.exceptions import Forbidden
 from webob.multidict import MultiDict
@@ -407,4 +407,4 @@ class FunctionalTestViews(WaxeTestCaseVersioning):
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
         expected = {"status": False, "error_msg": "Bad parameters!"}
-        self.assertEqual(simplejson.loads(res.body), expected)
+        self.assertEqual(json.loads(res.body), expected)
