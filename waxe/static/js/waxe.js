@@ -1,1 +1,1 @@
-../../../webmedia/js/build/waxe.js
+../../../webmedia/dist/waxe.js
