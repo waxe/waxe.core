@@ -18,3 +18,4 @@ List of improvements
 * Create a website
 * jquery.filebrowser.js: reload the files when we save a new file! (now it's not displayed)
 * write some tests for the js
+* Support subversion without login
