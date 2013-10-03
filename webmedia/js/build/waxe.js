@@ -2,10 +2,10 @@ if (typeof waxe === "undefined"){
     var waxe = {};
 }
 
-(function($){
+(function($, ns){
     "use strict";
 
-    waxe.ajax = {
+    ns.ajax = {
          GET: function(url, callback){
              $.ajax({
                  type: 'GET',
@@ -27,10 +27,10 @@ if (typeof waxe === "undefined"){
     var waxe = {};
 }
 
-(function($){
+(function($, ns){
     "use strict";
 
-    waxe.dom = {
+    ns.dom = {
         addPushStateOnLinks: function(container){
             container.find('a[data-href]').click(function(e){
                 e.preventDefault();
@@ -110,10 +110,113 @@ if (typeof waxe === "undefined"){
     var waxe = {};
 }
 
-(function($){
+(function($, ns){
     "use strict";
 
-    waxe.navbar = {
+    ns.jstree = {
+        load: function(data){
+            var tree = $("#tree");
+            tree.jstree({
+                "json_data" : {'data': [data]},
+                "plugins" : ["themes", "json_data", "ui", 'crrm', 'dnd'],
+                "core": {
+                    html_titles: true
+                },
+                "ui" : {select_multiple_modifier: false},
+                "crrm" : {
+                    "move" : {
+                        "check_move" : xmltool.jstree.check_move,
+                    }
+                },
+                "dnd" : {
+                    "drop_target" : false,
+                    "drag_target" : false
+                },
+            }).bind("select_node.jstree", function (e, data) {
+                var id = data.rslt.obj.attr("id");
+                id = id.replace(/^tree_/, '');
+                var elt = $('#' + id.replace(/:/g,'\\:'));
+                elt.focus();
+                var t =  elt.offset().top + $('.ui-layout-center').scrollTop() - $('.ui-layout-center').offset().top - 30;
+                $('.ui-layout-center').animate({
+                    scrollTop: t,
+                    }, 1000
+                );
+            }).bind("loaded.jstree", function (event, data) {
+                tree.jstree('open_all');
+                tree.height(tree.parent().parent().height());
+                $('body').data('layout').show('east');
+            }).bind("move_node.jstree", function(event, data){
+                $(document).message('info', 'Moving...', {overlay: true, modal: true});
+                setTimeout(function(){
+                    xmltool.jstree.move_node(event, data);
+                    $(document).message('success', 'Moved!');
+                }, 50);
+            }).bind('close_node.jstree', function(event, data){
+                var id = data.rslt.obj.attr("id");
+                id = id.replace(/^tree_/, '');
+                var elt = $('#' + id.replace(/:/g,'\\:'));
+                elt.data('togglefieldset').hide(false);
+            }).bind('open_node.jstree', function(event, data){
+                var id = data.rslt.obj.attr("id");
+                id = id.replace(/^tree_/, '');
+                var elt = $('#' + id.replace(/:/g,'\\:'));
+                elt.data('togglefieldset').show(false);
+            });
+        }
+    };
+
+
+    $(document).ready(function(){
+        if(typeof(jstree_data) !== 'undefined'){
+            waxe.jstree.load(jstree_data);
+        }
+    });
+
+})(jQuery, waxe);
+
+if (typeof waxe === "undefined"){
+    var waxe = {};
+}
+
+(function($, ns){
+    "use strict";
+
+    var set_tags = function(modal, url, dtd_url){
+        // Get the tags for the given dtd_url and update the modal
+        waxe.ajax.GET(url + '?dtd_url=' + dtd_url, function(data){
+                var select = modal.find('.dtd-tags');
+                select.html('');
+                for(var index in data.tags){
+                    var v = data.tags[index];
+                    select.append($('<option>').attr('value', v).html(v));
+                }
+        });
+    };
+
+    var set_new_modal_events = function(modal){
+        modal.find('.dtd-urls').on('change', function(){
+            var val = $(this).val();
+            if(val){
+                var url = $(this).data('href');
+                set_tags(modal, url, val);
+            }
+        });
+        modal.find('.submit').click(function(e){
+            e.preventDefault();
+            var url = $(this).data('href');
+            var dtd_url = modal.find('.dtd-urls').val();
+            var dtd_tag = modal.find('.dtd-tags').val();
+            if(dtd_url && dtd_tag){
+                url = url + '?dtd_url=' + dtd_url + '&dtd_tag=' + dtd_tag;
+                waxe.dom.load(url);
+                modal.modal('hide');
+            }
+        });
+    };
+
+
+    ns.navbar = {
         'new': function(){
             $('.navbar .new').on('click', function(e){
                 e.preventDefault();
@@ -224,39 +327,6 @@ if (typeof waxe === "undefined"){
 (function($){
     "use strict";
 
-    var set_tags = function(modal, url, dtd_url){
-        // Get the tags for the given dtd_url and update the modal
-        waxe.ajax.GET(url + '?dtd_url=' + dtd_url, function(data){
-                var select = modal.find('.dtd-tags');
-                select.html('');
-                for(var index in data.tags){
-                    var v = data.tags[index];
-                    select.append($('<option>').attr('value', v).html(v));
-                }
-        });
-    };
-
-    var set_new_modal_events = function(modal){
-        modal.find('.dtd-urls').on('change', function(){
-            var val = $(this).val();
-            if(val){
-                var url = $(this).data('href');
-                set_tags(modal, url, val);
-            }
-        });
-        modal.find('.submit').click(function(e){
-            e.preventDefault();
-            var url = $(this).data('href');
-            var dtd_url = modal.find('.dtd-urls').val();
-            var dtd_tag = modal.find('.dtd-tags').val();
-            if(dtd_url && dtd_tag){
-                url = url + '?dtd_url=' + dtd_url + '&dtd_tag=' + dtd_tag;
-                waxe.dom.load(url);
-                modal.modal('hide');
-            }
-        });
-    };
-
     waxe.old = {
         on_submit_form: function(e){
             e.preventDefault();
@@ -329,56 +399,6 @@ if (typeof waxe === "undefined"){
                         tree.height(tree.parent().parent().height());
                     }
                 }
-            });
-        },
-        load_jstree: function(data){
-            var tree = $("#tree");
-            tree.jstree({
-                "json_data" : {'data': [data]},
-                "plugins" : ["themes", "json_data", "ui", 'crrm', 'dnd'],
-                "core": {
-                    html_titles: true
-                },
-                "ui" : {select_multiple_modifier: false},
-                "crrm" : {
-                    "move" : {
-                        "check_move" : xmltool.jstree.check_move,
-                    }
-                },
-                "dnd" : {
-                    "drop_target" : false,
-                    "drag_target" : false
-                },
-            }).bind("select_node.jstree", function (e, data) {
-                var id = data.rslt.obj.attr("id");
-                id = id.replace(/^tree_/, '');
-                var elt = $('#' + id.replace(/:/g,'\\:'));
-                elt.focus();
-                var t =  elt.offset().top + $('.ui-layout-center').scrollTop() - $('.ui-layout-center').offset().top - 30;
-                $('.ui-layout-center').animate({
-                    scrollTop: t,
-                    }, 1000
-                );
-            }).bind("loaded.jstree", function (event, data) {
-                tree.jstree('open_all');
-                tree.height(tree.parent().parent().height());
-                $('body').data('layout').show('east');
-            }).bind("move_node.jstree", function(event, data){
-                $(document).message('info', 'Moving...', {overlay: true, modal: true});
-                setTimeout(function(){
-                    xmltool.jstree.move_node(event, data);
-                    $(document).message('success', 'Moved!');
-                }, 50);
-            }).bind('close_node.jstree', function(event, data){
-                var id = data.rslt.obj.attr("id");
-                id = id.replace(/^tree_/, '');
-                var elt = $('#' + id.replace(/:/g,'\\:'));
-                elt.data('togglefieldset').hide(false);
-            }).bind('open_node.jstree', function(event, data){
-                var id = data.rslt.obj.attr("id");
-                id = id.replace(/^tree_/, '');
-                var elt = $('#' + id.replace(/:/g,'\\:'));
-                elt.data('togglefieldset').show(false);
             });
         },
         init_diff: function(){
@@ -520,9 +540,6 @@ if (typeof waxe === "undefined"){
         waxe.old.init_layout();
         waxe.old.init_diff();
 
-        if(typeof(jstree_data) !== 'undefined'){
-            waxe.old.load_jstree(jstree_data);
-        }
     });
 
 })(jQuery);
