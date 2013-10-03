@@ -1,3 +1,7 @@
+if (typeof waxe === "undefined"){
+    var waxe = {};
+}
+
 (function($){
     "use strict";
 
@@ -28,59 +32,13 @@
             var dtd_tag = modal.find('.dtd-tags').val();
             if(dtd_url && dtd_tag){
                 url = url + '?dtd_url=' + dtd_url + '&dtd_tag=' + dtd_tag;
-                waxe_old.update_page(url);
+                waxe.dom.load(url);
                 modal.modal('hide');
             }
         });
     };
 
-    var waxe_old = {
-        link_events: function(container){
-            container.find('a[data-href]').click(function(e){
-                e.preventDefault();
-                window.history.pushState(
-                    {'json_url': $(this).data('href')},
-                    $(this).text(),
-                    $(this).attr('href')
-                    );
-                waxe_old.update_page($(this).data('href'));
-            });
-        },
-        update_page_content: function(data){
-            $(document).scrollTop(0);
-            if (data.error_msg){
-                $(document).message('error', data.error_msg);
-                return;
-            }
-            else if(data.content){
-                var $content = $('.content');
-                $content.html(data.content);
-                waxe_old.link_events($content);
-                waxe_old.init_form();
-                waxe_old.init_diff();
-                if(data.jstree_data){
-                    waxe_old.load_jstree(data.jstree_data);
-                }
-                else{
-                    $('body').data('layout').hide('east');
-                }
-                $(document).message('info', 'Loaded!');
-            }
-            var $breadcrumb = $('.breadcrumb');
-            if (data.breadcrumb){
-                $breadcrumb.html(data.breadcrumb);
-                waxe_old.link_events($breadcrumb);
-            }
-            else{
-                $breadcrumb.html('');
-            }
-        },
-        update_page: function(url){
-            $(document).message('info', 'Loading...', {'autohide': false});
-            waxe.ajax.GET(url, function(data, textStatus, jqXHR){
-                waxe_old.update_page_content(data);
-            });
-        },
+    waxe.old = {
         init_navbar: function(){
             $('.navbar .new').on('click', function(e){
                 e.preventDefault();
@@ -103,7 +61,7 @@
                 url: '/open.json',
                 title: 'Open file'
             }).bind('select', function(e){
-                waxe_old.update_page(e.href);
+                waxe.dom.load(e.href);
             });
 
             $('.navbar .saveas').filebrowser({
@@ -179,11 +137,11 @@
                 form.xmltool({
                     add_element_url: '/add-element.json',
                     comment_modal_url: '/get-comment-modal.json',
-                }).submit(waxe_old.on_submit_form);
+                }).submit(waxe.old.on_submit_form);
                 form.on('field_change.xmltool', function(){
                     form.data('status', 'updated');
                 });
-                waxe_old.auto_save();
+                waxe.old.auto_save();
             }
             else{
                 // Add css on the save buttons to be clear that these buttons
@@ -326,7 +284,7 @@
                                 var msg = modal.find('textarea').val();
                                 if (msg !== ''){
                                     params = params + '&msg=' + msg;
-                                    waxe_old.commit(params);
+                                    waxe.old.commit(params);
                                     modal.modal('hide');
                                 }
                             });
@@ -354,7 +312,7 @@
                      data: params,
                      dataType: 'json',
                      success: function(data, textStatus, jqXHR){
-                        waxe_old.update_page_content(data);
+                        waxe.dom.update(data);
                     },
                     error: function(jqXHR, textStatus, errorThrown){
                         var msg = jqXHR.status + ' ' + jqXHR.statusText + ': ' + '/update.json';
@@ -388,7 +346,7 @@
 
     window.onpopstate = function(e) {
         if(e.state !== null){
-            waxe_old.update_page(e.state.json_url);
+            waxe.dom.load(e.state.json_url);
         }
     };
 
@@ -406,14 +364,14 @@
             return confirmClose;
             }
         };
-        waxe_old.link_events($('.content,.breadcrumb,.navbar .dropdown-versioning'));
-        waxe_old.init_navbar();
-        waxe_old.init_form();
-        waxe_old.init_layout();
-        waxe_old.init_diff();
+        waxe.dom.addPushStateOnLinks($('.content,.breadcrumb,.navbar .dropdown-versioning'));
+        waxe.old.init_navbar();
+        waxe.old.init_form();
+        waxe.old.init_layout();
+        waxe.old.init_diff();
 
         if(typeof(jstree_data) !== 'undefined'){
-            waxe_old.load_jstree(jstree_data);
+            waxe.old.load_jstree(jstree_data);
         }
     });
 
