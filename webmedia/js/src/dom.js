@@ -2,10 +2,10 @@ if (typeof waxe === "undefined"){
     var waxe = {};
 }
 
-(function($){
+(function($, ns){
     "use strict";
 
-    waxe.dom = {
+    ns.dom = {
         addPushStateOnLinks: function(container){
             container.find('a[data-href]').click(function(e){
                 e.preventDefault();
