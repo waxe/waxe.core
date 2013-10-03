@@ -16,3 +16,5 @@ List of improvements
 * Interface to define a color system according to a dtd. Generate a css file by dtd? The difficulty is to revert the css to the interface, perhaps use comments to parse the css file.
 * Create a documentation to explain how it works!
 * Create a website
+* jquery.filebrowser.js: reload the files when we save a new file! (now it's not displayed)
+* write some tests for the js
