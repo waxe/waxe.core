@@ -1,6 +1,4 @@
-if (typeof waxe === "undefined"){
-    var waxe = {};
-}
+var waxe = waxe || {};
 
 (function($, ns){
     "use strict";
@@ -75,8 +73,9 @@ if (typeof waxe === "undefined"){
                 },
                 type: 'save'
             }).bind('before_open', function(e){
-                if(!waxe.form.exist())
+                if(!waxe.form.exist()) {
                     e.preventDefault();
+                }
             }).bind('select', function(e){
                 waxe.form.setFilename(e.href);
                 $(waxe.form.selector).submit();
@@ -116,7 +115,6 @@ if (typeof waxe === "undefined"){
 
     $(document).ready(function(){
         for (var key in waxe.navbar){
-            console.log(key);
             waxe.navbar[key]();
         }
     });

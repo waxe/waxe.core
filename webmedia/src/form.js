@@ -1,6 +1,4 @@
-if (typeof waxe === "undefined"){
-    var waxe = {};
-}
+var waxe = waxe || {};
 
 (function($, ns){
     "use strict";
@@ -8,8 +6,9 @@ if (typeof waxe === "undefined"){
     ns.form = {
         selector: 'form#xmltool-form',
         exist: function(){
-            if ($(this.selector).length)
+            if ($(this.selector).length) {
                 return true;
+            }
             return false;
         },
         getFilename: function(){

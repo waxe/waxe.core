@@ -6,10 +6,11 @@
   "newcap": true,
   "noarg": true,
   "sub": true,
-  "undef": true,
-  "unused": true,
+  "undef": false,
+  "unused": false,
   "boss": true,
   "eqnull": true,
   "browser": true,
+  "multistr": true,
   "predef": ["jQuery"]
 }

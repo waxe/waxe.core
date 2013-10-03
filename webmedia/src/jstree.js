@@ -1,6 +1,4 @@
-if (typeof waxe === "undefined"){
-    var waxe = {};
-}
+var waxe = waxe || {};
 
 (function($, ns){
     "use strict";
@@ -60,6 +58,7 @@ if (typeof waxe === "undefined"){
 
 
     $(document).ready(function(){
+        var jstree_data = jstree_data || undefined;
         if(typeof(jstree_data) !== 'undefined'){
             waxe.jstree.load(jstree_data);
         }

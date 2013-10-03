@@ -1,6 +1,4 @@
-if (typeof waxe === "undefined"){
-    var waxe = {};
-}
+var waxe = waxe || {};
 
 (function($){
     "use strict";
