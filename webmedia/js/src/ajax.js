@@ -2,10 +2,10 @@ if (typeof waxe === "undefined"){
     var waxe = {};
 }
 
-(function($){
+(function($, ns){
     "use strict";
 
-    waxe.ajax = {
+    ns.ajax = {
          GET: function(url, callback){
              $.ajax({
                  type: 'GET',
