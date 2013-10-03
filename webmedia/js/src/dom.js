@@ -28,7 +28,7 @@ if (typeof waxe === "undefined"){
                 $content.html(data.content);
                 waxe.dom.addPushStateOnLinks($content);
                 waxe.old.init_form();
-                waxe.old.init_diff();
+                waxe.versioning.init();
                 if(data.jstree_data){
                     waxe.old.load_jstree(data.jstree_data);
                 }
