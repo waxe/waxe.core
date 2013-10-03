@@ -106,6 +106,98 @@ if (typeof waxe === "undefined"){
 
 })(jQuery, waxe);
 
+if (typeof waxe === "undefined"){
+    var waxe = {};
+}
+
+(function($){
+    "use strict";
+
+    waxe.navbar = {
+        'new': function(){
+            $('.navbar .new').on('click', function(e){
+                e.preventDefault();
+                var $self = $(this);
+                if ($self.data('modal')){
+                    $self.data('modal').modal('show');
+                }
+                else{
+                    var url = $self.data('href');
+                    waxe.ajax.GET(url, function(data){
+                        var modal = $(data.content);
+                        set_new_modal_events(modal);
+                        $self.data('modal', modal);
+                        modal.modal();
+                    });
+                }
+            });
+        },
+        open: function(){
+            $('.navbar .open').filebrowser({
+                url: '/open.json',
+                title: 'Open file'
+            }).bind('select', function(e){
+                waxe.dom.load(e.href);
+            });
+        },
+        saveas: function(){
+            $('.navbar .saveas').filebrowser({
+                url: '/open.json',
+                text: {
+                    title: 'Save file',
+                    submit: 'Save',
+                },
+                type: 'save'
+            }).bind('before_open', function(e){
+                if(!waxe.form.exist())
+                    e.preventDefault();
+            }).bind('select', function(e){
+                waxe.form.setFilename(e.href);
+                $(waxe.form.selector).submit();
+            }).bind('create_folder', function(e){
+                var url = '/create-folder.json?path=' + e.path;
+                $.ajax({
+                     type: 'GET',
+                     url: url,
+                     dataType: 'json',
+                     async: false,
+                     success: function(data, textStatus, jqXHR){
+                         if(data.status === false){
+                            e.preventDefault();
+                            $(document).message('error', data.error_msg);
+                         }
+                    },
+                    error: function(jqXHR, textStatus, errorThrown){
+                        var msg = jqXHR.status + ' ' + jqXHR.statusText + ': ' + url;
+                        $(document).message('error', msg);
+                    }
+                });
+            });
+        },
+        save: function(){
+            $('.navbar .save').click(function(e){
+                e.preventDefault();
+                if(waxe.form.exist()){
+                    if (waxe.form.getFilename()){
+                        $(waxe.form.selector).submit();
+                    } else {
+                        $('.navbar .saveas').trigger('click');
+                    }
+                }
+            });
+        }
+    };
+
+    $(document).ready(function(){
+        for (var key in waxe.navbar){
+            console.log(key);
+            waxe.navbar[key]();
+        }
+    });
+
+})(jQuery, waxe);
+
+
 (function($){
     "use strict";
     $.fn.message.defaults.css.position = 'fixed';
@@ -166,74 +258,6 @@ if (typeof waxe === "undefined"){
     };
 
     waxe.old = {
-        init_navbar: function(){
-            $('.navbar .new').on('click', function(e){
-                e.preventDefault();
-                var $self = $(this);
-                if ($self.data('modal')){
-                    $self.data('modal').modal('show');
-                }
-                else{
-                    var url = $self.data('href');
-                    waxe.ajax.GET(url, function(data){
-                        var modal = $(data.content);
-                        set_new_modal_events(modal);
-                        $self.data('modal', modal);
-                        modal.modal();
-                    });
-                }
-            });
-
-            $('.navbar .open').filebrowser({
-                url: '/open.json',
-                title: 'Open file'
-            }).bind('select', function(e){
-                waxe.dom.load(e.href);
-            });
-
-            $('.navbar .saveas').filebrowser({
-                url: '/open.json',
-                text: {
-                    title: 'Save file',
-                    submit: 'Save',
-                },
-                type: 'save'
-            }).bind('before_open', function(e){
-                if(!waxe.form.exist())
-                    e.preventDefault();
-            }).bind('select', function(e){
-                waxe.form.setFilename(e.href);
-                $(waxe.form.selector).submit();
-            }).bind('create_folder', function(e){
-                var url = '/create-folder.json?path=' + e.path;
-                $.ajax({
-                     type: 'GET',
-                     url: url,
-                     dataType: 'json',
-                     async: false,
-                     success: function(data, textStatus, jqXHR){
-                         if(data.status === false){
-                            e.preventDefault();
-                            $(document).message('error', data.error_msg);
-                         }
-                    },
-                    error: function(jqXHR, textStatus, errorThrown){
-                        var msg = jqXHR.status + ' ' + jqXHR.statusText + ': ' + url;
-                        $(document).message('error', msg);
-                    }
-                });
-            });
-            $('.navbar .save').click(function(e){
-                e.preventDefault();
-                if(waxe.form.exist()){
-                    if (waxe.form.getFilename()){
-                        $(waxe.form.selector).submit();
-                    } else {
-                        $('.navbar .saveas').trigger('click');
-                    }
-                }
-            });
-        },
         on_submit_form: function(e){
             e.preventDefault();
             var params = $(this).serialize();
@@ -492,7 +516,6 @@ if (typeof waxe === "undefined"){
             }
         };
         waxe.dom.addPushStateOnLinks($('.content,.breadcrumb,.navbar .dropdown-versioning'));
-        waxe.old.init_navbar();
         waxe.old.init_form();
         waxe.old.init_layout();
         waxe.old.init_diff();
