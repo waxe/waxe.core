@@ -2,7 +2,7 @@ if (typeof waxe === "undefined"){
     var waxe = {};
 }
 
-(function($){
+(function($, ns){
     "use strict";
 
     var set_tags = function(modal, url, dtd_url){
@@ -39,7 +39,7 @@ if (typeof waxe === "undefined"){
     };
 
 
-    waxe.navbar = {
+    ns.navbar = {
         'new': function(){
             $('.navbar .new').on('click', function(e){
                 e.preventDefault();
