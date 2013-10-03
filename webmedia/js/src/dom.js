@@ -27,10 +27,10 @@ if (typeof waxe === "undefined"){
                 var $content = $('.content');
                 $content.html(data.content);
                 waxe.dom.addPushStateOnLinks($content);
-                waxe.old.init_form();
+                waxe.form.init();
                 waxe.versioning.init();
                 if(data.jstree_data){
-                    waxe.old.load_jstree(data.jstree_data);
+                    waxe.jstree.load(data.jstree_data);
                 }
                 else{
                     $('body').data('layout').hide('east');
@@ -53,6 +53,10 @@ if (typeof waxe === "undefined"){
             });
         }
      };
+
+    $(document).ready(function(){
+        waxe.dom.addPushStateOnLinks($('.content,.breadcrumb,.navbar .dropdown-versioning'));
+    });
 
 })(jQuery, waxe);
 
