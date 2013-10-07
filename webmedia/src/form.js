@@ -3,78 +3,92 @@ var waxe = waxe || {};
 (function($, ns){
     "use strict";
 
-    ns.form = {
-        selector: 'form#xmltool-form',
-        exist: function(){
-            if ($(this.selector).length) {
-                return true;
-            }
+
+    var Form = function(){
+        this.selector = 'form#xmltool-form';
+        this.filename_selector = '#_xml_filename';
+        this.$element = null;
+        this.status = null;
+        this.$filename = null;
+        this.auto_save_interval = null;
+        this.auto_save_time = 1000 * 60;
+        this.load();
+    };
+
+    Form.STATUS_UPDATED = 'updated';
+
+    Form.prototype.load = function(){
+        var that = this;
+        this.$element = null;
+        this.status = null;
+        this.$filename = null;
+        var $e = $(this.selector);
+        clearInterval(this.auto_save_interval);
+        if(!$e.length) {
+            // Add css on the save buttons to be clear that these buttons
+            // are disabled!
             return false;
-        },
-        getFilename: function(){
-            return $(this.selector + ' #_xml_filename').val();
-        },
-        setFilename: function(value){
-            $(this.selector + ' #_xml_filename').val(value);
-        },
-        init: function(){
-            var form = $(waxe.form.selector);
-            if (form.length){
-                form.xmltool({
-                    add_element_url: '/add-element.json',
-                    comment_modal_url: '/get-comment-modal.json',
-                }).submit(this.on_submit);
-                form.on('field_change.xmltool', function(){
-                    form.data('status', 'updated');
-                });
-                this.auto_save();
+        }
+        this.$element = $e;
+        // We assume we always have the hidden input in the form
+        this.$filename = $e.find(this.filename_selector);
+        this.filename = this.$filename.val();
+        this.$element.xmltool({
+            add_element_url: waxe.url.add_element,
+            comment_modal_url: waxe.url.comment_modal,
+        }).submit($.proxy(this.save, this));
+        this.$element.on('field_change.xmltool', function(){
+            that.status = that.STATUS_UPDATED;
+        });
+        this.auto_save();
+        return true;
+    };
+
+    Form.prototype.setFilename = function(v){
+        if (this.$element) {
+            this.$filename.val(v);
+            this.filename = v;
+            return true;
+        }
+        return false;
+    };
+
+    Form.prototype.save = function(e){
+        if(!this.$element) {
+            return false;
+        }
+        e.preventDefault();
+        var that = this;
+        var params = this.$element.serialize();
+        waxe.ajax.POST(waxe.url.update, params, function(data){
+            if (data.status){
+                that.status = null;
+                $(document).message('success', 'Saved');
+                // TODO: we should use waxe.dom to update the content!
+                $('.breadcrumb').html(data.breadcrumb);
             }
             else{
-                // Add css on the save buttons to be clear that these buttons
-                // are disabled!
+                $(document).message('error', data.error_msg);
             }
-        },
-        on_submit: function(e){
-            e.preventDefault();
-            var params = $(this).serialize();
-            $.ajax({
-                 type: 'POST',
-                 url: '/update.json',
-                 data: params,
-                 dataType: 'json',
-                 success: function(data, textStatus, jqXHR){
-                    if (data.status){
-                        $(waxe.form.selector).removeData('status');
-                        $(document).message('success', 'Saved');
-                        $('.breadcrumb').html(data.breadcrumb);
-                    }
-                    else{
-                        $(document).message('error', data.error_msg);
-                    }
-                },
-                error: function(jqXHR, textStatus, errorThrown){
-                    var msg = jqXHR.status + ' ' + jqXHR.statusText + ': ' + '/update.json';
-                    $(document).message('error', msg);
-                }
-            });
-        },
-        auto_save: function(){
-            var form = $(waxe.form.selector);
-            var save = function(){
-                if (form.data('status') === 'updated'){
-                    form.submit();
-                    form.removeData('status');
-                }
-            };
-            // TODO: improve this logic for the new files!
-            if (form.length && waxe.form.getFilename()){
-                setInterval(save, 1000 * 60);
+        });
+    };
+
+    Form.prototype.auto_save = function(){
+        var that = this;
+        var save = function(){
+            if (that.status === that.STATUS_UPDATED){
+                that.$element.submit();
+                that.status = null;
             }
+        };
+        // TODO: improve this logic for the new files!
+        if (this.filename){
+            this.auto_save_interval = setInterval(save, this.auto_save_time);
         }
     };
 
     $(document).ready(function(){
-        waxe.form.init();
+        waxe.form = new Form();
     });
 
 })(jQuery, waxe);

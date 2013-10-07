@@ -25,7 +25,7 @@ var waxe = waxe || {};
                 var $content = $('.content');
                 $content.html(data.content);
                 waxe.dom.addPushStateOnLinks($content);
-                waxe.form.init();
+                waxe.form.load();
                 waxe.versioning.init();
                 if(data.jstree_data){
                     waxe.jstree.load(data.jstree_data);

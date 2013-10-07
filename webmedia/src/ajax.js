@@ -27,6 +27,6 @@ var waxe = waxe || {};
          },
          POST: function(url, data, callback){
              ajax('POST', url, callback, data);
-         },
+         }
      };
 })(jQuery, waxe);

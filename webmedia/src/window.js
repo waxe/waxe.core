@@ -10,16 +10,15 @@ var waxe = waxe || {};
     };
 
     window.onbeforeunload = function(event) {
-        var form = $(waxe.form.selector);
-        if(form.data('status') === 'updated'){
+        if(waxe.form.status === waxe.form.STATUS_UPDATED){
 
-        event = event || window.event;
-        var confirmClose = 'The file has been updated, are you sure you want to exit?';
-        if (event) {
-            event.returnValue = confirmClose;
-        }
-        // For safari
-        return confirmClose;
+            event = event || window.event;
+            var confirmClose = 'The file has been updated, are you sure you want to exit?';
+            if (event) {
+                event.returnValue = confirmClose;
+            }
+            // For safari
+            return confirmClose;
         }
     };
 

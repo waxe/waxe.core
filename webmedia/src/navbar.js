@@ -73,12 +73,13 @@ var waxe = waxe || {};
                 },
                 type: 'save'
             }).bind('before_open', function(e){
-                if(!waxe.form.exist()) {
+                if(!waxe.form.$element) {
                     e.preventDefault();
                 }
             }).bind('select', function(e){
                 waxe.form.setFilename(e.href);
-                $(waxe.form.selector).submit();
+                // TODO: we should call window.history.pushState
+                waxe.form.$element.submit();
             }).bind('create_folder', function(e){
                 var url = '/create-folder.json?path=' + e.path;
                 $.ajax({
@@ -102,12 +103,10 @@ var waxe = waxe || {};
         save: function(){
             $('.navbar .save').click(function(e){
                 e.preventDefault();
-                if(waxe.form.exist()){
-                    if (waxe.form.getFilename()){
-                        $(waxe.form.selector).submit();
-                    } else {
-                        $('.navbar .saveas').trigger('click');
-                    }
+                if (waxe.form.filename){
+                    waxe.form.$element.submit();
+                } else {
+                    $('.navbar .saveas').trigger('click');
                 }
             });
         }
