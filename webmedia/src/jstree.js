@@ -58,8 +58,7 @@ var waxe = waxe || {};
 
 
     $(document).ready(function(){
-        var jstree_data = jstree_data || undefined;
-        if(typeof(jstree_data) !== 'undefined'){
+        if(typeof jstree_data !== 'undefined'){
             waxe.jstree.load(jstree_data);
         }
     });
