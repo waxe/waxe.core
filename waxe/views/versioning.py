@@ -84,7 +84,7 @@ class Views(BaseViews):
         changes = client.status(abspath)
         lis = []
         for f in reversed(changes):
-            if os.path.isdir(f.path):
+            if os.path.isdir(f.path.encode(locale.getpreferredencoding())):
                 continue
             if f.text_status == pysvn.wc_status_kind.normal:
                 continue
