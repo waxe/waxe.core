@@ -1,3 +1,5 @@
+import locale
+
 from pyramid.config import Configurator
 from sqlalchemy import engine_from_config
 from pyramid.session import UnencryptedCookieSessionFactoryConfig
@@ -35,6 +37,12 @@ def get_dtd_urls(request):
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
     """
+    # We need to set locale.LC_ALL for pysvn
+    language_code, encoding = locale.getdefaultlocale()
+    language_code = language_code or 'en_US'
+    encoding = encoding or 'UTF8'
+    locale.setlocale(locale.LC_ALL, '%s.%s' % (language_code, encoding))
+
     engine = engine_from_config(settings, 'sqlalchemy.')
     DBSession.configure(bind=engine)
     Base.metadata.bind = engine

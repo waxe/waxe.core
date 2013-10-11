@@ -11,7 +11,6 @@ import logging
 
 from subprocess import Popen, PIPE
 import pysvn
-
 import locale
 
 log = logging.getLogger(__name__)
@@ -71,12 +70,6 @@ class Views(BaseViews):
     @view_config(route_name='svn_status', renderer='index.mak', permission='edit')
     @view_config(route_name='svn_status_json', renderer='json', permission='edit')
     def svn_status(self):
-        # TODO: perhaps it's 'dangerous' to change the locale on the fly but we
-        # don't use translation for now, so we can leave with it!
-        # NOTE: we set the local because python defaults to the C locale. You
-        # need to tell python to initialise the locale for this to work.
-        language_code, encoding = locale.getdefaultlocale()
-        locale.setlocale(locale.LC_ALL, '%s.%s' % (language_code, encoding))
         root_path = self.request.root_path
         relpath = self.request.GET.get('path', '')
         abspath = browser.absolute_path(relpath, root_path)
@@ -207,8 +200,6 @@ class Views(BaseViews):
                 continue
 
             client = self.get_svn_client()
-            language_code, encoding = locale.getdefaultlocale()
-            locale.setlocale(locale.LC_ALL, '%s.%s' % (language_code, encoding))
             status = client.status(absfilename)
             assert len(status) == 1, status
             status = status[0]
