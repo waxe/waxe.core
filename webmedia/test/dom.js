@@ -66,16 +66,18 @@ var waxe = waxe || {};
 
     test("addPushStateOnLinks", function(){
         old_waxe_dom_load = waxe.dom.load;
+
+        var hist_cnt = window.history.length;
         var cnt = 0;
         waxe.dom.load = function(){
             cnt += 1;
         }
         var a = $('<a data-href="/plop">plop</a>');
         $('#qunit-fixture').append(a);
-        equal(window.history.length, 1, 'initial history');
+        equal(window.history.length, hist_cnt, 'initial history');
         waxe.dom.addPushStateOnLinks($('#qunit-fixture'));
         a.trigger('click');
-        equal(window.history.length, 2, 'history is updated');
+        equal(window.history.length, hist_cnt + 1, 'history is updated');
         equal(cnt, 1, 'page loaded');
         waxe.dom.load = old_waxe_dom_load;
     });
