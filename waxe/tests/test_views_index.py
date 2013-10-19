@@ -14,9 +14,9 @@ from ..models import (
 
 from ..views.index import (
     Views,
+    BadRequestView,
     HTTPBadRequest,
     JSONHTTPBadRequest,
-    bad_request,
     _get_tags
 )
 from urllib2 import HTTPError
@@ -360,9 +360,9 @@ class TestViews(WaxeTestCaseVersioning):
 
     def test_bad_request(self):
         DBSession.add(self.user_bob)
-        request = testing.DummyRequest(user=self.user_bob)
+        request = testing.DummyRequest(root_path='/path', user=self.user_bob)
         request.route_path = lambda *args, **kw: '/%s' % args[0]
-        dic = bad_request(request)
+        dic = BadRequestView(request).bad_request()
         self.assertEqual(len(dic), 1)
         expected = ('Go to your <a href="/admin_home">'
                     'admin interface</a> to insert a new user')
@@ -374,15 +374,15 @@ class TestViews(WaxeTestCaseVersioning):
         DBSession.add(editor)
 
         request.route_path = lambda *args, **kw: '/editorpath'
-        dic = bad_request(request)
+        dic = BadRequestView(request).bad_request()
         expected = {'content': u'  <a href="/editorpath">editor</a>\n'}
         self.assertEqual(dic, expected)
 
     def test_bad_request_not_admin(self):
         DBSession.add(self.user_fred)
-        request = testing.DummyRequest(user=self.user_fred)
+        request = testing.DummyRequest(root_path='/path', user=self.user_fred)
         request.route_path = lambda *args, **kw: '/%s' % args[0]
-        dic = bad_request(request)
+        dic = BadRequestView(request).bad_request()
         self.assertEqual(len(dic), 1)
         expected = 'There is a problem with your configuration'
         self.assertTrue(expected in dic['content'])

@@ -36,13 +36,12 @@ def login_user(login):
 
 SETTINGS = {
     'sqlalchemy.url': 'sqlite://',
-    'authentication.key': 'secret',
-    'authentication.debug': 'true',
+    'authentication.cookie.secret': 'secret',
     'mako.directories': 'waxe:templates',
     'session.key': 'session_key',
     'pyramid.includes': ['pyramid_auth', 'pyramid_sqladmin', 'pyramid_mako'],
-    'authentication.validate_function': 'waxe.security.validate_password',
-    'authentication.callback': 'waxe.security.get_user_permissions',
+    'authentication.cookie.validate_function': 'waxe.security.validate_password',
+    'authentication.cookie.callback': 'waxe.security.get_user_permissions',
     'dtd_urls': 'http://xmltool.lereskp.fr/static/exercise.dtd'
 }
 

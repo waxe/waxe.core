@@ -11,7 +11,7 @@ from xmltool import elements
 from urllib2 import HTTPError
 from subprocess import Popen, PIPE
 import json
-from base import JSONHTTPBadRequest, BaseViews
+from base import JSONHTTPBadRequest, BaseViews, BaseUserViews
 
 
 log = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ def _get_tags(dtd_url):
     return lis
 
 
-class Views(BaseViews):
+class Views(BaseUserViews):
 
     def _response(self, dic):
         if self._is_json():
@@ -362,22 +362,25 @@ class Views(BaseViews):
         return {'content': content}
 
 
-@view_config(context=JSONHTTPBadRequest, renderer='json', route_name=None)
-@view_config(context=HTTPBadRequest, renderer='index.mak', route_name=None)
-def bad_request(request):
-    if not request.user.multiple_account():
-        if request.user.is_admin():
-            link = request.route_path('admin_home')
-            return {'content': 'Go to your <a href="%s">admin interface</a> '
-                               'to insert a new user' % link}
-        return {'content': 'There is a problem with your configuration, '
-                'please contact your administrator with '
-                'the following message: Edit the user named \'%s\' '
-                'and set the root_path in the config.' % request.user.login}
+class BadRequestView(BaseViews):
 
-    logins = request.user.get_editable_logins()
-    content = render('blocks/login_selection.mak', {'logins': logins}, request)
-    return {'content': content}
+    @view_config(context=JSONHTTPBadRequest, renderer='json', route_name=None)
+    @view_config(context=HTTPBadRequest, renderer='index.mak', route_name=None)
+    def bad_request(self):
+        if not self.request.user.multiple_account():
+            if self.request.user.is_admin():
+                link = self.request.route_path('admin_home')
+                return {'content': 'Go to your <a href="%s">admin interface</a> '
+                                   'to insert a new user' % link}
+            return {'content': 'There is a problem with your configuration, '
+                    'please contact your administrator with '
+                    'the following message: Edit the user named \'%s\' '
+                    'and set the root_path in the config.' % self.request.user.login}
+
+        logins = self.request.user.get_editable_logins()
+        content = render('blocks/login_selection.mak', {'logins': logins},
+                         self.request)
+        return {'content': content}
 
 
 def includeme(config):
