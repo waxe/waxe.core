@@ -3,7 +3,12 @@ import json
 from pyramid import testing
 from pyramid.exceptions import Forbidden
 from webob.multidict import MultiDict
-from ..testing import WaxeTestCase, WaxeTestCaseVersioning, login_user
+from ..testing import (
+    WaxeTestCase,
+    WaxeTestCaseVersioning,
+    login_user,
+    local_login_user
+)
 from mock import patch, MagicMock
 from ..models import (
     DBSession,
@@ -90,10 +95,12 @@ class TestViews(WaxeTestCase):
         expected = (True, 'Fred', 'secret', False)
         self.assertEqual(res, expected)
 
+    @local_login_user('Bob')
     def test_svn_status(self):
         DBSession.add(self.user_bob)
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
-        request = testing.DummyRequest(root_path=svn_path)
+        self.user_bob.config.root_path = svn_path
+        request = testing.DummyRequest()
         request.route_path = lambda *args, **kw: '/%s/filepath' % args[0]
         request.user = self.user_bob
         res = Views(request).svn_status()
@@ -103,10 +110,12 @@ class TestViews(WaxeTestCase):
         self.assertTrue('file3.xml' in res['content'])
         self.assertTrue('file4.xml' in res['content'])
 
+    @local_login_user('Bob')
     def test_svn_diff(self):
         DBSession.add(self.user_bob)
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
-        request = testing.DummyRequest(root_path=svn_path)
+        self.user_bob.config.root_path = svn_path
+        request = testing.DummyRequest()
         request.GET = MultiDict()
         res = Views(request).svn_diff()
         expected = {'error_msg': 'You should provide at least one filename.'}
@@ -154,19 +163,23 @@ class TestViews(WaxeTestCase):
         self.assertEqual(res['content'].count('diff_from'), 2)
         self.assertTrue('submit' not in res['content'])
 
+    @local_login_user('Fred')
     def test_svn_update(self):
         DBSession.add(self.user_fred)
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
-        request = testing.DummyRequest(root_path=svn_path)
+        self.user_fred.config.root_path = svn_path
+        request = testing.DummyRequest()
         request.user = self.user_fred
         res = Views(request).svn_update()
         expected = {'content': '<pre>At revision 1.\n</pre>'}
         self.assertEqual(res, expected)
 
+    @local_login_user('Bob')
     def test_svn_commit_json(self):
         with patch('os.path.exists', return_value=True), patch('os.path.isfile', return_value=True):
             DBSession.add(self.user_bob)
             svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
+            self.user_bob.config.root_path = svn_path
             request = testing.DummyRequest(root_path=svn_path)
             request.user = self.user_bob
             res = Views(request).svn_commit_json()

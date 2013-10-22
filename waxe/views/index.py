@@ -35,13 +35,11 @@ class Views(BaseUserViews):
             return dic
 
         editor_login = None
-        if self.request.session.get('editor_login'):
-            editor_login = self.request.session.get('editor_login')
-        elif self.request.root_path:
-            editor_login = self.request.user.login
+        if self.root_path:
+            editor_login = self.current_user.login
 
-        if self.request.user.multiple_account():
-            dic['logins'] = self.request.user.get_editable_logins(editor_login)
+        if self.logged_user.multiple_account():
+            dic['logins'] = self.logged_user.get_editable_logins(editor_login)
 
         if editor_login and 'versioning' in self.request.registry.settings:
             editor = User.query.filter_by(login=editor_login).one()
@@ -71,7 +69,7 @@ class Views(BaseUserViews):
                 file_route, _query=[(key, path)])
 
         relpath = self.request.GET.get('path') or ''
-        root_path = self.request.root_path
+        root_path = self.root_path
         abspath = browser.absolute_path(relpath, root_path)
         folders, filenames = browser.get_files(abspath)
         data = {
@@ -167,7 +165,7 @@ class Views(BaseUserViews):
     @view_config(route_name='login_selection', renderer='index.mak',
                  permission='edit')
     def login_selection(self):
-        logins = self.request.user.get_editable_logins()
+        logins = self.logged_user.get_editable_logins()
         login = self.request.GET.get('login')
         if not login or login not in logins:
             raise HTTPBadRequest('Invalid login')
@@ -185,7 +183,7 @@ class Views(BaseUserViews):
             return {
                 'error_msg': 'A filename should be provided',
             }
-        root_path = self.request.root_path
+        root_path = self.root_path
         absfilename = browser.absolute_path(filename, root_path)
         try:
             obj = xmltool.load(absfilename)
@@ -263,7 +261,7 @@ class Views(BaseUserViews):
         if not path:
             return {'status': False, 'error_msg': 'No path given'}
 
-        root_path = self.request.root_path
+        root_path = self.root_path
         abspath = browser.absolute_path(path, root_path)
         process = Popen(['mkdir', abspath], stdout=PIPE, stderr=PIPE)
         error = process.stderr.read()
@@ -277,7 +275,7 @@ class Views(BaseUserViews):
         if not filename:
             return {'status': False, 'error_msg': 'No filename given'}
 
-        root_path = self.request.root_path
+        root_path = self.root_path
         absfilename = browser.absolute_path(filename, root_path)
         try:
             xmltool.update(absfilename, self.request.POST)
@@ -296,7 +294,7 @@ class Views(BaseUserViews):
         filename = self.request.POST.get('filename') or ''
         if not filecontent or not filename:
             return {'status': False, 'error_msg': 'Missing parameters!'}
-        root_path = self.request.root_path
+        root_path = self.root_path
         absfilename = browser.absolute_path(filename, root_path)
         try:
             obj = xmltool.load_string(filecontent)
@@ -318,7 +316,7 @@ class Views(BaseUserViews):
         if 'data' not in params or not params['data']:
             return {'status': False, 'error_msg': 'Missing parameters!'}
 
-        root_path = self.request.root_path
+        root_path = self.root_path
         status = True
         error_msgs = []
         for dic in params['data']:
@@ -367,17 +365,17 @@ class BadRequestView(BaseViews):
     @view_config(context=JSONHTTPBadRequest, renderer='json', route_name=None)
     @view_config(context=HTTPBadRequest, renderer='index.mak', route_name=None)
     def bad_request(self):
-        if not self.request.user.multiple_account():
-            if self.request.user.is_admin():
+        if not self.logged_user.multiple_account():
+            if self.logged_user.is_admin():
                 link = self.request.route_path('admin_home')
                 return {'content': 'Go to your <a href="%s">admin interface</a> '
                                    'to insert a new user' % link}
             return {'content': 'There is a problem with your configuration, '
                     'please contact your administrator with '
                     'the following message: Edit the user named \'%s\' '
-                    'and set the root_path in the config.' % self.request.user.login}
+                    'and set the root_path in the config.' % self.logged_user.login}
 
-        logins = self.request.user.get_editable_logins()
+        logins = self.logged_user.get_editable_logins()
         content = render('blocks/login_selection.mak', {'logins': logins},
                          self.request)
         return {'content': content}

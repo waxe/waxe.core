@@ -84,6 +84,7 @@ class TestSecurity(WaxeTestCase):
     def test_get_root_path_from_request(self):
         DBSession.add(self.user_bob)
         request = testing.DummyRequest()
+        self.user_bob.config = None
         request.user = None
         self.assertEqual(security.get_root_path_from_request(request),
                          None)

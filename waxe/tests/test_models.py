@@ -111,7 +111,8 @@ class TestUser(WaxeTestCase):
         DBSession.add(user)
         DBSession.add(self.user_bob)
         self.assertEqual(user.get_editable_logins(), [])
-        self.assertEqual(self.user_bob.get_editable_logins(), [])
+        self.assertEqual(self.user_bob.get_editable_logins(),
+                         [self.user_bob.login])
 
         contributor = User(login='contributor', password='pass1')
         contributor.roles = [Role.query.filter_by(name=ROLE_CONTRIBUTOR).one()]
@@ -124,10 +125,9 @@ class TestUser(WaxeTestCase):
         DBSession.add(editor)
 
         result = self.user_bob.get_editable_logins()
-        expected = [editor.login, contributor.login]
+        expected = [self.user_bob.login, editor.login, contributor.login]
         self.assertEqual(result, expected)
 
-        self.user_bob.config = UserConfig(root_path='/path')
         result = self.user_bob.get_editable_logins()
         expected = [self.user_bob.login, editor.login, contributor.login]
         self.assertEqual(result, expected)

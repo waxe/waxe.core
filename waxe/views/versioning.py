@@ -70,7 +70,7 @@ class Views(BaseViews):
     @view_config(route_name='svn_status', renderer='index.mak', permission='edit')
     @view_config(route_name='svn_status_json', renderer='json', permission='edit')
     def svn_status(self):
-        root_path = self.request.root_path
+        root_path = self.root_path
         relpath = self.request.GET.get('path', '')
         abspath = browser.absolute_path(relpath, root_path)
         client = self.get_svn_client()
@@ -97,7 +97,7 @@ class Views(BaseViews):
         }
 
     def _svn_diff(self, filename, client, index=0, editable=False):
-        root_path = self.request.root_path
+        root_path = self.root_path
         absfilename = browser.absolute_path(filename, root_path)
         info = client.info(root_path)
         old_rev = pysvn.Revision(pysvn.opt_revision_kind.number,
@@ -139,7 +139,7 @@ class Views(BaseViews):
         client = self.get_svn_client()
         html = ''
         can_commit = True
-        root_path = self.request.root_path
+        root_path = self.root_path
 
         for index, filename in enumerate(filenames):
             absfilename = browser.absolute_path(filename, root_path)
@@ -163,7 +163,7 @@ class Views(BaseViews):
     def svn_update(self):
         # We don't use pysvn to make the repository update since it's very slow
         # on big repo. Also the output is better from the command line.
-        p = Popen(svn_cmd(self.request, "update  %s" % self.request.root_path),
+        p = Popen(svn_cmd(self.request, "update  %s" % self.root_path),
                   shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE,
                   close_fds=True)
         (child_stdout, child_stdin) = (p.stdout, p.stdin)
@@ -173,7 +173,7 @@ class Views(BaseViews):
 
         res = p.stdout.read()
         # We want to display relative urls
-        res = res.replace(self.request.root_path + '/', '')
+        res = res.replace(self.root_path + '/', '')
         return {'content': '<pre>%s</pre>' % res}
 
     @view_config(route_name='svn_commit_json', renderer='json', permission='edit')
@@ -188,7 +188,7 @@ class Views(BaseViews):
         for dic in params['data']:
             filenames += [dic['filename']]
 
-        root_path = self.request.root_path
+        root_path = self.root_path
 
         error_msg = []
         ok_filenames = []
