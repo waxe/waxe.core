@@ -8,6 +8,7 @@ from mock import patch
 import tw2.core as twc
 from sqlalchemy import create_engine
 import bcrypt
+from pyramid import testing
 
 from . import main
 from .models import (
@@ -59,14 +60,14 @@ SETTINGS = {
     'dtd_urls': 'http://xmltool.lereskp.fr/static/exercise.dtd'
 }
 
+SECRET_ADMIN = bcrypt.hashpw('secret_admin', bcrypt.gensalt())
+SECRET_BOB = bcrypt.hashpw('secret_bob', bcrypt.gensalt())
+SECRET_FRED = bcrypt.hashpw('secret_fred', bcrypt.gensalt())
 
-class WaxeTestCase(unittest.TestCase):
 
+class DBTestCase(unittest.TestCase):
     def setUp(self):
-        self.settings = SETTINGS.copy()
-        app = main({}, **self.settings)
-        app = twc.middleware.TwMiddleware(app)
-        self.testapp = TestApp(app)
+        super(DBTestCase, self).setUp()
         engine = create_engine('sqlite://')
         DBSession.configure(bind=engine)
         Base.metadata.create_all(engine)
@@ -75,21 +76,18 @@ class WaxeTestCase(unittest.TestCase):
                 r = Role(name=role)
                 DBSession.add(r)
             admin = Role(name="admin")
-            pwd = bcrypt.hashpw('secret_admin', bcrypt.gensalt())
-            self.user_admin = User(login="Admin", password=pwd)
+            self.user_admin = User(login="Admin", password=SECRET_ADMIN)
             self.user_admin.roles = [admin]
             DBSession.add(self.user_admin)
 
-            pwd = bcrypt.hashpw('secret_bob', bcrypt.gensalt())
-            self.user_bob = User(login="Bob", password=pwd)
+            self.user_bob = User(login="Bob", password=SECRET_BOB)
             self.user_bob.roles = [admin]
             DBSession.add(self.user_bob)
             self.user_bob.config = UserConfig(
                 root_path=os.path.join(os.getcwd(), 'waxe/tests/files')
             )
 
-            pwd = bcrypt.hashpw('secret_fred', bcrypt.gensalt())
-            self.user_fred = User(login='Fred', password=pwd)
+            self.user_fred = User(login='Fred', password=SECRET_FRED)
             self.user_fred.config = UserConfig(
                 root_path='/fred/path',
                 use_versioning=True,
@@ -99,9 +97,30 @@ class WaxeTestCase(unittest.TestCase):
 
     def tearDown(self):
         DBSession.remove()
+        super(DBTestCase, self).tearDown()
 
 
-class WaxeTestCaseVersioning(unittest.TestCase):
+class BaseTestCase(DBTestCase):
+    def setUp(self):
+        super(BaseTestCase, self).setUp()
+        self.config = testing.setUp()
+
+    def tearDown(self):
+        testing.tearDown()
+        super(BaseTestCase, self).tearDown()
+
+
+class WaxeTestCase(DBTestCase):
+
+    def setUp(self):
+        self.settings = SETTINGS.copy()
+        app = main({}, **self.settings)
+        app = twc.middleware.TwMiddleware(app)
+        self.testapp = TestApp(app)
+        super(WaxeTestCase, self).setUp()
+
+
+class WaxeTestCaseVersioning(DBTestCase):
 
     def setUp(self):
         self.settings = SETTINGS.copy()
@@ -109,37 +128,8 @@ class WaxeTestCaseVersioning(unittest.TestCase):
         app = main({}, **self.settings)
         app = twc.middleware.TwMiddleware(app)
         self.testapp = TestApp(app)
-        engine = create_engine('sqlite://')
-        DBSession.configure(bind=engine)
-        Base.metadata.create_all(engine)
-        with transaction.manager:
-            for role in [ROLE_EDITOR, ROLE_CONTRIBUTOR]:
-                r = Role(name=role)
-                DBSession.add(r)
-            admin = Role(name="admin")
-            pwd = bcrypt.hashpw('secret_admin', bcrypt.gensalt())
-            self.user_admin = User(login="Admin", password=pwd)
-            self.user_admin.roles = [admin]
-            DBSession.add(self.user_admin)
-
-            pwd = bcrypt.hashpw('secret_bob', bcrypt.gensalt())
-            self.user_bob = User(login="Bob", password=pwd)
-            self.user_bob.roles = [admin]
-            DBSession.add(self.user_bob)
-            self.user_bob.config = UserConfig(
-                root_path=os.path.join(os.getcwd(), 'waxe/tests/files'),
-                use_versioning=True,
-            )
-
-            pwd = bcrypt.hashpw('secret_fred', bcrypt.gensalt())
-            self.user_fred = User(login='Fred', password=pwd)
-            self.user_fred.config = UserConfig(
-                root_path='/fred/path',
-                use_versioning=True,
-                versioning_password='secret_fred',
-            )
-            DBSession.add(self.user_fred)
-
-
-    def tearDown(self):
-        DBSession.remove()
+        super(WaxeTestCaseVersioning, self).setUp()
+        DBSession.add(self.user_fred)
+        DBSession.add(self.user_bob)
+        self.user_fred.config.use_versioning = True
+        self.user_bob.config.use_versioning = True
