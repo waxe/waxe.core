@@ -1,6 +1,6 @@
 from pyramid.httpexceptions import HTTPBadRequest
 from pyramid.security import has_permission
-from .. import security
+from .. import security, models
 
 
 class JSONHTTPBadRequest(HTTPBadRequest):
@@ -40,6 +40,16 @@ class BaseViews(object):
                               self.request.context,
                               self.request)
 
+    def user_is_editor(self):
+        """Check if the logged user is editor.
+
+        :return: True if the logged user is editor
+        :rtype: bool
+        """
+        return has_permission('editor',
+                              self.request.context,
+                              self.request)
+
     def _is_json(self):
         """Check the current request is a json one.
 
@@ -49,6 +59,29 @@ class BaseViews(object):
         .. note:: We assume the json route names always end with '_json'
         """
         return self.request.matched_route.name.endswith('_json')
+
+    def get_editable_logins(self):
+        """Get the editable login by the logged user.
+
+        :return: list of login
+        :rtype: list of str
+        """
+        lis = []
+        if (hasattr(self.logged_user, 'config') and
+           self.logged_user.config and self.logged_user.config.root_path):
+            lis += [self.logged_user.login]
+
+        if self.user_is_admin():
+            contributors = models.get_contributors()
+            editors = models.get_editors()
+            for user in (editors + contributors):
+                lis += [user.login]
+        elif self.user_is_editor():
+            contributors = models.get_contributors()
+            for user in contributors:
+                lis += [user.login]
+
+        return list(set(lis))
 
 
 class BaseUserViews(BaseViews):

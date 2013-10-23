@@ -71,29 +71,30 @@ class DBTestCase(unittest.TestCase):
         engine = create_engine('sqlite://')
         DBSession.configure(bind=engine)
         Base.metadata.create_all(engine)
-        with transaction.manager:
-            for role in [ROLE_EDITOR, ROLE_CONTRIBUTOR]:
-                r = Role(name=role)
-                DBSession.add(r)
-            admin = Role(name="admin")
-            self.user_admin = User(login="Admin", password=SECRET_ADMIN)
-            self.user_admin.roles = [admin]
-            DBSession.add(self.user_admin)
+        self.role_editor = Role(name=ROLE_EDITOR)
+        DBSession.add(self.role_editor)
+        self.role_contributor = Role(name=ROLE_CONTRIBUTOR)
+        DBSession.add(self.role_contributor)
+        self.role_admin = Role(name="admin")
+        DBSession.add(self.role_admin)
+        self.user_admin = User(login="Admin", password=SECRET_ADMIN)
+        self.user_admin.roles = [self.role_admin]
+        DBSession.add(self.user_admin)
 
-            self.user_bob = User(login="Bob", password=SECRET_BOB)
-            self.user_bob.roles = [admin]
-            DBSession.add(self.user_bob)
-            self.user_bob.config = UserConfig(
-                root_path=os.path.join(os.getcwd(), 'waxe/tests/files')
-            )
+        self.user_bob = User(login="Bob", password=SECRET_BOB)
+        self.user_bob.roles = [self.role_admin]
+        DBSession.add(self.user_bob)
+        self.user_bob.config = UserConfig(
+            root_path=os.path.join(os.getcwd(), 'waxe/tests/files')
+        )
 
-            self.user_fred = User(login='Fred', password=SECRET_FRED)
-            self.user_fred.config = UserConfig(
-                root_path='/fred/path',
-                use_versioning=True,
-                versioning_password='secret_fred',
-            )
-            DBSession.add(self.user_fred)
+        self.user_fred = User(login='Fred', password=SECRET_FRED)
+        self.user_fred.config = UserConfig(
+            root_path='/fred/path',
+            use_versioning=True,
+            versioning_password='secret_fred',
+        )
+        DBSession.add(self.user_fred)
 
     def tearDown(self):
         DBSession.remove()

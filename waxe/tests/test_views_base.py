@@ -1,26 +1,10 @@
-import os
-import json
 from pyramid import testing
 from pyramid.httpexceptions import HTTPBadRequest
-from ..testing import (
-    BaseTestCase,
-    WaxeTestCase,
-    WaxeTestCaseVersioning,
-    login_user,
-    local_login_user
-)
 from mock import patch
-from ..models import (
-    DBSession,
-    User,
-    UserConfig,
-    Role,
-    ROLE_EDITOR,
-    ROLE_CONTRIBUTOR
-)
 
+from ..testing import BaseTestCase
+from ..models import UserConfig
 from .. import security
-
 from ..views.base import (
     BaseViews,
     BaseUserViews,
@@ -34,6 +18,15 @@ class EmptyClass(object):
 
 class TestBaseView(BaseTestCase):
 
+    def setUp(self):
+        super(TestBaseView, self).setUp()
+        self.config.registry.settings.update({
+            'authentication.cookie.secret': 'scrt',
+            'authentication.cookie.callback': ('waxe.security.'
+                                               'get_user_permissions')
+        })
+        self.config.include('pyramid_auth')
+
     def test___init__(self):
         request = testing.DummyRequest()
         obj = BaseViews(request)
@@ -42,8 +35,6 @@ class TestBaseView(BaseTestCase):
         self.assertEqual(obj.current_user, None)
         self.assertEqual(obj.root_path, None)
 
-        DBSession.add(self.user_bob)
-        DBSession.add(self.user_admin)
         with patch('waxe.security.get_user_from_request',
                    return_value=self.user_bob):
             obj = BaseViews(request)
@@ -60,7 +51,6 @@ class TestBaseView(BaseTestCase):
             self.assertEqual(obj.root_path, None)
 
     def test_get_current_user(self):
-        DBSession.add(self.user_bob)
         request = testing.DummyRequest()
         res = BaseViews(request)._get_current_user()
         self.assertEqual(res, None)
@@ -80,14 +70,41 @@ class TestBaseView(BaseTestCase):
 
     def test_user_is_admin(self):
         request = testing.DummyRequest()
-        request.root = security.RootFactory(request)
-        self.config.testing_securitypolicy(userid='Bob', permissive=False)
+        request.context = security.RootFactory(request)
         res = BaseViews(request).user_is_admin()
         self.assertEqual(res, False)
 
-        self.config.testing_securitypolicy(userid='Bob', permissive=True)
-        res = BaseViews(request).user_is_admin()
-        self.assertEqual(res, True)
+        with patch('pyramid.authentication.'
+                   'AuthTktAuthenticationPolicy.unauthenticated_userid',
+                   return_value=self.user_bob.login):
+            res = BaseViews(request).user_is_admin()
+            self.assertEqual(res, True)
+
+    def test_user_is_editor(self):
+        request = testing.DummyRequest()
+        request.context = security.RootFactory(request)
+        res = BaseViews(request).user_is_editor()
+        self.assertEqual(res, False)
+
+        with patch('pyramid.authentication.'
+                   'AuthTktAuthenticationPolicy.unauthenticated_userid',
+                   return_value=self.user_fred.login):
+            res = BaseViews(request).user_is_editor()
+            self.assertEqual(res, False)
+
+        self.user_fred.roles += [self.role_editor]
+        with patch('pyramid.authentication.'
+                   'AuthTktAuthenticationPolicy.unauthenticated_userid',
+                   return_value=self.user_fred.login):
+            res = BaseViews(request).user_is_editor()
+            self.assertEqual(res, True)
+
+        self.user_fred.roles = [self.role_contributor]
+        with patch('pyramid.authentication.'
+                   'AuthTktAuthenticationPolicy.unauthenticated_userid',
+                   return_value=self.user_fred.login):
+            res = BaseViews(request).user_is_editor()
+            self.assertEqual(res, False)
 
     def test__is_json(self):
         request = testing.DummyRequest()
@@ -99,6 +116,92 @@ class TestBaseView(BaseTestCase):
         request.matched_route.name = 'test_json'
         res = BaseViews(request)._is_json()
         self.assertEqual(res, True)
+
+    def test_get_editable_logins_admin(self):
+        request = testing.DummyRequest()
+        request.context = security.RootFactory(request)
+        with patch('pyramid.authentication.'
+                   'AuthTktAuthenticationPolicy.unauthenticated_userid',
+                   return_value=self.user_admin.login):
+            res = BaseViews(request).get_editable_logins()
+            self.assertEqual(res, [])
+
+        self.user_fred.roles += [self.role_editor]
+        with patch('pyramid.authentication.'
+                   'AuthTktAuthenticationPolicy.unauthenticated_userid',
+                   return_value=self.user_admin.login):
+            res = BaseViews(request).get_editable_logins()
+            self.assertEqual(res, [self.user_fred.login])
+
+        self.user_bob.roles += [self.role_contributor]
+        with patch('pyramid.authentication.'
+                   'AuthTktAuthenticationPolicy.unauthenticated_userid',
+                   return_value=self.user_admin.login):
+            res = BaseViews(request).get_editable_logins()
+            self.assertEqual(res, [self.user_bob.login, self.user_fred.login])
+
+        self.user_admin.config = UserConfig(root_path='/admin/path')
+        with patch('pyramid.authentication.'
+                   'AuthTktAuthenticationPolicy.unauthenticated_userid',
+                   return_value=self.user_admin.login):
+            res = BaseViews(request).get_editable_logins()
+            self.assertEqual(res, [self.user_admin.login,
+                                   self.user_bob.login,
+                                   self.user_fred.login])
+
+    def test_get_editable_logins_editor(self):
+        request = testing.DummyRequest()
+        request.context = security.RootFactory(request)
+        with patch('pyramid.authentication.'
+                   'AuthTktAuthenticationPolicy.unauthenticated_userid',
+                   return_value=self.user_fred.login):
+            res = BaseViews(request).get_editable_logins()
+            self.assertEqual(res, [self.user_fred.login])
+
+        self.user_bob.roles += [self.role_editor]
+        with patch('pyramid.authentication.'
+                   'AuthTktAuthenticationPolicy.unauthenticated_userid',
+                   return_value=self.user_fred.login):
+            res = BaseViews(request).get_editable_logins()
+            self.assertEqual(res, [self.user_fred.login])
+
+        self.user_fred.roles += [self.role_editor]
+        with patch('pyramid.authentication.'
+                   'AuthTktAuthenticationPolicy.unauthenticated_userid',
+                   return_value=self.user_fred.login):
+            res = BaseViews(request).get_editable_logins()
+            self.assertEqual(res, [self.user_fred.login])
+
+        self.user_bob.roles += [self.role_contributor]
+        with patch('pyramid.authentication.'
+                   'AuthTktAuthenticationPolicy.unauthenticated_userid',
+                   return_value=self.user_fred.login):
+            res = BaseViews(request).get_editable_logins()
+            self.assertEqual(res, [self.user_bob.login, self.user_fred.login])
+
+    def test_get_editable_logins_contributor(self):
+        request = testing.DummyRequest()
+        request.context = security.RootFactory(request)
+        self.user_fred.roles = [self.role_contributor]
+        with patch('pyramid.authentication.'
+                   'AuthTktAuthenticationPolicy.unauthenticated_userid',
+                   return_value=self.user_fred.login):
+            res = BaseViews(request).get_editable_logins()
+            self.assertEqual(res, [self.user_fred.login])
+
+        self.user_bob.roles += [self.role_editor]
+        with patch('pyramid.authentication.'
+                   'AuthTktAuthenticationPolicy.unauthenticated_userid',
+                   return_value=self.user_fred.login):
+            res = BaseViews(request).get_editable_logins()
+            self.assertEqual(res, [self.user_fred.login])
+
+        self.user_bob.roles += [self.role_contributor]
+        with patch('pyramid.authentication.'
+                   'AuthTktAuthenticationPolicy.unauthenticated_userid',
+                   return_value=self.user_fred.login):
+            res = BaseViews(request).get_editable_logins()
+            self.assertEqual(res, [self.user_fred.login])
 
 
 class TestBaseUserView(BaseTestCase):

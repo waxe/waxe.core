@@ -12,7 +12,7 @@ class RootFactory(object):
     __acl__ = [
         (Allow, Everyone, 'view'),
         (Allow, 'role:%s' % ROLE_ADMIN, ['admin', 'edit']),
-        (Allow, 'role:%s' % ROLE_EDITOR, ['edit']),
+        (Allow, 'role:%s' % ROLE_EDITOR, ['editor', 'edit']),
         (Allow, 'role:%s' % ROLE_CONTRIBUTOR, ['edit']),
     ]
 
