@@ -1,8 +1,9 @@
 import os
 import json
 from pyramid import testing
-from ..testing import WaxeTestCase, WaxeTestCaseVersioning, login_user, local_login_user
+from ..testing import WaxeTestCase, WaxeTestCaseVersioning, login_user, BaseTestCase
 from mock import patch
+from .. import security
 from ..models import (
     DBSession,
     User,
@@ -27,57 +28,30 @@ class TestViewsNoVersioning(WaxeTestCase):
     def setUp(self):
         super(TestViewsNoVersioning, self).setUp()
         self.config = testing.setUp(settings=self.settings)
+        self.config.registry.settings.update({
+            'authentication.cookie.secret': 'scrt',
+            'authentication.cookie.callback': ('waxe.security.'
+                                               'get_user_permissions')
+        })
+        self.config.include('pyramid_auth')
         self.config.include('pyramid_mako')
 
     def tearDown(self):
         testing.tearDown()
         super(TestViewsNoVersioning, self).tearDown()
 
-    @local_login_user('Bob')
-    def test__response(self):
-        DBSession.add(self.user_bob)
-        request = testing.DummyRequest()
-        with patch('waxe.views.index.Views._is_json', return_value=True):
-            res = Views(request)._response({})
-            self.assertEqual(res, {})
-
-        with patch('waxe.views.index.Views._is_json', return_value=False):
-            res = Views(request)._response({})
-            self.assertEqual(res, {'editor_login': self.user_bob.login})
-            request.session = {'editor_login': 'Fred'}
-
-            res = Views(request)._response({})
-            self.assertEqual(res, {'editor_login': 'Fred'})
-
-            contributor = User(login='contributor', password='pass1')
-            contributor.roles = [Role.query.filter_by(name=ROLE_CONTRIBUTOR).one()]
-            contributor.config = UserConfig(root_path='/path')
-            DBSession.add(contributor)
-            res = Views(request)._response({})
-            self.assertEqual(res, {'editor_login': 'Fred',
-                                   'logins': ['Bob', 'contributor']})
-
-            request.session = {}
-            self.user_bob.config.root_path = ''
-            class C(object): pass
-            request.matched_route = C()
-            request.matched_route.name = 'login_selection'
-            res = Views(request)._response({})
-            self.assertEqual(res, {'editor_login': 'Account',
-                                   'logins': ['contributor']})
-
-    @local_login_user('Bob')
+    @login_user('Bob')
     def test_home(self):
-        DBSession.add(self.user_bob)
         self.user_bob.config.root_path = '/unexisting'
         request = testing.DummyRequest()
+        request.context = security.RootFactory(request)
         request.route_path = lambda *args, **kw: '/%s' % args[0]
         expected = {
             'breadcrumb': '<li class="active">root</li>',
             'content': u'<ul id="file-navigation" class="unstyled" data-path="">\n</ul>\n',
             'editor_login': u'Bob',
         }
-        with patch('waxe.views.index.Views._is_json', return_value=False):
+        with patch('waxe.views.base.BaseViews._is_json', return_value=False):
             res = Views(request).home()
             self.assertEqual(res, expected)
 
@@ -85,21 +59,26 @@ class TestViewsNoVersioning(WaxeTestCase):
             'breadcrumb': '<li class="active">root</li>',
             'content': u'<ul id="file-navigation" class="unstyled" data-path="">\n</ul>\n',
         }
-        with patch('waxe.views.index.Views._is_json', return_value=True):
+        with patch('waxe.views.base.BaseViews._is_json', return_value=True):
             res = Views(request).home()
             self.assertEqual(res, expected)
 
 
-class TestViews(WaxeTestCaseVersioning):
+class TestViews(BaseTestCase):
 
     def setUp(self):
         super(TestViews, self).setUp()
-        self.config = testing.setUp(settings=self.settings)
+        self.config.registry.settings.update({
+            'mako.directories': 'waxe:templates',
+            'versioning': True,
+            'authentication.cookie.secret': 'scrt',
+            'authentication.cookie.callback': ('waxe.security.'
+                                               'get_user_permissions')
+        })
+        self.config.include('pyramid_auth')
         self.config.include('pyramid_mako')
-
-    def tearDown(self):
-        testing.tearDown()
-        super(TestViews, self).tearDown()
+        self.user_fred.config.use_versioning = True
+        self.user_bob.config.use_versioning = True
 
     def test__get_tags(self):
         dtd_url = 'http://xmltool.lereskp.fr/static/exercise.dtd'
@@ -114,7 +93,7 @@ class TestViews(WaxeTestCaseVersioning):
         request.matched_route.name = 'route'
         try:
             Views(request)
-            assert 0
+            assert(False)
         except HTTPBadRequest, e:
             self.assertEqual(str(e), 'root path not defined')
 
@@ -129,7 +108,7 @@ class TestViews(WaxeTestCaseVersioning):
         o = Views(request)
         self.assertEqual(o.request, request)
 
-    @local_login_user('Bob')
+    @login_user('Bob')
     def test__is_json(self):
         request = testing.DummyRequest()
 
@@ -142,52 +121,7 @@ class TestViews(WaxeTestCaseVersioning):
         request.matched_route.name = 'route_json'
         self.assertTrue(Views(request)._is_json())
 
-    @local_login_user('Bob')
-    def test__response(self):
-        DBSession.add(self.user_bob)
-        DBSession.add(self.user_fred)
-        request = testing.DummyRequest()
-        with patch('waxe.views.index.Views._is_json', return_value=True):
-            res = Views(request)._response({})
-            self.assertEqual(res, {})
-
-        with patch('waxe.views.index.Views._is_json', return_value=False):
-            res = Views(request)._response({})
-            self.assertEqual(res, {'editor_login': self.user_bob.login,
-                                   'versioning': True})
-            request.session = {'editor_login': self.user_fred.login}
-
-            res = Views(request)._response({})
-            self.assertEqual(res, {'editor_login': self.user_fred.login,
-                                   'versioning': True})
-
-            contributor = User(login='contributor', password='pass1')
-            contributor.roles = [Role.query.filter_by(name=ROLE_CONTRIBUTOR).one()]
-            contributor.config = UserConfig(root_path='/path')
-            DBSession.add(contributor)
-            res = Views(request)._response({})
-            self.assertEqual(res, {'editor_login': self.user_fred.login,
-                                   'versioning': True,
-                                   'logins': ['Bob', 'contributor']})
-
-            self.user_fred.config.use_versioning = False
-            res = Views(request)._response({})
-            self.assertEqual(res, {'editor_login': self.user_fred.login,
-                                   'logins': ['Bob', 'contributor']})
-
-            request.session = {}
-            request.root_path = None
-
-            class C(object):
-                pass
-            request.matched_route = C()
-            request.matched_route.name = 'login_selection'
-            res = Views(request)._response({})
-            self.assertEqual(res, {'editor_login': 'Bob',
-                                   'logins': ['contributor'],
-                                   'versioning': True})
-
-    @local_login_user('Bob')
+    @login_user('Bob')
     def test__get_navigation_data(self):
         request = testing.DummyRequest()
         request.route_path = lambda *args, **kw: '/%s/filepath' % args[0]
@@ -235,7 +169,7 @@ class TestViews(WaxeTestCaseVersioning):
         }
         self.assertTrue(res, expected)
 
-    @local_login_user('Bob')
+    @login_user('Bob')
     def test__get_navigation(self):
         request = testing.DummyRequest()
         request.route_path = lambda *args, **kw: '/filepath'
@@ -274,7 +208,7 @@ class TestViews(WaxeTestCaseVersioning):
             '</ul>\n')
         self.assertEqual(res, expected)
 
-    @local_login_user('Bob')
+    @login_user('Bob')
     def test__get_breadcrumb_data(self):
         request = testing.DummyRequest()
         res = Views(request)._get_breadcrumb_data('')
@@ -285,7 +219,7 @@ class TestViews(WaxeTestCaseVersioning):
         expected = [('root', ''), ('folder1', 'folder1')]
         self.assertEqual(res, expected)
 
-    @local_login_user('Bob')
+    @login_user('Bob')
     def test__get_breadcrumb(self):
         request = testing.DummyRequest()
         request.route_path = lambda *args, **kw: '/filepath'
@@ -313,7 +247,7 @@ class TestViews(WaxeTestCaseVersioning):
         )
         self.assertEqual(res, expected)
 
-    @local_login_user('Bob')
+    @login_user('Bob')
     def test_home(self):
         DBSession.add(self.user_bob)
         self.user_bob.config.root_path = '/unexisting'
@@ -336,25 +270,27 @@ class TestViews(WaxeTestCaseVersioning):
             res = Views(request).home()
             self.assertEqual(res, expected)
 
-    @local_login_user('Bob')
+    @login_user('Bob')
     def test_login_selection(self):
         DBSession.add(self.user_bob)
         request = testing.DummyRequest()
+        request.context = security.RootFactory(request)
         try:
             res = Views(request).login_selection()
-            assert 0
+            assert(False)
         except HTTPBadRequest, e:
             self.assertEqual(str(e), 'Invalid login')
 
         request = testing.DummyRequest(params={'login': 'editor'})
+        request.context = security.RootFactory(request)
         try:
             res = Views(request).login_selection()
-            assert 0
+            assert(False)
         except HTTPBadRequest, e:
             self.assertEqual(str(e), 'Invalid login')
 
         editor = User(login='editor', password='pass1')
-        editor.roles = [Role.query.filter_by(name=ROLE_EDITOR).one()]
+        editor.roles = [self.role_editor]
         editor.config = UserConfig(root_path='/path')
         DBSession.add(editor)
 
@@ -364,10 +300,10 @@ class TestViews(WaxeTestCaseVersioning):
         expected = {'editor_login': 'editor', 'root_path': '/path'}
         self.assertEqual(request.session, expected)
 
-    @local_login_user('Bob')
+    @login_user('Admin')
     def test_bad_request(self):
-        DBSession.add(self.user_bob)
         request = testing.DummyRequest()
+        request.context = security.RootFactory(request)
         request.route_path = lambda *args, **kw: '/%s' % args[0]
         dic = BadRequestView(request).bad_request()
         self.assertEqual(len(dic), 1)
@@ -380,23 +316,25 @@ class TestViews(WaxeTestCaseVersioning):
         editor.config = UserConfig(root_path='/path')
         DBSession.add(editor)
 
+        self.user_bob.roles += [self.role_editor]
         request.route_path = lambda *args, **kw: '/editorpath'
         dic = BadRequestView(request).bad_request()
         expected = {'content': (u'  <a href="/editorpath">Bob</a>\n'
                                 u'  <a href="/editorpath">editor</a>\n')}
         self.assertEqual(dic, expected)
 
-    @local_login_user('Fred')
+    @login_user('Fred')
     def test_bad_request_not_admin(self):
-        DBSession.add(self.user_fred)
         request = testing.DummyRequest()
+        request.context = security.RootFactory(request)
         request.route_path = lambda *args, **kw: '/%s' % args[0]
+        self.user_fred.config.root_path = ''
         dic = BadRequestView(request).bad_request()
         self.assertEqual(len(dic), 1)
         expected = 'There is a problem with your configuration'
         self.assertTrue(expected in dic['content'])
 
-    @local_login_user('Bob')
+    @login_user('Bob')
     def test_edit(self):
         class C(object): pass
         DBSession.add(self.user_bob)
@@ -468,7 +406,7 @@ class TestViews(WaxeTestCaseVersioning):
             res = Views(request).edit()
             self.assertEqual(res, expected)
 
-    @local_login_user('Bob')
+    @login_user('Bob')
     def test_get_tags(self):
         DBSession.add(self.user_bob)
         request = testing.DummyRequest()
@@ -481,7 +419,7 @@ class TestViews(WaxeTestCaseVersioning):
         expected = {'tags': ['Exercise', 'comments', 'mqm', 'qcm', 'test']}
         self.assertEqual(res, expected)
 
-    @local_login_user('Bob')
+    @login_user('Bob')
     def test_new(self):
         dtd_url = 'http://xmltool.lereskp.fr/static/exercise.dtd'
         DBSession.add(self.user_bob)
@@ -504,7 +442,7 @@ class TestViews(WaxeTestCaseVersioning):
         self.assertTrue('<a data-href="/filepath" href="/filepath">root</a>'
                         in res['breadcrumb'])
 
-    @local_login_user('Bob')
+    @login_user('Bob')
     def test_open(self):
         DBSession.add(self.user_bob)
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
@@ -524,7 +462,7 @@ class TestViews(WaxeTestCaseVersioning):
         }
         self.assertEqual(res, expected)
 
-    @local_login_user('Bob')
+    @login_user('Bob')
     def test_create_folder(self):
         try:
             DBSession.add(self.user_bob)
@@ -550,7 +488,7 @@ class TestViews(WaxeTestCaseVersioning):
         finally:
             os.rmdir(os.path.join(path, 'new_folder'))
 
-    @local_login_user('Bob')
+    @login_user('Bob')
     def test_update(self):
         DBSession.add(self.user_bob)
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
@@ -589,7 +527,7 @@ class TestViews(WaxeTestCaseVersioning):
             res = Views(request).update()
             self.assertEqual(res, expected)
 
-    @local_login_user('Bob')
+    @login_user('Bob')
     def test_update_text(self):
         DBSession.add(self.user_bob)
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
@@ -632,7 +570,7 @@ class TestViews(WaxeTestCaseVersioning):
             self.assertTrue('class="modal' in res['content'])
             self.assertTrue('Commit message' in res['content'])
 
-    @local_login_user('Bob')
+    @login_user('Bob')
     def test_update_texts(self):
         DBSession.add(self.user_bob)
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
@@ -678,7 +616,7 @@ class TestViews(WaxeTestCaseVersioning):
             self.assertTrue('class="modal' in res['content'])
             self.assertTrue('Commit message' in res['content'])
 
-    @local_login_user('Bob')
+    @login_user('Bob')
     def test_add_element_json(self):
         DBSession.add(self.user_bob)
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
@@ -765,7 +703,7 @@ class FunctionalTestViews(WaxeTestCase):
         self.assertTrue('<form' in res.body)
         self.assertTrue('Login' in res.body)
 
-    @login_user('Bob')
+    @login_user('Admin')
     def test_login_selection(self):
         res = self.testapp.get('/login-selection', status=200)
         expected = ('Go to your <a href="/admin">'

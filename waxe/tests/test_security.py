@@ -1,7 +1,7 @@
 from pyramid import testing
 from waxe import security
-from ..testing import WaxeTestCase, DBSession, User
-from ..models import UserConfig
+from ..testing import BaseTestCase
+from ..models import UserConfig, User, Group, DBSession
 import logging
 
 
@@ -25,7 +25,7 @@ class MockLoggingHandler(logging.Handler):
         }
 
 
-class TestSecurity(WaxeTestCase):
+class TestSecurity(BaseTestCase):
 
     def test_root_factory(self):
         request = testing.DummyRequest()
@@ -33,7 +33,6 @@ class TestSecurity(WaxeTestCase):
         self.assertTrue(factory.__acl__)
 
     def test_get_user(self):
-        DBSession.add(self.user_bob)
         self.assertEqual(security.get_user(None), None)
         self.assertEqual(security.get_user('Bob'), self.user_bob)
         self.assertEqual(security.get_user('bob'), None)
@@ -61,28 +60,35 @@ class TestSecurity(WaxeTestCase):
         perms = security.get_user_permissions('Bob', request)
         expected = ['role:admin']
         self.assertEqual(perms, expected)
-        from ..models import Group
         group = Group(name='group1')
-        DBSession.add(self.user_bob)
         self.user_bob.groups = [group]
         expected = ['role:admin', 'group:group1']
         perms = security.get_user_permissions('Bob', request)
         self.assertEqual(perms, expected)
 
+    def test_get_userid_from_request(self):
+        request = testing.DummyRequest()
+        self.assertEqual(security.get_userid_from_request(request), None)
+        self.config.testing_securitypolicy(userid=self.user_bob.login,
+                                           permissive=False)
+        self.assertEqual(security.get_userid_from_request(request),
+                         self.user_bob.login)
+        self.config.testing_securitypolicy(userid='nonexisting',
+                                           permissive=False)
+        self.assertEqual(security.get_userid_from_request(request),
+                         'nonexisting')
+
     def test_get_user_from_request(self):
-        DBSession.add(self.user_bob)
         request = testing.DummyRequest()
         self.assertEqual(security.get_user_from_request(request), None)
-        config = testing.setUp()
-        config.testing_securitypolicy(userid=self.user_bob.login,
+        self.config.testing_securitypolicy(userid=self.user_bob.login,
                                            permissive=False)
         self.assertEqual(security.get_user_from_request(request), self.user_bob)
-        config.testing_securitypolicy(userid='nonexisting',
+        self.config.testing_securitypolicy(userid='nonexisting',
                                            permissive=False)
         self.assertEqual(security.get_user_from_request(request), None)
 
     def test_get_root_path_from_request(self):
-        DBSession.add(self.user_bob)
         request = testing.DummyRequest()
         self.user_bob.config = None
         request.user = None

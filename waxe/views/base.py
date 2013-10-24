@@ -14,7 +14,8 @@ class BaseViews(object):
 
     def __init__(self, request):
         self.request = request
-        self.logged_user = security.get_user_from_request(self.request)
+        self.logged_user_login = security.get_userid_from_request(self.request)
+        self.logged_user = security.get_user(self.logged_user_login)
         self.current_user = self._get_current_user()
         self.root_path = None
         if self.current_user and self.current_user.config:
@@ -82,6 +83,34 @@ class BaseViews(object):
                 lis += [user.login]
 
         return list(set(lis))
+
+    def _response(self, dic):
+        """Update the given dic for non json request with some data needed in
+        the navbar.
+
+        :param dic: a dict containing some data for the reponse
+        :type dic: dict
+        :return: the given dict updated if needed
+        :rtype: dict
+        """
+        if self._is_json():
+            return dic
+
+        editor_login = self.logged_user_login
+        if self.root_path:
+            editor_login = self.current_user.login
+        dic['editor_login'] = editor_login
+
+        logins = [l for l in self.get_editable_logins() if l != editor_login]
+        if logins:
+            dic['logins'] = logins
+
+        if editor_login and 'versioning' in self.request.registry.settings:
+            editor = models.User.query.filter_by(login=editor_login).one()
+            if editor.config and editor.config.use_versioning:
+                dic['versioning'] = True
+
+        return dic
 
 
 class BaseUserViews(BaseViews):

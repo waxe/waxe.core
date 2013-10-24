@@ -118,35 +118,6 @@ class User(Base):
     def is_admin(self):
         return self.has_role(ROLE_ADMIN)
 
-    def multiple_account(self):
-        editors = get_editors()
-        contributors = get_contributors()
-        if self.has_role(ROLE_ADMIN):
-            if editors or contributors:
-                return True
-        if self.has_role(ROLE_EDITOR):
-            if contributors:
-                return True
-        return False
-
-    def get_editable_logins(self, exclude=None):
-        lis = []
-        if self.config and self.config.root_path:
-            lis += [self.login]
-
-        editors = get_editors()
-        contributors = get_contributors()
-        if self.has_role(ROLE_ADMIN):
-            for user in (editors + contributors):
-                lis += [user.login]
-        elif self.has_role(ROLE_EDITOR):
-            for user in contributors:
-                lis += [user.login]
-
-        if exclude:
-            return [l for l in lis if l != exclude]
-        return lis
-
     def can_commit(self, path):
         if not os.path.exists(path):
             raise Exception('Invalid path %s' % path)

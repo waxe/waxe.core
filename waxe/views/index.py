@@ -13,7 +13,6 @@ from subprocess import Popen, PIPE
 import json
 from base import JSONHTTPBadRequest, BaseViews, BaseUserViews
 
-
 log = logging.getLogger(__name__)
 
 
@@ -29,25 +28,6 @@ def _get_tags(dtd_url):
 
 
 class Views(BaseUserViews):
-
-    def _response(self, dic):
-        if self._is_json():
-            return dic
-
-        editor_login = None
-        if self.root_path:
-            editor_login = self.current_user.login
-
-        if self.logged_user.multiple_account():
-            dic['logins'] = self.logged_user.get_editable_logins(editor_login)
-
-        if editor_login and 'versioning' in self.request.registry.settings:
-            editor = User.query.filter_by(login=editor_login).one()
-            if editor.config and editor.config.use_versioning:
-                dic['versioning'] = True
-
-        dic['editor_login'] = editor_login or 'Account'
-        return dic
 
     def _get_navigation_data(self, add_previous=False, folder_route='home',
                              file_route='edit', only_json=False):
@@ -165,7 +145,7 @@ class Views(BaseUserViews):
     @view_config(route_name='login_selection', renderer='index.mak',
                  permission='edit')
     def login_selection(self):
-        logins = self.logged_user.get_editable_logins()
+        logins = self.get_editable_logins()
         login = self.request.GET.get('login')
         if not login or login not in logins:
             raise HTTPBadRequest('Invalid login')
@@ -365,8 +345,12 @@ class BadRequestView(BaseViews):
     @view_config(context=JSONHTTPBadRequest, renderer='json', route_name=None)
     @view_config(context=HTTPBadRequest, renderer='index.mak', route_name=None)
     def bad_request(self):
-        if not self.logged_user.multiple_account():
-            if self.logged_user.is_admin():
+        """This view is called when there is no selected account and the logged
+        user has nothing to edit.
+        """
+        logins = self.get_editable_logins()
+        if not logins:
+            if self.user_is_admin():
                 link = self.request.route_path('admin_home')
                 return {'content': 'Go to your <a href="%s">admin interface</a> '
                                    'to insert a new user' % link}
@@ -375,7 +359,6 @@ class BadRequestView(BaseViews):
                     'the following message: Edit the user named \'%s\' '
                     'and set the root_path in the config.' % self.logged_user.login}
 
-        logins = self.logged_user.get_editable_logins()
         content = render('blocks/login_selection.mak', {'logins': logins},
                          self.request)
         return {'content': content}

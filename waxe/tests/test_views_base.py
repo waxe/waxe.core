@@ -2,7 +2,7 @@ from pyramid import testing
 from pyramid.httpexceptions import HTTPBadRequest
 from mock import patch
 
-from ..testing import BaseTestCase
+from ..testing import BaseTestCase, login_user
 from ..models import UserConfig
 from .. import security
 from ..views.base import (
@@ -27,18 +27,25 @@ class TestBaseView(BaseTestCase):
         })
         self.config.include('pyramid_auth')
 
-    def test___init__(self):
+    def DummyRequest(self):
         request = testing.DummyRequest()
+        request.context = security.RootFactory(request)
+        return request
+
+    def test___init__(self):
+        request = self.DummyRequest()
         obj = BaseViews(request)
         self.assertEqual(obj.request, request)
+        self.assertEqual(obj.logged_user_login, None)
         self.assertEqual(obj.logged_user, None)
         self.assertEqual(obj.current_user, None)
         self.assertEqual(obj.root_path, None)
 
-        with patch('waxe.security.get_user_from_request',
-                   return_value=self.user_bob):
+        with patch('waxe.security.get_userid_from_request',
+                   return_value=self.user_bob.login):
             obj = BaseViews(request)
             self.assertEqual(obj.request, request)
+            self.assertEqual(obj.logged_user_login, self.user_bob.login)
             self.assertEqual(obj.logged_user, self.user_bob)
             self.assertEqual(obj.current_user, self.user_bob)
             self.assertEqual(obj.root_path, self.user_bob.config.root_path)
@@ -46,12 +53,13 @@ class TestBaseView(BaseTestCase):
             request.session = {'editor_login': 'Admin'}
             obj = BaseViews(request)
             self.assertEqual(obj.request, request)
+            self.assertEqual(obj.logged_user_login, self.user_bob.login)
             self.assertEqual(obj.logged_user, self.user_bob)
             self.assertEqual(obj.current_user, self.user_admin)
             self.assertEqual(obj.root_path, None)
 
     def test_get_current_user(self):
-        request = testing.DummyRequest()
+        request = self.DummyRequest()
         res = BaseViews(request)._get_current_user()
         self.assertEqual(res, None)
 
@@ -69,8 +77,7 @@ class TestBaseView(BaseTestCase):
         self.assertEqual(res.login, self.user_bob.login)
 
     def test_user_is_admin(self):
-        request = testing.DummyRequest()
-        request.context = security.RootFactory(request)
+        request = self.DummyRequest()
         res = BaseViews(request).user_is_admin()
         self.assertEqual(res, False)
 
@@ -81,8 +88,7 @@ class TestBaseView(BaseTestCase):
             self.assertEqual(res, True)
 
     def test_user_is_editor(self):
-        request = testing.DummyRequest()
-        request.context = security.RootFactory(request)
+        request = self.DummyRequest()
         res = BaseViews(request).user_is_editor()
         self.assertEqual(res, False)
 
@@ -107,7 +113,7 @@ class TestBaseView(BaseTestCase):
             self.assertEqual(res, False)
 
     def test__is_json(self):
-        request = testing.DummyRequest()
+        request = self.DummyRequest()
         request.matched_route = EmptyClass()
         request.matched_route.name = 'test'
         res = BaseViews(request)._is_json()
@@ -118,8 +124,7 @@ class TestBaseView(BaseTestCase):
         self.assertEqual(res, True)
 
     def test_get_editable_logins_admin(self):
-        request = testing.DummyRequest()
-        request.context = security.RootFactory(request)
+        request = self.DummyRequest()
         with patch('pyramid.authentication.'
                    'AuthTktAuthenticationPolicy.unauthenticated_userid',
                    return_value=self.user_admin.login):
@@ -150,8 +155,7 @@ class TestBaseView(BaseTestCase):
                                    self.user_fred.login])
 
     def test_get_editable_logins_editor(self):
-        request = testing.DummyRequest()
-        request.context = security.RootFactory(request)
+        request = self.DummyRequest()
         with patch('pyramid.authentication.'
                    'AuthTktAuthenticationPolicy.unauthenticated_userid',
                    return_value=self.user_fred.login):
@@ -180,8 +184,7 @@ class TestBaseView(BaseTestCase):
             self.assertEqual(res, [self.user_bob.login, self.user_fred.login])
 
     def test_get_editable_logins_contributor(self):
-        request = testing.DummyRequest()
-        request.context = security.RootFactory(request)
+        request = self.DummyRequest()
         self.user_fred.roles = [self.role_contributor]
         with patch('pyramid.authentication.'
                    'AuthTktAuthenticationPolicy.unauthenticated_userid',
@@ -202,6 +205,71 @@ class TestBaseView(BaseTestCase):
                    return_value=self.user_fred.login):
             res = BaseViews(request).get_editable_logins()
             self.assertEqual(res, [self.user_fred.login])
+
+    @login_user('Fred')
+    def test__response_editor(self):
+        request = self.DummyRequest()
+        request.matched_route = EmptyClass()
+        request.matched_route.name = 'route_json'
+
+        res = BaseViews(request)._response({})
+        self.assertEqual(res, {})
+
+        res = BaseViews(request)._response({'key': 'value'})
+        self.assertEqual(res, {'key': 'value'})
+
+        request.matched_route.name = 'route'
+
+        res = BaseViews(request)._response({})
+        self.assertEqual(res, {'editor_login': self.user_fred.login})
+
+        request.session = {'editor_login': 'Bob'}
+        res = BaseViews(request)._response({})
+        self.assertEqual(res, {'editor_login': 'Bob', 'logins': ['Fred']})
+
+        res = BaseViews(request)._response({'key': 'value'})
+        self.assertEqual(res, {'editor_login': 'Bob',
+                               'logins': ['Fred'],
+                               'key': 'value'})
+
+    @login_user('Admin')
+    def test__response_admin(self):
+        request = self.DummyRequest()
+        request.matched_route = EmptyClass()
+        request.matched_route.name = 'route'
+
+        res = BaseViews(request)._response({})
+        self.assertEqual(res, {'editor_login': self.user_admin.login})
+
+        request.session = {'editor_login': 'Bob'}
+        res = BaseViews(request)._response({})
+        self.assertEqual(res, {'editor_login': 'Bob'})
+
+    @login_user('Bob')
+    def test__response_bob_admin(self):
+        request = self.DummyRequest()
+        request.matched_route = EmptyClass()
+        request.matched_route.name = 'route'
+
+        res = BaseViews(request)._response({})
+        self.assertEqual(res, {'editor_login': self.user_bob.login})
+
+        request.session = {'editor_login': 'Bob'}
+        res = BaseViews(request)._response({})
+        self.assertEqual(res, {'editor_login': 'Bob'})
+
+        self.user_fred.roles = [self.role_editor, self.role_contributor]
+        res = BaseViews(request)._response({})
+        self.assertEqual(res, {'editor_login': 'Bob', 'logins': ['Fred']})
+
+    @login_user('LeResKP')
+    def test__response_lereskp(self):
+        request = self.DummyRequest()
+        request.matched_route = EmptyClass()
+        request.matched_route.name = 'route'
+
+        res = BaseViews(request)._response({})
+        self.assertEqual(res, {'editor_login': 'LeResKP'})
 
 
 class TestBaseUserView(BaseTestCase):
