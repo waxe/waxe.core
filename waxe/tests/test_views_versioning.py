@@ -19,8 +19,6 @@ from ..models import (
 
 from ..views.versioning import (
     Views,
-    get_svn_login,
-    svn_cmd,
 )
 import pysvn
 
@@ -37,37 +35,35 @@ class TestViews(WaxeTestCase):
         super(TestViews, self).tearDown()
 
     def test_svn_cmd(self):
-        DBSession.add(self.user_fred)
+        self.config.testing_securitypolicy(userid='Fred', permissive=True)
         request = testing.DummyRequest()
-        request.user = self.user_fred
-        res = svn_cmd(request, 'update')
+        res = Views(request).svn_cmd('update')
         expected = 'svn update --non-interactive'
         self.assertEqual(res, expected)
 
         request.registry.settings['versioning.auth.active'] = True
-        res = svn_cmd(request, 'update')
+        res = Views(request).svn_cmd('update')
         expected = ('svn update --non-interactive '
                     '--username Fred --password secret_fred')
         self.assertEqual(res, expected)
 
     def test_svn_cmd_failed(self):
-        DBSession.add(self.user_bob)
+        self.config.testing_securitypolicy(userid='Bob', permissive=True)
         request = testing.DummyRequest()
-        request.user = self.user_bob
         request.registry.settings['versioning.auth.active'] = True
         try:
-            svn_cmd(request, 'update')
+            Views(request).svn_cmd('update')
             assert(False)
         except Exception, e:
             self.assertEqual(str(e), 'No versioning password set for Bob')
 
     def test_get_svn_login(self):
-        DBSession.add(self.user_bob)
-
         request = testing.DummyRequest()
-        request.user = self.user_bob
+        view = Views(request)
+        view.current_user = self.user_bob
         try:
-            get_svn_login(request)
+            view.get_svn_login()
+            assert(False)
         except Exception, e:
             self.assertEqual(str(e), 'No versioning password set for Bob')
 
@@ -76,22 +72,27 @@ class TestViews(WaxeTestCase):
             use_versioning=True,
             versioning_password='secret_bob',
         )
-        res = get_svn_login(request)
+        res = view.get_svn_login()
         expected = (False, 'Bob', 'secret_bob', False)
         self.assertEqual(res, expected)
 
-        request.session['editor_login'] = 'Fred'
-        res = get_svn_login(request)
+        view = Views(request)
+        view.current_user = self.user_fred
+        res = view.get_svn_login()
         expected = (False, 'Fred', 'secret_fred', False)
         self.assertEqual(res, expected)
 
         request.registry.settings['versioning.auth.active'] = True
-        res = get_svn_login(request)
+        view = Views(request)
+        view.current_user = self.user_fred
+        res = view.get_svn_login()
         expected = (True, 'Fred', 'secret_fred', False)
         self.assertEqual(res, expected)
 
         request.registry.settings['versioning.auth.pwd'] = 'secret'
-        res = get_svn_login(request)
+        view = Views(request)
+        view.current_user = self.user_fred
+        res = view.get_svn_login()
         expected = (True, 'Fred', 'secret', False)
         self.assertEqual(res, expected)
 

@@ -23,46 +23,38 @@ labels_mapping = {
 }
 
 
-def svn_cmd(request, cmd):
-    lis = ['svn', cmd, '--non-interactive']
-    auth, login, pwd, keep = get_svn_login(request)
-    if auth:
-        lis += ['--username', login, '--password', pwd]
-    return ' '.join(lis)
-
-
 def svn_ssl_server_trust_prompt(trust_dict):
     return True, trust_dict['failures'], False
 
 
-def get_svn_login(request):
-    auth = False
-    if 'versioning.auth.active' in request.registry.settings:
-        auth = True
-
-    pwd = request.registry.settings.get('versioning.auth.pwd')
-    editor_login = request.session.get('editor_login')
-    if not editor_login:
-        editor_login = request.user.login
-        if not pwd and request.user.config:
-            pwd = request.user.config.versioning_password
-    assert editor_login
-    if not pwd:
-        editor = User.query.filter_by(login=editor_login).one()
-        if editor.config:
-            pwd = editor.config.versioning_password
-    if not pwd:
-        # TODO: a good idea should be to ask the password to the user
-        raise Exception('No versioning password set for %s' % editor_login)
-
-    return auth, str(editor_login), pwd, False
-
-
 class Views(BaseViews):
+
+    def svn_cmd(self, cmd):
+        lis = ['svn', cmd, '--non-interactive']
+        auth, login, pwd, keep = self.get_svn_login()
+        if auth:
+            lis += ['--username', login, '--password', pwd]
+        return ' '.join(lis)
+
+    def get_svn_login(self):
+        auth = False
+        if 'versioning.auth.active' in self.request.registry.settings:
+            auth = True
+
+        editor_login = self.current_user.login
+        pwd = self.request.registry.settings.get('versioning.auth.pwd')
+        if not pwd:
+            pwd = self.current_user.config.versioning_password
+
+        if not pwd:
+            # TODO: a good idea should be to ask the password to the user
+            raise Exception('No versioning password set for %s' % editor_login)
+
+        return auth, str(editor_login), pwd, False
 
     def get_svn_client(self):
         client = pysvn.Client()
-        client.callback_get_login = lambda *args, **kw: get_svn_login(self.request)
+        client.callback_get_login = lambda *args, **kw: self.get_svn_login()
         if self.request.registry.settings.get('versioning.auth.https'):
             client.callback_ssl_server_trust_prompt = svn_ssl_server_trust_prompt
         return client
@@ -163,7 +155,7 @@ class Views(BaseViews):
     def svn_update(self):
         # We don't use pysvn to make the repository update since it's very slow
         # on big repo. Also the output is better from the command line.
-        p = Popen(svn_cmd(self.request, "update  %s" % self.root_path),
+        p = Popen(self.svn_cmd("update  %s" % self.root_path),
                   shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE,
                   close_fds=True)
         (child_stdout, child_stdin) = (p.stdout, p.stdin)
