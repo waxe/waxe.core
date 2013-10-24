@@ -118,33 +118,6 @@ class User(Base):
     def is_admin(self):
         return self.has_role(ROLE_ADMIN)
 
-    def can_commit(self, path):
-        if not os.path.exists(path):
-            raise Exception('Invalid path %s' % path)
-
-        if self.has_role(ROLE_ADMIN):
-            return True
-
-        if self.has_role(ROLE_EDITOR):
-            return True
-
-        assert self.has_role(ROLE_CONTRIBUTOR), 'You are not a contributor'
-
-        if os.path.isfile(path):
-            path = os.path.dirname(path)
-
-        path = os.path.normpath(path)
-
-        paths = list(self.versioning_paths)
-        paths.sort(lambda a, b: cmp(len(a.path), len(b.path)))
-        paths.reverse()
-        for p in paths:
-            if path.startswith(os.path.normpath(p.path)):
-                if VERSIONING_PATH_STATUS_ALLOWED == p.status:
-                    return True
-                return False
-        return False
-
 
 class UserConfig(Base):
     __tablename__ = 'user_config'

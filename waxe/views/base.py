@@ -51,6 +51,16 @@ class BaseViews(object):
                               self.request.context,
                               self.request)
 
+    def user_is_contributor(self):
+        """Check if the logged user is contributor.
+
+        :return: True if the logged user is contributor
+        :rtype: bool
+        """
+        return has_permission('contributor',
+                              self.request.context,
+                              self.request)
+
     def _is_json(self):
         """Check the current request is a json one.
 

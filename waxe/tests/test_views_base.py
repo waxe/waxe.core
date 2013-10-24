@@ -112,6 +112,21 @@ class TestBaseView(BaseTestCase):
             res = BaseViews(request).user_is_editor()
             self.assertEqual(res, False)
 
+    def test_user_is_contributor(self):
+        request = self.DummyRequest()
+        res = BaseViews(request).user_is_contributor()
+        self.assertEqual(res, False)
+
+        with patch('pyramid.authentication.'
+                   'AuthTktAuthenticationPolicy.unauthenticated_userid',
+                   return_value=self.user_bob.login):
+            res = BaseViews(request).user_is_contributor()
+            self.assertEqual(res, False)
+
+            self.user_bob.roles = [self.role_contributor]
+            res = BaseViews(request).user_is_contributor()
+            self.assertEqual(res, True)
+
     def test__is_json(self):
         request = self.DummyRequest()
         request.matched_route = EmptyClass()

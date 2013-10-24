@@ -13,7 +13,7 @@ class RootFactory(object):
         (Allow, Everyone, 'view'),
         (Allow, 'role:%s' % ROLE_ADMIN, ['admin', 'edit']),
         (Allow, 'role:%s' % ROLE_EDITOR, ['editor', 'edit']),
-        (Allow, 'role:%s' % ROLE_CONTRIBUTOR, ['edit']),
+        (Allow, 'role:%s' % ROLE_CONTRIBUTOR, ['contributor', 'edit']),
     ]
 
     def __init__(self, request):

@@ -5,7 +5,7 @@ from pyramid.renderers import render
 from pyramid.exceptions import Forbidden
 from .. import browser
 from .. import diff
-from ..models import User
+from .. import models
 from ..utils import unflatten_params
 import logging
 
@@ -28,6 +28,33 @@ def svn_ssl_server_trust_prompt(trust_dict):
 
 
 class Views(BaseViews):
+
+    def can_commit(self, path):
+        if not os.path.exists(path):
+            raise Exception('Invalid path %s' % path)
+
+        if self.user_is_admin():
+            return True
+
+        if self.user_is_editor():
+            return True
+
+        assert self.user_is_contributor(), 'You are not a contributor'
+
+        if os.path.isfile(path):
+            path = os.path.dirname(path)
+
+        path = os.path.normpath(path)
+
+        paths = list(self.logged_user.versioning_paths)
+        paths.sort(lambda a, b: cmp(len(a.path), len(b.path)))
+        paths.reverse()
+        for p in paths:
+            if path.startswith(os.path.normpath(p.path)):
+                if models.VERSIONING_PATH_STATUS_ALLOWED == p.status:
+                    return True
+                return False
+        return False
 
     def svn_cmd(self, cmd):
         lis = ['svn', cmd, '--non-interactive']
@@ -135,7 +162,7 @@ class Views(BaseViews):
 
         for index, filename in enumerate(filenames):
             absfilename = browser.absolute_path(filename, root_path)
-            if not self.request.user.can_commit(absfilename):
+            if not self.can_commit(absfilename):
                 can_commit = False
             html += self._svn_diff(filename, client, index=index,
                                    editable=can_commit)
@@ -187,7 +214,7 @@ class Views(BaseViews):
 
         for filename in filenames:
             absfilename = browser.absolute_path(filename, root_path)
-            if not self.request.user.can_commit(absfilename):
+            if not self.can_commit(absfilename):
                 error_msg += ['Can\'t commit: %s' % filename]
                 continue
 
