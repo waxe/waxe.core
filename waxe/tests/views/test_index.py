@@ -51,7 +51,7 @@ class TestViewsNoVersioning(WaxeTestCase):
             'content': u'<ul id="file-navigation" class="unstyled" data-path="">\n</ul>\n',
             'editor_login': u'Bob',
         }
-        with patch('waxe.views.base.BaseViews._is_json', return_value=False):
+        with patch('waxe.views.base.BaseView._is_json', return_value=False):
             res = Views(request).home()
             self.assertEqual(res, expected)
 
@@ -59,7 +59,7 @@ class TestViewsNoVersioning(WaxeTestCase):
             'breadcrumb': '<li class="active">root</li>',
             'content': u'<ul id="file-navigation" class="unstyled" data-path="">\n</ul>\n',
         }
-        with patch('waxe.views.base.BaseViews._is_json', return_value=True):
+        with patch('waxe.views.base.BaseView._is_json', return_value=True):
             res = Views(request).home()
             self.assertEqual(res, expected)
 

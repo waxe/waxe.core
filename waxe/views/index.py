@@ -11,7 +11,7 @@ from xmltool import elements
 from urllib2 import HTTPError
 from subprocess import Popen, PIPE
 import json
-from base import JSONHTTPBadRequest, BaseViews, BaseUserViews
+from base import JSONHTTPBadRequest, BaseView, BaseUserView
 
 log = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ def _get_tags(dtd_url):
     return lis
 
 
-class Views(BaseUserViews):
+class Views(BaseUserView):
 
     def _get_navigation_data(self, add_previous=False, folder_route='home',
                              file_route='edit', only_json=False):
@@ -340,7 +340,7 @@ class Views(BaseUserViews):
         return {'content': content}
 
 
-class BadRequestView(BaseViews):
+class BadRequestView(BaseView):
 
     @view_config(context=JSONHTTPBadRequest, renderer='json', route_name=None)
     @view_config(context=HTTPBadRequest, renderer='index.mak', route_name=None)

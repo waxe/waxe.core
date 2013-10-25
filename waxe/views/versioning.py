@@ -1,5 +1,5 @@
 import os.path
-from base import BaseViews
+from base import BaseView
 from pyramid.view import view_config
 from pyramid.renderers import render
 from pyramid.exceptions import Forbidden
@@ -27,7 +27,7 @@ def svn_ssl_server_trust_prompt(trust_dict):
     return True, trust_dict['failures'], False
 
 
-class Views(BaseViews):
+class Views(BaseView):
 
     def can_commit(self, path):
         if not os.path.exists(path):

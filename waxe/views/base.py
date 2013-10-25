@@ -7,7 +7,7 @@ class JSONHTTPBadRequest(HTTPBadRequest):
     pass
 
 
-class BaseViews(object):
+class BaseView(object):
     """All the Waxe views should inherit from this one. It doesn't make any
     validation, it can be used anywhere
     """
@@ -123,12 +123,12 @@ class BaseViews(object):
         return dic
 
 
-class BaseUserViews(BaseViews):
+class BaseUserView(BaseView):
     """Base view which check that the current user has a root path. It's to
     check he has some files to edit!
     """
     def __init__(self, request):
-        super(BaseUserViews, self).__init__(request)
+        super(BaseUserView, self).__init__(request)
         if (not self.root_path and
                 request.matched_route.name != 'login_selection'):
             if self._is_json():
