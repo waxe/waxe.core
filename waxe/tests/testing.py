@@ -10,8 +10,8 @@ from sqlalchemy import create_engine
 import bcrypt
 from pyramid import testing
 
-from . import main
-from .models import (
+from .. import main
+from ..models import (
     DBSession,
     Base,
     User,

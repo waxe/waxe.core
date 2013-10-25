@@ -1,10 +1,11 @@
 import os
 import json
 from pyramid import testing
-from ..testing import WaxeTestCase, WaxeTestCaseVersioning, login_user, BaseTestCase
 from mock import patch
-from .. import security
-from ..models import (
+from urllib2 import HTTPError
+from ..testing import WaxeTestCase, WaxeTestCaseVersioning, login_user, BaseTestCase
+from waxe import security
+from waxe.models import (
     DBSession,
     User,
     UserConfig,
@@ -13,14 +14,13 @@ from ..models import (
     ROLE_CONTRIBUTOR
 )
 
-from ..views.index import (
+from waxe.views.index import (
     Views,
     BadRequestView,
     HTTPBadRequest,
     JSONHTTPBadRequest,
     _get_tags
 )
-from urllib2 import HTTPError
 
 
 class TestViewsNoVersioning(WaxeTestCase):

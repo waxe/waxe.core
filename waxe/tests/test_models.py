@@ -1,4 +1,4 @@
-from ..testing import WaxeTestCase, DBSession
+from .testing import WaxeTestCase, DBSession
 from ..models import (
     get_editors,
     get_contributors,

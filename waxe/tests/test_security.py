@@ -1,6 +1,6 @@
 from pyramid import testing
 from waxe import security
-from ..testing import BaseTestCase
+from .testing import BaseTestCase
 from ..models import UserConfig, User, Group, DBSession
 import logging
 

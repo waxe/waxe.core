@@ -3,14 +3,15 @@ import json
 from pyramid import testing
 from pyramid.exceptions import Forbidden
 from webob.multidict import MultiDict
+from mock import patch, MagicMock
+import pysvn
 from ..testing import (
     WaxeTestCase,
     WaxeTestCaseVersioning,
     login_user,
 )
-from .. import security
-from mock import patch, MagicMock
-from ..models import (
+from waxe import security
+from waxe.models import (
     DBSession,
     User,
     UserConfig,
@@ -21,10 +22,9 @@ from ..models import (
     VERSIONING_PATH_STATUS_FORBIDDEN,
 )
 
-from ..views.versioning import (
+from waxe.views.versioning import (
     Views,
 )
-import pysvn
 
 
 class TestViews(WaxeTestCase):

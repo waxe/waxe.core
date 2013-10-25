@@ -3,9 +3,9 @@ from pyramid.httpexceptions import HTTPBadRequest
 from mock import patch
 
 from ..testing import BaseTestCase, login_user
-from ..models import UserConfig
-from .. import security
-from ..views.base import (
+from waxe.models import UserConfig
+from waxe import security
+from waxe.views.base import (
     BaseViews,
     BaseUserViews,
     JSONHTTPBadRequest,
