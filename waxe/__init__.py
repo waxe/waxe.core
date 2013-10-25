@@ -8,12 +8,7 @@ from .models import (
     DBSession,
     Base,
 )
-from .security import (
-    get_user_permissions,
-    RootFactory,
-    get_user_from_request,
-    get_root_path_from_request,
-)
+from .security import RootFactory
 
 # Add the modules you want to be include in the config
 views_modules = [
@@ -52,10 +47,7 @@ def main(global_config, **settings):
                           session_factory=session_factory,
                           root_factory=RootFactory)
     config.add_static_view('static', 'static', cache_max_age=3600)
-
-    config.set_request_property(get_user_from_request, 'user', reify=True)
-    config.set_request_property(get_root_path_from_request,
-                                'root_path', reify=True)
+    # TODO: not sure we need to define dtd_urls here.
     config.set_request_property(get_dtd_urls, 'dtd_urls', reify=True)
 
     for module in get_views_modules(settings):

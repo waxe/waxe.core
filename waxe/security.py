@@ -56,21 +56,3 @@ def get_user_permissions(login, request):
 
 def get_userid_from_request(request):
     return unauthenticated_userid(request)
-
-
-def get_user_from_request(request):
-    login = unauthenticated_userid(request)
-    return get_user(login)
-
-
-def get_root_path_from_request(request):
-    if not request.user:
-        return None
-
-    if 'root_path' in request.session:
-        return request.session['root_path']
-
-    if not request.user.config:
-        return None
-
-    return request.user.config.root_path
