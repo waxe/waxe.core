@@ -1,17 +1,17 @@
 import os.path
-from base import BaseView
+import logging
+import pysvn
+import locale
+from subprocess import Popen, PIPE
 from pyramid.view import view_config
 from pyramid.renderers import render
 from pyramid.exceptions import Forbidden
-from .. import browser
-from .. import diff
-from .. import models
-from ..utils import unflatten_params
-import logging
+from waxe import browser
+from waxe import diff
+from waxe import models
+from waxe.utils import unflatten_params
+from ..base import BaseView
 
-from subprocess import Popen, PIPE
-import pysvn
-import locale
 
 log = logging.getLogger(__name__)
 

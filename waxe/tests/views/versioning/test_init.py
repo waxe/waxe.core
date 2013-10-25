@@ -5,10 +5,11 @@ from pyramid.exceptions import Forbidden
 from webob.multidict import MultiDict
 from mock import patch, MagicMock
 import pysvn
-from ..testing import (
+from waxe.tests.testing import (
     WaxeTestCase,
     WaxeTestCaseVersioning,
     login_user,
+    BaseTestCase,
 )
 from waxe import security
 from waxe.models import (
@@ -16,8 +17,6 @@ from waxe.models import (
     User,
     UserConfig,
     VersioningPath,
-    Role,
-    ROLE_CONTRIBUTOR,
     VERSIONING_PATH_STATUS_ALLOWED,
     VERSIONING_PATH_STATUS_FORBIDDEN,
 )
@@ -27,23 +26,16 @@ from waxe.views.versioning import (
 )
 
 
-class TestViews(WaxeTestCase):
+class TestViews(BaseTestCase):
 
     def setUp(self):
         super(TestViews, self).setUp()
-        self.config = testing.setUp(settings=self.settings)
         self.config.registry.settings.update({
             'authentication.cookie.secret': 'scrt',
             'authentication.cookie.callback': ('waxe.security.'
                                                'get_user_permissions')
         })
         self.config.include('pyramid_auth')
-
-        self.config.include('pyramid_mako')
-
-    def tearDown(self):
-        testing.tearDown()
-        super(TestViews, self).tearDown()
 
     def test_svn_cmd(self):
         self.config.testing_securitypolicy(userid='Fred', permissive=True)
@@ -109,7 +101,6 @@ class TestViews(WaxeTestCase):
 
     @login_user('Bob')
     def test_svn_status(self):
-        DBSession.add(self.user_bob)
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         self.user_bob.config.root_path = svn_path
         request = testing.DummyRequest()
@@ -123,7 +114,6 @@ class TestViews(WaxeTestCase):
 
     @login_user('Bob')
     def test_svn_diff(self):
-        DBSession.add(self.user_bob)
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         self.user_bob.config.root_path = svn_path
         request = testing.DummyRequest()
@@ -160,7 +150,7 @@ class TestViews(WaxeTestCase):
         request.context = security.RootFactory(request)
         request.GET = MultiDict({'filenames': 'file3.xml'})
         request.route_path = lambda *args, **kw: '/%s/filepath' % args[0]
-        self.user_bob.roles = [Role(name=ROLE_CONTRIBUTOR)]
+        self.user_bob.roles = [self.role_contributor]
         res = Views(request).svn_diff()
         self.assertEqual(len(res), 1)
         self.assertTrue('class="diff"' in res['content'])
@@ -177,7 +167,6 @@ class TestViews(WaxeTestCase):
 
     @login_user('Fred')
     def test_svn_update(self):
-        DBSession.add(self.user_fred)
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         self.user_fred.config.root_path = svn_path
         request = testing.DummyRequest()
@@ -188,7 +177,6 @@ class TestViews(WaxeTestCase):
     @login_user('Bob')
     def test_svn_commit_json(self):
         with patch('os.path.exists', return_value=True), patch('os.path.isfile', return_value=True):
-            DBSession.add(self.user_bob)
             svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
             self.user_bob.config.root_path = svn_path
             request = testing.DummyRequest(root_path=svn_path)
@@ -262,7 +250,7 @@ class TestViews(WaxeTestCase):
             except Exception, e:
                 self.assertEqual(str(e), 'You are not a contributor')
 
-            self.user_bob.roles = [Role(name=ROLE_CONTRIBUTOR)]
+            self.user_bob.roles = [self.role_contributor]
             try:
                 res = Views(request).svn_commit_json()
             except Forbidden, e:
@@ -346,44 +334,39 @@ class FunctionalTestViewsNoVersioning(WaxeTestCase):
             '/versioning/update.json',
             '/versioning/commit.json',
         ]:
-            self.testapp.get('/versioning/status', status=404)
+            self.testapp.get(url, status=404)
 
 
 class FunctionalTestViews(WaxeTestCaseVersioning):
 
-    def test_svn_status_forbidden(self):
-        res = self.testapp.get('/versioning/status', status=302)
-        self.assertEqual(
-            res.location,
-            'http://localhost/login?next=http%3A%2F%2Flocalhost%2Fversioning%2Fstatus')
-        res = res.follow()
-        self.assertEqual(res.status, "200 OK")
-        self.assertTrue('<form' in res.body)
-        self.assertTrue('Login' in res.body)
+    def test_forbidden(self):
+        for url in [
+            '/versioning/status',
+            '/versioning/status.json',
+            '/versioning/diff',
+            '/versioning/diff.json',
+            '/versioning/update',
+            '/versioning/update.json',
+            '/versioning/commit.json',
+        ]:
+            res = self.testapp.get(url, status=302)
+            self.assertTrue('http://localhost/login?next=' in res.location)
+            res = res.follow()
+            self.assertEqual(res.status, "200 OK")
+            self.assertTrue('<form' in res.body)
+            self.assertTrue('Login' in res.body)
 
     @login_user('Bob')
     def test_svn_status(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
-        DBSession.add(self.user_bob)
         self.user_bob.config = UserConfig(root_path=svn_path)
         res = self.testapp.get('/versioning/status', status=200)
         self.assertTrue(res.body)
         self.assertTrue('file1.xml' in res.body)
 
-    def test_svn_status_json_forbidden(self):
-        res = self.testapp.get('/versioning/status.json', status=302)
-        self.assertEqual(
-            res.location,
-            'http://localhost/login?next=http%3A%2F%2Flocalhost%2Fversioning%2Fstatus.json')
-        res = res.follow()
-        self.assertEqual(res.status, "200 OK")
-        self.assertTrue('<form' in res.body)
-        self.assertTrue('Login' in res.body)
-
     @login_user('Bob')
     def test_svn_status_json(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
-        DBSession.add(self.user_bob)
         self.user_bob.config = UserConfig(root_path=svn_path)
         res = self.testapp.get('/versioning/status.json', status=200)
         self.assertTrue(res.body)
@@ -391,20 +374,9 @@ class FunctionalTestViews(WaxeTestCaseVersioning):
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
 
-    def test_svn_diff_forbidden(self):
-        res = self.testapp.get('/versioning/diff', status=302)
-        self.assertEqual(
-            res.location,
-            'http://localhost/login?next=http%3A%2F%2Flocalhost%2Fversioning%2Fdiff')
-        res = res.follow()
-        self.assertEqual(res.status, "200 OK")
-        self.assertTrue('<form' in res.body)
-        self.assertTrue('Login' in res.body)
-
     @login_user('Bob')
     def test_svn_diff(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
-        DBSession.add(self.user_bob)
         self.user_bob.config = UserConfig(root_path=svn_path)
         res = self.testapp.get('/versioning/diff', status=200)
         self.assertTrue('Error: You should provide at least one filename' in res.body)
@@ -413,20 +385,9 @@ class FunctionalTestViews(WaxeTestCaseVersioning):
                                params={'filenames': 'file1.xml'})
         self.assertTrue('diff' in res.body)
 
-    def test_svn_diff_json_forbidden(self):
-        res = self.testapp.get('/versioning/diff.json', status=302)
-        self.assertEqual(
-            res.location,
-            'http://localhost/login?next=http%3A%2F%2Flocalhost%2Fversioning%2Fdiff.json')
-        res = res.follow()
-        self.assertEqual(res.status, "200 OK")
-        self.assertTrue('<form' in res.body)
-        self.assertTrue('Login' in res.body)
-
     @login_user('Bob')
     def test_svn_diff_json(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
-        DBSession.add(self.user_bob)
         self.user_bob.config = UserConfig(root_path=svn_path)
         res = self.testapp.get('/versioning/diff.json', status=200)
         self.assertTrue('You should provide at least one filename' in res.body)
@@ -437,39 +398,17 @@ class FunctionalTestViews(WaxeTestCaseVersioning):
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
 
-    def test_svn_update_forbidden(self):
-        res = self.testapp.get('/versioning/update', status=302)
-        self.assertEqual(
-            res.location,
-            'http://localhost/login?next=http%3A%2F%2Flocalhost%2Fversioning%2Fupdate')
-        res = res.follow()
-        self.assertEqual(res.status, "200 OK")
-        self.assertTrue('<form' in res.body)
-        self.assertTrue('Login' in res.body)
-
     @login_user('Bob')
     def test_svn_update(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
-        DBSession.add(self.user_bob)
         self.user_bob.config = UserConfig(root_path=svn_path,
                                           versioning_password='secret_bob')
         res = self.testapp.get('/versioning/update', status=200)
         self.assertTrue('At revision 1.' in res.body)
 
-    def test_svn_update_json_forbidden(self):
-        res = self.testapp.get('/versioning/update.json', status=302)
-        self.assertEqual(
-            res.location,
-            'http://localhost/login?next=http%3A%2F%2Flocalhost%2Fversioning%2Fupdate.json')
-        res = res.follow()
-        self.assertEqual(res.status, "200 OK")
-        self.assertTrue('<form' in res.body)
-        self.assertTrue('Login' in res.body)
-
     @login_user('Bob')
     def test_svn_update_json(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
-        DBSession.add(self.user_bob)
         self.user_bob.config = UserConfig(root_path=svn_path,
                                           versioning_password='secret_bob')
         res = self.testapp.get('/versioning/update.json', status=200)
@@ -477,24 +416,12 @@ class FunctionalTestViews(WaxeTestCaseVersioning):
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
 
-    def test_svn_commit_json_forbidden(self):
-        res = self.testapp.get('/versioning/commit.json', status=302)
-        self.assertEqual(
-            res.location,
-            'http://localhost/login?next=http%3A%2F%2Flocalhost%2Fversioning%2Fcommit.json')
-        res = res.follow()
-        self.assertEqual(res.status, "200 OK")
-        self.assertTrue('<form' in res.body)
-        self.assertTrue('Login' in res.body)
-
     @login_user('Bob')
     def test_svn_commit_json(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
-        DBSession.add(self.user_bob)
         self.user_bob.config = UserConfig(root_path=svn_path)
         res = self.testapp.get('/versioning/commit.json', status=200)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
         expected = {"status": False, "error_msg": "Bad parameters!"}
         self.assertEqual(json.loads(res.body), expected)
-
