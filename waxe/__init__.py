@@ -13,6 +13,7 @@ from .security import RootFactory
 # Add the modules you want to be include in the config
 views_modules = [
     'waxe.views.index',
+    'waxe.views.explorer',
 ]
 
 

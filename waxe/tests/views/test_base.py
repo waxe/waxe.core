@@ -2,11 +2,12 @@ from pyramid import testing
 from pyramid.httpexceptions import HTTPBadRequest
 from mock import patch
 
-from ..testing import BaseTestCase, login_user
+from ..testing import BaseTestCase, LoggedBobTestCase, login_user
 from waxe.models import UserConfig
 from waxe import security
 from waxe.views.base import (
     BaseView,
+    NavigationView,
     BaseUserView,
     JSONHTTPBadRequest,
 )
@@ -285,6 +286,46 @@ class TestBaseView(BaseTestCase):
 
         res = BaseView(request)._response({})
         self.assertEqual(res, {'editor_login': 'LeResKP'})
+
+
+class TestNavigationView(LoggedBobTestCase):
+
+    def test__get_breadcrumb_data(self):
+        request = testing.DummyRequest()
+        res = NavigationView(request)._get_breadcrumb_data('')
+        expected = [('root', '')]
+        self.assertEqual(res, expected)
+
+        res = NavigationView(request)._get_breadcrumb_data('folder1')
+        expected = [('root', ''), ('folder1', 'folder1')]
+        self.assertEqual(res, expected)
+
+    def test__get_breadcrumb(self):
+        request = testing.DummyRequest()
+        request.route_path = lambda *args, **kw: '/filepath'
+        res = NavigationView(request)._get_breadcrumb('folder1')
+        expected = (
+            '<li>'
+            '<a data-href="/filepath" href="/filepath">root</a> '
+            '<span class="divider">/</span>'
+            '</li>'
+            '<li class="active">folder1</li>'
+        )
+        self.assertEqual(res, expected)
+
+        res = NavigationView(request)._get_breadcrumb('')
+        expected = (
+            '<li class="active">root</li>'
+        )
+        self.assertEqual(res, expected)
+
+        res = NavigationView(request)._get_breadcrumb('', force_link=True)
+        expected = (
+            '<li>'
+            '<a data-href="/filepath" href="/filepath">root</a> '
+            '</li>'
+        )
+        self.assertEqual(res, expected)
 
 
 class TestBaseUserView(BaseTestCase):

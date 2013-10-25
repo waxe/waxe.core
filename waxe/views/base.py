@@ -1,3 +1,4 @@
+import os
 from pyramid.httpexceptions import HTTPBadRequest
 from pyramid.security import has_permission
 from .. import security, models
@@ -123,7 +124,51 @@ class BaseView(object):
         return dic
 
 
-class BaseUserView(BaseView):
+class NavigationView(BaseView):
+
+    def _get_breadcrumb_data(self, relpath):
+        tple = []
+        while relpath:
+            name = os.path.basename(relpath)
+            tple += [(name, relpath)]
+            relpath = os.path.dirname(relpath)
+
+        tple += [('root', '')]
+        tple.reverse()
+        return tple
+
+    def _get_breadcrumb(self, relpath, force_link=False):
+        def get_data_href(path, key):
+            return self.request.route_path(
+                'home_json', _query=[(key, path)])
+
+        def get_href(path, key):
+            return self.request.route_path(
+                'home', _query=[(key, path)])
+
+        tple = self._get_breadcrumb_data(relpath)
+        html = []
+        for index, (name, relpath) in enumerate(tple):
+            if index == len(tple) - 1 and not force_link:
+                html += ['<li class="active">%s</li>' % (name)]
+            else:
+                divider = ''
+                if len(tple) > 1:
+                    divider = '<span class="divider">/</span>'
+                html += [(
+                    '<li>'
+                    '<a data-href="%s" href="%s">%s</a> '
+                    '%s'
+                    '</li>') % (
+                        get_data_href(relpath, 'path'),
+                        get_href(relpath, 'path'),
+                        name,
+                        divider
+                    )]
+        return ''.join(html)
+
+
+class BaseUserView(NavigationView):
     """Base view which check that the current user has a root path. It's to
     check he has some files to edit!
     """

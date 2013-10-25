@@ -105,10 +105,21 @@ class BaseTestCase(DBTestCase):
     def setUp(self):
         super(BaseTestCase, self).setUp()
         self.config = testing.setUp()
+        self.config.registry.settings.update({
+            'mako.directories': 'waxe:templates',
+        })
+        self.config.include('pyramid_mako')
 
     def tearDown(self):
         testing.tearDown()
         super(BaseTestCase, self).tearDown()
+
+
+class LoggedBobTestCase(BaseTestCase):
+    def setUp(self):
+        super(LoggedBobTestCase, self).setUp()
+        self.config.testing_securitypolicy(userid=self.user_bob.login,
+                                           permissive=True)
 
 
 class WaxeTestCase(DBTestCase):
