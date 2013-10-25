@@ -8,7 +8,8 @@ from base import JSONHTTPBadRequest, BaseView, BaseUserView
 log = logging.getLogger(__name__)
 
 
-class Views(BaseUserView):
+class IndexView(BaseUserView):
+
     @view_config(route_name='login_selection', renderer='index.mak',
                  permission='edit')
     def login_selection(self):

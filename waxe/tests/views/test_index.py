@@ -8,16 +8,16 @@ from waxe.models import (
 )
 
 from waxe.views.index import (
-    Views,
+    IndexView,
     BadRequestView,
     HTTPBadRequest,
 )
 
 
-class TestViews(BaseTestCase):
+class TestIndexView(BaseTestCase):
 
     def setUp(self):
-        super(TestViews, self).setUp()
+        super(TestIndexView, self).setUp()
         self.config.registry.settings.update({
             'versioning': True,
             'authentication.cookie.secret': 'scrt',
@@ -33,7 +33,7 @@ class TestViews(BaseTestCase):
         request = testing.DummyRequest()
         request.context = security.RootFactory(request)
         try:
-            res = Views(request).login_selection()
+            res = IndexView(request).login_selection()
             assert(False)
         except HTTPBadRequest, e:
             self.assertEqual(str(e), 'Invalid login')
@@ -41,7 +41,7 @@ class TestViews(BaseTestCase):
         request = testing.DummyRequest(params={'login': 'editor'})
         request.context = security.RootFactory(request)
         try:
-            res = Views(request).login_selection()
+            res = IndexView(request).login_selection()
             assert(False)
         except HTTPBadRequest, e:
             self.assertEqual(str(e), 'Invalid login')
@@ -51,7 +51,7 @@ class TestViews(BaseTestCase):
         editor.config = UserConfig(root_path='/path')
         DBSession.add(editor)
 
-        res = Views(request).login_selection()
+        res = IndexView(request).login_selection()
         self.assertEqual(res.status, "302 Found")
         self.assertEqual(res.location, '/')
         expected = {'editor_login': 'editor', 'root_path': '/path'}
@@ -92,7 +92,7 @@ class TestViews(BaseTestCase):
         self.assertTrue(expected in dic['content'])
 
 
-class FunctionalTestViews(WaxeTestCase):
+class FunctionalTestIndexView(WaxeTestCase):
 
     def test_login_selection_forbidden(self):
         res = self.testapp.get('/login-selection', status=302)
