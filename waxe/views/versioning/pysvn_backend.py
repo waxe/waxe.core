@@ -172,20 +172,20 @@ class PysvnView(BaseView):
         return {'content': html}
 
     def update(self):
-        # We don't use pysvn to make the repository update since it's very slow
-        # on big repo. Also the output is better from the command line.
-        p = Popen(self.svn_cmd("update  %s" % self.root_path),
-                  shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE,
-                  close_fds=True)
-        (child_stdout, child_stdin) = (p.stdout, p.stdin)
-        error = p.stderr.read()
-        if error:
-            return {'error_msg': error}
+        root_path = self.root_path
+        relpath = self.request.GET.get('path', '')
+        abspath = browser.absolute_path(relpath, root_path)
+        client = self.get_svn_client()
+        try:
+            revisions = client.update(abspath)
+        except pysvn.ClientError, e:
+            return {
+                'error_msg': str(e).replace(root_path + '/', ''),
+            }
 
-        res = p.stdout.read()
-        # We want to display relative urls
-        res = res.replace(self.root_path + '/', '')
-        return {'content': '<pre>%s</pre>' % res}
+        return {
+            'content': 'The repository has been updated!',
+        }
 
     def commit(self):
         msg = self.request.POST.get('msg')
