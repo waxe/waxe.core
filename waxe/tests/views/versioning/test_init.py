@@ -21,12 +21,16 @@ from waxe.models import (
     VERSIONING_PATH_STATUS_FORBIDDEN,
 )
 
-from waxe.views.versioning import (
-    Views,
+from waxe.views.versioning.pysvn_backend import (
+    PysvnView,
 )
 
 
 class TestViews(BaseTestCase):
+
+    ClassView = PysvnView
+    get_svn_client_str = ('waxe.views.versioning.'
+                          'pysvn_backend.PysvnView.get_svn_client')
 
     def setUp(self):
         super(TestViews, self).setUp()
@@ -40,12 +44,12 @@ class TestViews(BaseTestCase):
     def test_svn_cmd(self):
         self.config.testing_securitypolicy(userid='Fred', permissive=True)
         request = testing.DummyRequest()
-        res = Views(request).svn_cmd('update')
+        res = self.ClassView(request).svn_cmd('update')
         expected = 'svn update --non-interactive'
         self.assertEqual(res, expected)
 
         request.registry.settings['versioning.auth.active'] = True
-        res = Views(request).svn_cmd('update')
+        res = self.ClassView(request).svn_cmd('update')
         expected = ('svn update --non-interactive '
                     '--username Fred --password secret_fred')
         self.assertEqual(res, expected)
@@ -55,14 +59,14 @@ class TestViews(BaseTestCase):
         request = testing.DummyRequest()
         request.registry.settings['versioning.auth.active'] = True
         try:
-            Views(request).svn_cmd('update')
+            self.ClassView(request).svn_cmd('update')
             assert(False)
         except Exception, e:
             self.assertEqual(str(e), 'No versioning password set for Bob')
 
     def test_get_svn_login(self):
         request = testing.DummyRequest()
-        view = Views(request)
+        view = self.ClassView(request)
         view.current_user = self.user_bob
         try:
             view.get_svn_login()
@@ -79,33 +83,33 @@ class TestViews(BaseTestCase):
         expected = (False, 'Bob', 'secret_bob', False)
         self.assertEqual(res, expected)
 
-        view = Views(request)
+        view = self.ClassView(request)
         view.current_user = self.user_fred
         res = view.get_svn_login()
         expected = (False, 'Fred', 'secret_fred', False)
         self.assertEqual(res, expected)
 
         request.registry.settings['versioning.auth.active'] = True
-        view = Views(request)
+        view = self.ClassView(request)
         view.current_user = self.user_fred
         res = view.get_svn_login()
         expected = (True, 'Fred', 'secret_fred', False)
         self.assertEqual(res, expected)
 
         request.registry.settings['versioning.auth.pwd'] = 'secret'
-        view = Views(request)
+        view = self.ClassView(request)
         view.current_user = self.user_fred
         res = view.get_svn_login()
         expected = (True, 'Fred', 'secret', False)
         self.assertEqual(res, expected)
 
     @login_user('Bob')
-    def test_svn_status(self):
+    def test_status(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         self.user_bob.config.root_path = svn_path
         request = testing.DummyRequest()
         request.route_path = lambda *args, **kw: '/%s/filepath' % args[0]
-        res = Views(request).svn_status()
+        res = self.ClassView(request).status()
         self.assertEqual(len(res), 1)
         self.assertTrue('<form' in res['content'])
         self.assertTrue('file1.xml' in res['content'])
@@ -113,13 +117,13 @@ class TestViews(BaseTestCase):
         self.assertTrue('file4.xml' in res['content'])
 
     @login_user('Bob')
-    def test_svn_diff(self):
+    def test_diff(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         self.user_bob.config.root_path = svn_path
         request = testing.DummyRequest()
         request.context = security.RootFactory(request)
         request.GET = MultiDict()
-        res = Views(request).svn_diff()
+        res = self.ClassView(request).diff()
         expected = {'error_msg': 'You should provide at least one filename.'}
         self.assertEqual(res, expected)
 
@@ -128,7 +132,7 @@ class TestViews(BaseTestCase):
         request.context = security.RootFactory(request)
         request.GET = MultiDict({'filenames': 'file1.xml'})
         request.route_path = lambda *args, **kw: '/%s/filepath' % args[0]
-        res = Views(request).svn_diff()
+        res = self.ClassView(request).diff()
         self.assertEqual(len(res), 1)
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 1)
@@ -139,7 +143,7 @@ class TestViews(BaseTestCase):
         request.context = security.RootFactory(request)
         request.GET = MultiDict({'filenames': 'file3.xml'})
         request.route_path = lambda *args, **kw: '/%s/filepath' % args[0]
-        res = Views(request).svn_diff()
+        res = self.ClassView(request).diff()
         self.assertEqual(len(res), 1)
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 1)
@@ -151,7 +155,7 @@ class TestViews(BaseTestCase):
         request.GET = MultiDict({'filenames': 'file3.xml'})
         request.route_path = lambda *args, **kw: '/%s/filepath' % args[0]
         self.user_bob.roles = [self.role_contributor]
-        res = Views(request).svn_diff()
+        res = self.ClassView(request).diff()
         self.assertEqual(len(res), 1)
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 1)
@@ -159,29 +163,29 @@ class TestViews(BaseTestCase):
 
         request.GET = MultiDict([('filenames', 'file1.xml'),
                                  ('filenames', 'file3.xml')])
-        res = Views(request).svn_diff()
+        res = self.ClassView(request).diff()
         self.assertEqual(len(res), 1)
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 2)
         self.assertTrue('submit' not in res['content'])
 
     @login_user('Fred')
-    def test_svn_update(self):
+    def test_update(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         self.user_fred.config.root_path = svn_path
         request = testing.DummyRequest()
-        res = Views(request).svn_update()
+        res = self.ClassView(request).update()
         expected = {'content': '<pre>At revision 1.\n</pre>'}
         self.assertEqual(res, expected)
 
     @login_user('Bob')
-    def test_svn_commit_json(self):
+    def test_commit(self):
         with patch('os.path.exists', return_value=True), patch('os.path.isfile', return_value=True):
             svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
             self.user_bob.config.root_path = svn_path
             request = testing.DummyRequest(root_path=svn_path)
             request.context = security.RootFactory(request)
-            res = Views(request).svn_commit_json()
+            res = self.ClassView(request).commit()
             expected = {"status": False, "error_msg": "Bad parameters!"}
             self.assertEqual(res, expected)
 
@@ -194,8 +198,8 @@ class TestViews(BaseTestCase):
                 params={'data': [{'filename': 'test.xml'}],
                         'msg': 'my commit message'})
             request.context = security.RootFactory(request)
-            with patch('waxe.views.versioning.Views.get_svn_client', return_value=mock):
-                res = Views(request).svn_commit_json()
+            with patch(self.get_svn_client_str, return_value=mock):
+                res = self.ClassView(request).commit()
                 mock.checkin.assert_called_once_with(
                     [os.path.join(svn_path, 'test.xml')],
                     'my commit message')
@@ -207,9 +211,8 @@ class TestViews(BaseTestCase):
             status_mock = MagicMock()
             status_mock.text_status = pysvn.wc_status_kind.normal
             mock.status = MagicMock(return_value=[status_mock])
-            with patch('waxe.views.versioning.Views.get_svn_client',
-                       return_value=mock):
-                res = Views(request).svn_commit_json()
+            with patch(self.get_svn_client_str, return_value=mock):
+                res = self.ClassView(request).commit()
                 expected = {'status': False,
                             'error_msg': 'Can\'t commit test.xml'}
                 self.assertEqual(res, expected)
@@ -220,8 +223,8 @@ class TestViews(BaseTestCase):
             status_mock = MagicMock()
             status_mock.text_status = pysvn.wc_status_kind.conflicted
             mock.status = MagicMock(return_value=[status_mock])
-            with patch('waxe.views.versioning.Views.get_svn_client', return_value=mock):
-                res = Views(request).svn_commit_json()
+            with patch(self.get_svn_client_str, return_value=mock):
+                res = self.ClassView(request).commit()
                 expected = {
                     'status': False,
                     'error_msg': "Can't commit conflicted file: test.xml"
@@ -232,8 +235,8 @@ class TestViews(BaseTestCase):
             status_mock = MagicMock()
             status_mock.text_status = pysvn.wc_status_kind.unversioned
             mock.status = MagicMock(return_value=[status_mock])
-            with patch('waxe.views.versioning.Views.get_svn_client', return_value=mock):
-                res = Views(request).svn_commit_json()
+            with patch(self.get_svn_client_str, return_value=mock):
+                res = self.ClassView(request).commit()
                 mock.add.assert_called_once_with(
                     os.path.join(svn_path, 'test.xml'))
                 mock.checkin.assert_called_once_with(
@@ -245,14 +248,14 @@ class TestViews(BaseTestCase):
             # No permission
             self.user_bob.roles = []
             try:
-                res = Views(request).svn_commit_json()
+                res = self.ClassView(request).commit()
                 assert 0
             except Exception, e:
                 self.assertEqual(str(e), 'You are not a contributor')
 
             self.user_bob.roles = [self.role_contributor]
             try:
-                res = Views(request).svn_commit_json()
+                res = self.ClassView(request).commit()
             except Forbidden, e:
                 self.assertEqual(str(e), 'Restricted area')
 
@@ -268,7 +271,7 @@ class TestViews(BaseTestCase):
                    'AuthTktAuthenticationPolicy.unauthenticated_userid',
                    return_value=user.login):
             with patch('os.path.exists', return_value=True), patch('os.path.isfile', return_value=True):
-                view = Views(request)
+                view = self.ClassView(request)
                 res = view.can_commit('/home/test/myfile.xml')
                 self.assertEqual(res, True)
 
@@ -277,7 +280,7 @@ class TestViews(BaseTestCase):
                    'AuthTktAuthenticationPolicy.unauthenticated_userid',
                    return_value=user.login):
             with patch('os.path.exists', return_value=True), patch('os.path.isfile', return_value=True):
-                view = Views(request)
+                view = self.ClassView(request)
                 res = view.can_commit('/home/test/myfile.xml')
                 self.assertEqual(res, True)
 
@@ -285,7 +288,7 @@ class TestViews(BaseTestCase):
         with patch('pyramid.authentication.'
                    'AuthTktAuthenticationPolicy.unauthenticated_userid',
                    return_value=user.login):
-            view = Views(request)
+            view = self.ClassView(request)
             try:
                 res = view.can_commit('/home/test/folder1/myfile.xml')
                 assert(False)
@@ -357,7 +360,7 @@ class FunctionalTestViews(WaxeTestCaseVersioning):
             self.assertTrue('Login' in res.body)
 
     @login_user('Bob')
-    def test_svn_status(self):
+    def test_status(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         self.user_bob.config = UserConfig(root_path=svn_path)
         res = self.testapp.get('/versioning/status', status=200)
@@ -365,7 +368,7 @@ class FunctionalTestViews(WaxeTestCaseVersioning):
         self.assertTrue('file1.xml' in res.body)
 
     @login_user('Bob')
-    def test_svn_status_json(self):
+    def test_status_json(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         self.user_bob.config = UserConfig(root_path=svn_path)
         res = self.testapp.get('/versioning/status.json', status=200)
@@ -375,7 +378,7 @@ class FunctionalTestViews(WaxeTestCaseVersioning):
                         res._headerlist)
 
     @login_user('Bob')
-    def test_svn_diff(self):
+    def test_diff(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         self.user_bob.config = UserConfig(root_path=svn_path)
         res = self.testapp.get('/versioning/diff', status=200)
@@ -386,7 +389,7 @@ class FunctionalTestViews(WaxeTestCaseVersioning):
         self.assertTrue('diff' in res.body)
 
     @login_user('Bob')
-    def test_svn_diff_json(self):
+    def test_diff_json(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         self.user_bob.config = UserConfig(root_path=svn_path)
         res = self.testapp.get('/versioning/diff.json', status=200)
@@ -399,7 +402,7 @@ class FunctionalTestViews(WaxeTestCaseVersioning):
                         res._headerlist)
 
     @login_user('Bob')
-    def test_svn_update(self):
+    def test_update(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         self.user_bob.config = UserConfig(root_path=svn_path,
                                           versioning_password='secret_bob')
@@ -407,7 +410,7 @@ class FunctionalTestViews(WaxeTestCaseVersioning):
         self.assertTrue('At revision 1.' in res.body)
 
     @login_user('Bob')
-    def test_svn_update_json(self):
+    def test_update_json(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         self.user_bob.config = UserConfig(root_path=svn_path,
                                           versioning_password='secret_bob')
@@ -417,7 +420,7 @@ class FunctionalTestViews(WaxeTestCaseVersioning):
                         res._headerlist)
 
     @login_user('Bob')
-    def test_svn_commit_json(self):
+    def test_commit_json(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         self.user_bob.config = UserConfig(root_path=svn_path)
         res = self.testapp.get('/versioning/commit.json', status=200)

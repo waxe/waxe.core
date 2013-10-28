@@ -50,10 +50,10 @@
                 </a>
                 <ul class="dropdown-menu dropdown-versioning">
                     <li>
-                      <a href="${request.route_path('svn_status')}" data-href="${request.route_path('svn_status_json')}">Status</a>
+                      <a href="${request.route_path('versioning_dispatcher', func='status')}" data-href="${request.route_path('versioning_dispatcher_json', func='status')}">Status</a>
                     </i>
                     <li>
-                      <a href="${request.route_path('svn_update')}" data-href="${request.route_path('svn_update_json')}">Update</a>
+                      <a href="${request.route_path('versioning_dispatcher', func='update')}" data-href="${request.route_path('versioning_dispatcher_json', func='update')}">Update</a>
                     </li>
                 </ul>
               </li>
