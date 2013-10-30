@@ -36,7 +36,15 @@ class EditorView(BaseUserView):
         absfilename = browser.absolute_path(filename, root_path)
         try:
             obj = xmltool.load(absfilename)
-            html = xmltool.generate_form_from_obj(obj, form_filename=filename)
+            html = xmltool.generate_form_from_obj(
+                obj,
+                form_filename=filename,
+                form_attrs={
+                    'data-add-href': self.request.route_path('add_element_json'),
+                    'data-comment-href': self.request.route_path('get_comment_modal_json'),
+                    'data-href': self.request.route_path('update_json'),
+                }
+            )
             jstree_data = obj.to_jstree_dict([])
             if not self._is_json():
                 jstree_data = json.dumps(jstree_data)
@@ -72,7 +80,14 @@ class EditorView(BaseUserView):
         dtd_tag = self.request.GET.get('dtd_tag') or None
 
         if dtd_tag and dtd_url:
-            html = xmltool.new(dtd_url, dtd_tag)
+            html = xmltool.new(
+                dtd_url,
+                dtd_tag,
+                form_attrs={
+                    'data-add-href': self.request.route_path('add_element_json'),
+                    'data-comment-href': self.request.route_path('get_comment_modal_json'),
+                    'data-href': self.request.route_path('update_json'),
+                })
             return {
                 'content': html,
                 'breadcrumb': self._get_breadcrumb(None, force_link=True),

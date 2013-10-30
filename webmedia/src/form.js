@@ -34,8 +34,8 @@ var waxe = waxe || {};
         this.$filename = $e.find(this.filename_selector);
         this.filename = this.$filename.val();
         this.$element.xmltool({
-            add_element_url: waxe.url.add_element,
-            comment_modal_url: waxe.url.comment_modal,
+            add_element_url: this.$element.data('add-href'),
+            comment_modal_url: this.$element.data('comment-href')
         }).submit($.proxy(this.save, this));
         this.$element.on('field_change.xmltool', function(){
             that.status = that.STATUS_UPDATED;
@@ -60,7 +60,7 @@ var waxe = waxe || {};
         e.preventDefault();
         var that = this;
         var params = this.$element.serialize();
-        waxe.ajax.POST(waxe.url.update, params, function(data){
+        waxe.ajax.POST(this.$element.data('href'), params, function(data){
             if (data.status){
                 that.status = null;
                 $(document).message('success', 'Saved');

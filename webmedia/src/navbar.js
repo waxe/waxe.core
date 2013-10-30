@@ -72,7 +72,7 @@ var waxe = waxe || {};
 
     NavBar.prototype.init_open = function() {
         this.$elements.open.filebrowser({
-            url: waxe.url.filebrowser,
+            url: this.$elements.open.data('fb-href'),
             title: 'Open file'
         }).bind('select', function(e){
             waxe.dom.load(e.href);
@@ -80,8 +80,9 @@ var waxe = waxe || {};
     };
 
     NavBar.prototype.init_saveas = function() {
+        var that = this;
         this.$elements.saveas.filebrowser({
-            url: waxe.url.filebrowser,
+            url: this.$elements.saveas.data('fb-href'),
             text: {
                 title: 'Save file',
                 submit: 'Save',
@@ -96,7 +97,7 @@ var waxe = waxe || {};
             // TODO: we should call window.history.pushState
             waxe.form.$element.submit();
         }).bind('create_folder', function(e){
-            var url = waxe.url.create_folder + '?path=' + e.path;
+            var url = that.$elements.saveas.data('fb-folder-href') + '?path=' + e.path;
             waxe.ajax.GET(url, function(data){
                 if(data.status === false){
                    e.preventDefault();

@@ -1,6 +1,6 @@
 <div class="ui-layout-center">
 % if files_data:
-  <form class="diff" data-action="/versioning/diff.json" action="/versioning/diff" method="GET">
+  <form class="diff" data-action="${request.route_path('versioning_dispatcher_json', method='diff')}" action="${request.route_path('versioning_dispatcher', method='diff')}" method="GET">
 
   <div>
 	Select: <a href="#" class="select-all">All</a> / <a href="#" class="select-none">None</a>
