@@ -45,8 +45,10 @@ class TestEditorView(LoggedBobTestCase):
             keys.sort()
             self.assertEqual(keys, ['breadcrumb', 'content', 'jstree_data'])
             self.assertEqual(res['breadcrumb'],  expected_breadcrumb)
-            self.assertTrue('<form method="POST" id="xmltool-form">' in
-                            res['content'])
+            self.assertTrue(
+                '<form method="POST" id="xmltool-form" '
+                'data-comment-href="/filepath" data-add-href="/filepath" '
+                'data-href="/filepath">' in res['content'])
             self.assertTrue(isinstance(res['jstree_data'], dict))
 
             request.matched_route.name = 'route'
@@ -55,8 +57,10 @@ class TestEditorView(LoggedBobTestCase):
             keys.sort()
             self.assertEqual(keys, ['breadcrumb', 'content', 'jstree_data'])
             self.assertEqual(res['breadcrumb'],  expected_breadcrumb)
-            self.assertTrue('<form method="POST" id="xmltool-form">' in
-                            res['content'])
+            self.assertTrue(
+                '<form method="POST" id="xmltool-form" '
+                'data-comment-href="/filepath" data-add-href="/filepath" '
+                'data-href="/filepath">' in res['content'])
             self.assertTrue(isinstance(res['jstree_data'], str))
 
         def raise_func(*args, **kw):
@@ -103,6 +107,7 @@ class TestEditorView(LoggedBobTestCase):
     def test_new(self):
         dtd_url = 'http://xmltool.lereskp.fr/static/exercise.dtd'
         request = testing.DummyRequest()
+        request.route_path = lambda *args, **kw: '/filepath'
         request.dtd_urls = [dtd_url]
         res = EditorView(request).new()
         self.assertEqual(len(res), 1)
@@ -116,8 +121,10 @@ class TestEditorView(LoggedBobTestCase):
         request.route_path = lambda *args, **kw: '/filepath'
         res = EditorView(request).new()
         self.assertEqual(len(res), 2)
-        self.assertTrue('<form method="POST" id="xmltool-form">'
-                        in res['content'])
+        self.assertTrue(
+            '<form method="POST" id="xmltool-form" '
+            'data-comment-href="/filepath" data-add-href="/filepath" '
+            'data-href="/filepath">' in res['content'])
         self.assertTrue('<a data-href="/filepath" href="/filepath">root</a>'
                         in res['breadcrumb'])
 
@@ -294,8 +301,11 @@ class FunctionalTestEditorView(WaxeTestCase):
                                params={'filename': 'file1.xml'})
         dic = json.loads(res.body)
         self.assertEqual(len(dic), 3)
-        self.assertTrue('<form method="POST" id="xmltool-form">' in
-                        dic['content'])
+        self.assertTrue(
+            '<form method="POST" id="xmltool-form" '
+            'data-comment-href="/get-comment-modal.json" '
+            'data-add-href="/add-element.json" '
+            'data-href="/update.json">' in dic['content'])
         self.assertTrue(isinstance(dic['jstree_data'], dict))
 
     @login_user('Bob')
@@ -331,8 +341,11 @@ class FunctionalTestEditorView(WaxeTestCase):
                                        'dtd_tag': dtd_tag})
         dic = json.loads(res.body)
         self.assertEqual(len(dic), 2)
-        self.assertTrue('<form method="POST" id="xmltool-form">' in
-                        dic['content'])
+        self.assertTrue(
+            '<form method="POST" id="xmltool-form" '
+            'data-comment-href="/get-comment-modal.json" '
+            'data-add-href="/add-element.json" '
+            'data-href="/update.json">' in dic['content'])
         self.assertTrue(dic['breadcrumb'])
         self.assertTrue('data-href="/home.json?path="' in dic['breadcrumb'])
 

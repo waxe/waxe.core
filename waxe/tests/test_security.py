@@ -48,10 +48,15 @@ class TestSecurity(BaseTestCase):
                          ['Multiple rows were found for one()'])
 
     def test_validate_password(self):
-        self.assertEqual(security.validate_password('nonexisting', ''), False)
-        self.assertEqual(security.validate_password('Bob', ''), False)
-        self.assertEqual(security.validate_password('Bob', 'toto'), False)
-        self.assertEqual(security.validate_password('Bob', 'secret_bob'), True)
+        request = testing.DummyRequest()
+        self.assertEqual(security.validate_password(request,
+                                                    'nonexisting', ''), False)
+        self.assertEqual(security.validate_password(request,
+                                                    'Bob', ''), False)
+        self.assertEqual(security.validate_password(request,
+                                                    'Bob', 'toto'), False)
+        self.assertEqual(security.validate_password(request,
+                                                    'Bob', 'secret_bob'), True)
 
     def test_get_user_permissions(self):
         request = testing.DummyRequest()
