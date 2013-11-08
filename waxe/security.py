@@ -31,7 +31,7 @@ def get_user(login):
         log.exception(e)
 
 
-def validate_password(login, password):
+def validate_password(request, login, password):
     user = get_user(login)
     if not user:
         return False
