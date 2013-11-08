@@ -1,16 +1,5 @@
-import os.path
-import logging
-import pysvn
-import locale
 from subprocess import Popen, PIPE
-from pyramid.renderers import render
-from waxe import browser
-from waxe import diff
-from waxe import models
-from waxe.utils import unflatten_params
-from ..base import BaseView
 from .pysvn_backend import PysvnView
-
 
 
 class PythonSvnView(PysvnView):
@@ -30,5 +19,4 @@ class PythonSvnView(PysvnView):
         res = p.stdout.read()
         # We want to display relative urls
         res = res.replace(self.root_path + '/', '')
-        return {'content': '<pre>%s</pre>' % res}
-
+        return self._response({'content': '<pre>%s</pre>' % res})

@@ -55,7 +55,8 @@ class TestEditorView(LoggedBobTestCase):
             res = EditorView(request).edit()
             keys = res.keys()
             keys.sort()
-            self.assertEqual(keys, ['breadcrumb', 'content', 'jstree_data'])
+            self.assertEqual(keys, ['breadcrumb', 'content',
+                                    'editor_login', 'jstree_data'])
             self.assertEqual(res['breadcrumb'],  expected_breadcrumb)
             self.assertTrue(
                 '<form method="POST" id="xmltool-form" '

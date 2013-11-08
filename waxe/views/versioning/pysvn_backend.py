@@ -67,6 +67,10 @@ class PysvnView(BaseView):
             auth = True
 
         editor_login = self.current_user.login
+        if not auth:
+            # No auth, no need to find a password
+            return False, str(editor_login), None, False
+
         pwd = self.request.registry.settings.get('versioning.auth.pwd')
         if not pwd:
             pwd = self.current_user.config.versioning_password
@@ -107,9 +111,9 @@ class PysvnView(BaseView):
         content = render('blocks/versioning.mak', {
             'files_data': lis,
         }, self.request)
-        return {
+        return self._response({
             'content': content,
-        }
+        })
 
     def _svn_diff(self, filename, client, index=0, editable=False):
         root_path = self.root_path
@@ -145,9 +149,9 @@ class PysvnView(BaseView):
     def diff(self):
         filenames = self.request.GET.getall('filenames') or ''
         if not filenames:
-            return {
+            return self._response({
                 'error_msg': 'You should provide at least one filename.',
-            }
+            })
 
         client = self.get_svn_client()
         html = ''
@@ -169,7 +173,7 @@ class PysvnView(BaseView):
                 '<input data-filename="%s" type="submit" '
                 'class="diff-submit" value="Save and commit" />'
                 '</form') % (''.join(html), filename)
-        return {'content': html}
+        return self._response({'content': html})
 
     def update(self):
         root_path = self.root_path
@@ -179,20 +183,21 @@ class PysvnView(BaseView):
         try:
             revisions = client.update(abspath)
         except pysvn.ClientError, e:
-            return {
+            return self._response({
                 'error_msg': str(e).replace(root_path + '/', ''),
-            }
+            })
 
-        return {
+        return self._response({
             'content': 'The repository has been updated!',
-        }
+        })
 
     def commit(self):
         msg = self.request.POST.get('msg')
         params = unflatten_params(self.request.POST)
 
         if 'data' not in params or not params['data'] or not msg:
-            return {'status': False, 'error_msg': 'Bad parameters!'}
+            return self._response({'status': False,
+                                   'error_msg': 'Bad parameters!'})
 
         filenames = []
         for dic in params['data']:
@@ -235,7 +240,7 @@ class PysvnView(BaseView):
                 error_msg += ['Can\'t commit %s' % filename]
 
         if error_msg:
-            return {'status': False, 'error_msg': '<br />'.join(error_msg)}
+            return self._response({'status': False, 'error_msg': '<br />'.join(error_msg)})
         # TODO: return the content of the status.
         # We should make a redirect!
-        return {'status': True, 'content': 'Commit done'}
+        return self._response({'status': True, 'content': 'Commit done'})

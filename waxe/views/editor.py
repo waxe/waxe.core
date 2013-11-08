@@ -59,11 +59,11 @@ class EditorView(BaseUserView):
                 'error_msg': str(e)
             }
         breadcrumb = self._get_breadcrumb(filename)
-        return {
+        return self._response({
             'content': html,
             'breadcrumb': breadcrumb,
             'jstree_data': jstree_data,
-        }
+        })
 
     @view_config(route_name='get_tags_json', renderer='json', permission='edit')
     def get_tags(self):

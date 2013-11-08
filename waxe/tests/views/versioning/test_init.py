@@ -30,11 +30,23 @@ from waxe.views.versioning.python_svn_backend import (
 )
 
 
+class EmptyClass(object):
+    pass
+
+
 class SvnViewTester(object):
     ClassView = None
 
     get_svn_client_str = ('waxe.views.versioning.'
                           'pysvn_backend.PysvnView.get_svn_client')
+
+    def DummyRequest(self, *args, **kw):
+        request = testing.DummyRequest(*args, **kw)
+        request.context = security.RootFactory(request)
+        request.route_path = lambda *args, **kw: '/%s' % args[0]
+        request.matched_route = EmptyClass()
+        request.matched_route.name = 'route'
+        return request
 
     def setUp(self):
         super(SvnViewTester, self).setUp()
@@ -47,7 +59,7 @@ class SvnViewTester(object):
 
     def test_svn_cmd(self):
         self.config.testing_securitypolicy(userid='Fred', permissive=True)
-        request = testing.DummyRequest()
+        request = self.DummyRequest()
         res = self.ClassView(request).svn_cmd('update')
         expected = 'svn update --non-interactive'
         self.assertEqual(res, expected)
@@ -60,7 +72,7 @@ class SvnViewTester(object):
 
     def test_svn_cmd_failed(self):
         self.config.testing_securitypolicy(userid='Bob', permissive=True)
-        request = testing.DummyRequest()
+        request = self.DummyRequest()
         request.registry.settings['versioning.auth.active'] = True
         try:
             self.ClassView(request).svn_cmd('update')
@@ -69,9 +81,15 @@ class SvnViewTester(object):
             self.assertEqual(str(e), 'No versioning password set for Bob')
 
     def test_get_svn_login(self):
-        request = testing.DummyRequest()
+        request = self.DummyRequest()
         view = self.ClassView(request)
         view.current_user = self.user_bob
+
+        res = view.get_svn_login()
+        expected = (False, 'Bob', None, False)
+        self.assertEqual(res, expected)
+
+        request.registry.settings['versioning.auth.active'] = True
         try:
             view.get_svn_login()
             assert(False)
@@ -84,16 +102,15 @@ class SvnViewTester(object):
             versioning_password='secret_bob',
         )
         res = view.get_svn_login()
-        expected = (False, 'Bob', 'secret_bob', False)
+        expected = (True, 'Bob', 'secret_bob', False)
         self.assertEqual(res, expected)
 
         view = self.ClassView(request)
         view.current_user = self.user_fred
         res = view.get_svn_login()
-        expected = (False, 'Fred', 'secret_fred', False)
+        expected = (True, 'Fred', 'secret_fred', False)
         self.assertEqual(res, expected)
 
-        request.registry.settings['versioning.auth.active'] = True
         view = self.ClassView(request)
         view.current_user = self.user_fred
         res = view.get_svn_login()
@@ -111,10 +128,10 @@ class SvnViewTester(object):
     def test_status(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         self.user_bob.config.root_path = svn_path
-        request = testing.DummyRequest()
-        request.route_path = lambda *args, **kw: '/%s/filepath' % args[0]
+        request = self.DummyRequest()
         res = self.ClassView(request).status()
-        self.assertEqual(len(res), 1)
+        self.assertEqual(len(res), 2)
+        self.assertEqual(res.keys(), ['content', 'editor_login'])
         self.assertTrue('<form' in res['content'])
         self.assertTrue('file1.xml' in res['content'])
         self.assertTrue('file3.xml' in res['content'])
@@ -124,43 +141,40 @@ class SvnViewTester(object):
     def test_diff(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         self.user_bob.config.root_path = svn_path
-        request = testing.DummyRequest()
-        request.context = security.RootFactory(request)
+        request = self.DummyRequest()
         request.GET = MultiDict()
         res = self.ClassView(request).diff()
-        expected = {'error_msg': 'You should provide at least one filename.'}
+        expected = {'error_msg': 'You should provide at least one filename.',
+                    'editor_login': 'Bob'}
         self.assertEqual(res, expected)
 
-        request = testing.DummyRequest(root_path=svn_path,
+        request = self.DummyRequest(root_path=svn_path,
                                        params={'filenames': 'file1.xml'})
-        request.context = security.RootFactory(request)
         request.GET = MultiDict({'filenames': 'file1.xml'})
-        request.route_path = lambda *args, **kw: '/%s/filepath' % args[0]
         res = self.ClassView(request).diff()
-        self.assertEqual(len(res), 1)
+        self.assertEqual(len(res), 2)
+        self.assertEqual(res.keys(), ['content', 'editor_login'])
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 1)
         self.assertTrue('submit' in res['content'])
 
-        request = testing.DummyRequest(root_path=svn_path,
+        request = self.DummyRequest(root_path=svn_path,
                                        params={'filenames': 'file3.xml'})
-        request.context = security.RootFactory(request)
         request.GET = MultiDict({'filenames': 'file3.xml'})
-        request.route_path = lambda *args, **kw: '/%s/filepath' % args[0]
         res = self.ClassView(request).diff()
-        self.assertEqual(len(res), 1)
+        self.assertEqual(len(res), 2)
+        self.assertEqual(res.keys(), ['content', 'editor_login'])
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 1)
         self.assertTrue('submit' in res['content'])
 
-        request = testing.DummyRequest(root_path=svn_path,
+        request = self.DummyRequest(root_path=svn_path,
                                        params={'filenames': 'file3.xml'})
-        request.context = security.RootFactory(request)
         request.GET = MultiDict({'filenames': 'file3.xml'})
-        request.route_path = lambda *args, **kw: '/%s/filepath' % args[0]
         self.user_bob.roles = [self.role_contributor]
         res = self.ClassView(request).diff()
-        self.assertEqual(len(res), 1)
+        self.assertEqual(len(res), 2)
+        self.assertEqual(res.keys(), ['content', 'editor_login'])
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 1)
         self.assertTrue('submit' not in res['content'])
@@ -168,7 +182,8 @@ class SvnViewTester(object):
         request.GET = MultiDict([('filenames', 'file1.xml'),
                                  ('filenames', 'file3.xml')])
         res = self.ClassView(request).diff()
-        self.assertEqual(len(res), 1)
+        self.assertEqual(len(res), 2)
+        self.assertEqual(res.keys(), ['content', 'editor_login'])
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 2)
         self.assertTrue('submit' not in res['content'])
@@ -178,27 +193,29 @@ class SvnViewTester(object):
         with patch('os.path.exists', return_value=True), patch('os.path.isfile', return_value=True):
             svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
             self.user_bob.config.root_path = svn_path
-            request = testing.DummyRequest(root_path=svn_path)
-            request.context = security.RootFactory(request)
+            request = self.DummyRequest(root_path=svn_path)
             res = self.ClassView(request).commit()
-            expected = {"status": False, "error_msg": "Bad parameters!"}
+            expected = {"status": False,
+                        "error_msg": "Bad parameters!",
+                        'editor_login': 'Bob'}
             self.assertEqual(res, expected)
 
             mock = MagicMock()
             status_mock = MagicMock()
             status_mock.text_status = pysvn.wc_status_kind.normal
             mock.status = MagicMock(return_value=[status_mock])
-            request = testing.DummyRequest(
+            request = self.DummyRequest(
                 root_path=svn_path,
                 params={'data': [{'filename': 'test.xml'}],
                         'msg': 'my commit message'})
-            request.context = security.RootFactory(request)
             with patch(self.get_svn_client_str, return_value=mock):
                 res = self.ClassView(request).commit()
                 mock.checkin.assert_called_once_with(
                     [os.path.join(svn_path, 'test.xml')],
                     'my commit message')
-                expected = {'status': True, 'content': 'Commit done'}
+                expected = {'status': True,
+                            'content': 'Commit done',
+                            'editor_login': 'Bob'}
                 self.assertEqual(res, expected)
 
             mock = MagicMock(side_effect=Exception('Error'))
@@ -209,7 +226,8 @@ class SvnViewTester(object):
             with patch(self.get_svn_client_str, return_value=mock):
                 res = self.ClassView(request).commit()
                 expected = {'status': False,
-                            'error_msg': 'Can\'t commit test.xml'}
+                            'error_msg': 'Can\'t commit test.xml',
+                            'editor_login': 'Bob'}
                 self.assertEqual(res, expected)
                 mock.checkin.assert_called_once_with(
                     [os.path.join(svn_path, 'test.xml')],
@@ -222,8 +240,8 @@ class SvnViewTester(object):
                 res = self.ClassView(request).commit()
                 expected = {
                     'status': False,
-                    'error_msg': "Can't commit conflicted file: test.xml"
-                }
+                    'error_msg': "Can't commit conflicted file: test.xml",
+                    'editor_login': 'Bob'}
                 self.assertEqual(res, expected)
 
             mock = MagicMock()
@@ -237,7 +255,9 @@ class SvnViewTester(object):
                 mock.checkin.assert_called_once_with(
                     [os.path.join(svn_path, 'test.xml')],
                     'my commit message')
-                expected = {'status': True, 'content': 'Commit done'}
+                expected = {'status': True,
+                            'content': 'Commit done',
+                            'editor_login': 'Bob'}
                 self.assertEqual(res, expected)
 
             # No permission
@@ -258,8 +278,7 @@ class SvnViewTester(object):
         user = User(login='user1', password='pass1')
         DBSession.add(user)
 
-        request = testing.DummyRequest()
-        request.context = security.RootFactory(request)
+        request = self.DummyRequest()
 
         user.roles = [self.role_admin]
         with patch('pyramid.authentication.'
@@ -327,9 +346,10 @@ class TestPysvnView(SvnViewTester, BaseTestCase):
     def test_update(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         self.user_fred.config.root_path = svn_path
-        request = testing.DummyRequest()
+        request = self.DummyRequest()
         res = self.ClassView(request).update()
-        expected = {'content': 'The repository has been updated!'}
+        expected = {'content': 'The repository has been updated!',
+                    'editor_login': 'Fred'}
         self.assertEqual(res, expected)
 
 
@@ -340,9 +360,10 @@ class TestPythonSvnView(SvnViewTester, BaseTestCase):
     def test_update(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         self.user_fred.config.root_path = svn_path
-        request = testing.DummyRequest()
+        request = self.DummyRequest()
         res = self.ClassView(request).update()
-        expected = {'content': '<pre>At revision 1.\n</pre>'}
+        expected = {'content': '<pre>At revision 1.\n</pre>',
+                    'editor_login': 'Fred'}
         self.assertEqual(res, expected)
 
 
