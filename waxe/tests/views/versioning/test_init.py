@@ -80,10 +80,14 @@ class SvnViewTester(object):
         except Exception, e:
             self.assertEqual(str(e), 'No versioning password set for Bob')
 
+    @login_user('Bob')
     def test_get_svn_login(self):
         request = self.DummyRequest()
+        self.user_bob.config = UserConfig(
+            root_path='/root_path',
+            use_versioning=True,
+        )
         view = self.ClassView(request)
-        view.current_user = self.user_bob
 
         res = view.get_svn_login()
         expected = (False, 'Bob', None, False)
@@ -96,11 +100,7 @@ class SvnViewTester(object):
         except Exception, e:
             self.assertEqual(str(e), 'No versioning password set for Bob')
 
-        self.user_bob.config = UserConfig(
-            root_path='',
-            use_versioning=True,
-            versioning_password='secret_bob',
-        )
+        self.user_bob.config.versioning_password = 'secret_bob'
         res = view.get_svn_login()
         expected = (True, 'Bob', 'secret_bob', False)
         self.assertEqual(res, expected)
@@ -276,6 +276,7 @@ class SvnViewTester(object):
 
     def test_can_commit(self):
         user = User(login='user1', password='pass1')
+        user.config = UserConfig(root_path='/root_path')
         DBSession.add(user)
 
         request = self.DummyRequest()

@@ -8,7 +8,7 @@ from waxe import browser
 from waxe import diff
 from waxe import models
 from waxe.utils import unflatten_params
-from ..base import BaseView
+from ..base import BaseUserView
 
 
 log = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ def svn_ssl_server_trust_prompt(trust_dict):
     return True, trust_dict['failures'], False
 
 
-class PysvnView(BaseView):
+class PysvnView(BaseUserView):
 
     def can_commit(self, path):
         if not os.path.exists(path):
