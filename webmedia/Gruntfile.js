@@ -21,9 +21,31 @@ module.exports = function(grunt) {
         stripBanners: true
       },
       dist: {
-        src: ['src/*js'],
+        src: [
+            'libs/jquery/jquery.js',
+            'libs/js/jquery-ui-1.10.1.custom.min.js',
+            'libs/bootstrap-3.0.2/js/transition.js',
+            'libs/bootstrap-3.0.2/js/alert.js',
+            'libs/bootstrap-3.0.2/js/button.js',
+            'libs/bootstrap-3.0.2/js/carousel.js',
+            'libs/bootstrap-3.0.2/js/collapse.js',
+            'libs/bootstrap-3.0.2/js/dropdown.js',
+            'libs/bootstrap-3.0.2/js/modal.js',
+            'libs/bootstrap-3.0.2/js/tooltip.js',
+            'libs/bootstrap-3.0.2/js/popover.js',
+            'libs/bootstrap-3.0.2/js/scrollspy.js',
+            'libs/bootstrap-3.0.2/js/tab.js',
+            'libs/bootstrap-3.0.2/js/affix.js',
+            'libs/js/jquery.layout-latest.min.js',
+            'libs/js/jquery.jstree.js',
+            'libs/js/jquery.message.js',
+            'libs/js/jquery.autosize.js',
+            'libs/js/xmltool/*.js',
+            'src/jquery.filebrowser.js',
+            'src/*js'
+        ],
         dest: '../waxe/static/js/<%= pkg.name %>.js'
-      },
+      }
     },
     uglify: {
       options: {
