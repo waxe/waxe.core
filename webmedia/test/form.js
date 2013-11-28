@@ -96,6 +96,7 @@ test("save", function() {
 test("auto_save", function() {
     expect(6);
     waxe.form.auto_save();
+    /*jshint -W020 */
     var old_setInterval = setInterval;
     setInterval = function(func){
         func();

@@ -29,7 +29,7 @@ var waxe = waxe || {};
                 var $content = $('.content');
                 $content.html(data.content);
                 waxe.dom.addPushStateOnLinks($content);
-                waxe.form.load();
+                waxe.form.load(data.jstree_data);
                 waxe.versioning.init();
                 $(document).message('info', 'Loaded!');
             }
@@ -43,10 +43,7 @@ var waxe = waxe || {};
                 $breadcrumb.html('');
             }
 
-            if('jstree_data' in data){
-                waxe.jstree.load(data.jstree_data);
-            }
-            else{
+            if(!('jstree_data' in data)){
                 $('body').data('layout').hide('east');
             }
         },

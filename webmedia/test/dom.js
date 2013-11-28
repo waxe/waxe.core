@@ -15,13 +15,6 @@ var waxe = waxe || {};
         }
     };
 
-    var jstree_nb_called = 0;
-    var FakeJstree = {
-        load: function(){
-            jstree_nb_called += 1;
-        }
-    };
-
     var message_error_nb_called = 0;
     var message_info_nb_called = 0;
     var message_success_nb_called = 0;
@@ -40,26 +33,21 @@ var waxe = waxe || {};
     var breadcrumb = $('<div class="breadcrumb" />');
     var content = $('<div class="content" />');
     var layout = new FakeLayout();
-    var old_waxe_jstree;
     var old_waxe_versioning;
     QUnit.module('Test waxe.dom', {
         setup: function(){
-            old_waxe_jstree = waxe.jstree;
             old_waxe_versioning = waxe.versioning;
-            waxe.jstree = FakeJstree;
             waxe.versioning = FakeVersioning;
             $('#qunit-fixture').html(breadcrumb);
             $('#qunit-fixture').append(content);
             $('#qunit-fixture').append(layout.$elt);
             $('body').data('layout', layout);
             versioning_nb_called = 0;
-            jstree_nb_called = 0;
             message_error_nb_called = 0;
             message_success_nb_called = 0;
             message_info_nb_called = 0;
         },
         teardown: function(){
-            waxe.jstree = old_waxe_jstree;
             waxe.versioning = old_waxe_versioning;
         }
     });
@@ -104,7 +92,6 @@ var waxe = waxe || {};
         equal(breadcrumb.html(), 'My breadcrumb', 'breadcrumb updated');
         equal(layout.$elt.is(':visible'), false, 'layout is always hidden');
         equal(versioning_nb_called, 1);
-        equal(jstree_nb_called, 0);
         equal(message_error_nb_called,  0);
         equal(message_success_nb_called,  0);
         equal(message_info_nb_called, 1);
@@ -118,7 +105,6 @@ var waxe = waxe || {};
         equal(breadcrumb.html(), '', 'breadcrumb is empty');
         equal(layout.$elt.is(':visible'), false, 'layout is always hidden');
         equal(versioning_nb_called, 2);
-        equal(jstree_nb_called, 0);
         equal(message_error_nb_called,  0);
         equal(message_success_nb_called,  0);
         equal(message_info_nb_called, 2);
@@ -132,21 +118,17 @@ var waxe = waxe || {};
         equal(breadcrumb.html(), 'My breadcrumb', 'breadcrumb updated');
         equal(layout.$elt.is(':visible'), false, 'layout is always hidden');
         equal(versioning_nb_called, 2);
-        equal(jstree_nb_called, 0);
         equal(message_error_nb_called,  0);
         equal(message_success_nb_called,  0);
         equal(message_info_nb_called, 2);
         equal(cnt, 4);
 
-        data = {
-            jstree_data: 'My data'
-        };
+        data = {};
         waxe.dom.update(data);
         equal(content.html(), 'My new content', 'content not updated');
         equal(breadcrumb.html(), '', 'breadcrumb updated');
         equal(layout.$elt.is(':visible'), false, 'layout is always hidden');
         equal(versioning_nb_called, 2);
-        equal(jstree_nb_called, 1);
         equal(message_error_nb_called,  0);
         equal(message_success_nb_called,  0);
         equal(message_info_nb_called, 2);
@@ -161,7 +143,6 @@ var waxe = waxe || {};
         equal(breadcrumb.html(), '', 'breadcrumb updated');
         equal(layout.$elt.is(':visible'), false, 'layout is always hidden');
         equal(versioning_nb_called, 2);
-        equal(jstree_nb_called, 1);
         equal(message_error_nb_called,  1);
         equal(message_success_nb_called,  0);
         equal(message_info_nb_called, 2);

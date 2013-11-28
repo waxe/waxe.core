@@ -4,7 +4,7 @@ var waxe = waxe || {};
     "use strict";
 
 
-    var Form = function(){
+    var Form = function(jstreeData){
         this.selector = 'form#xmltool-form';
         this.filename_selector = '#_xml_filename';
         this.$element = null;
@@ -12,12 +12,12 @@ var waxe = waxe || {};
         this.$filename = null;
         this.auto_save_interval = null;
         this.auto_save_time = 1000 * 60;
-        this.load();
+        this.load(jstreeData);
     };
 
     Form.STATUS_UPDATED = 'updated';
 
-    Form.prototype.load = function(){
+    Form.prototype.load = function(jstreeData){
         var that = this;
         this.$element = null;
         this.status = null;
@@ -35,8 +35,17 @@ var waxe = waxe || {};
         this.filename = this.$filename.val();
         this.$element.xmltool({
             add_element_url: this.$element.data('add-href'),
-            comment_modal_url: this.$element.data('comment-href')
-        }).submit($.proxy(this.save, this));
+            comment_modal_url: this.$element.data('comment-href'),
+            jstreeSelector: '#tree',
+            jstreeData: jstreeData,
+            message: function(){
+                var d = $(document);
+                d.message.apply(d, arguments);
+            },
+            treeContainerSelector: '.ui-layout-center'
+        }).submit($.proxy(this.save, this)).on('loadedJstree', function(){
+            $('body').data('layout').show('east');
+        });
         this.$element.on('field_change.xmltool', function(){
             that.status = that.STATUS_UPDATED;
         });
@@ -88,7 +97,11 @@ var waxe = waxe || {};
     };
 
     $(document).ready(function(){
-        waxe.form = new Form();
+        var data = null;
+        if (typeof jstree_data !== 'undefined') {
+            data = jstree_data;
+        }
+        waxe.form = new Form(data);
     });
 
 })(jQuery, waxe);
