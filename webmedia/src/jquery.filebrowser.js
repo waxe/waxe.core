@@ -1,14 +1,16 @@
+/* TODO: fix this error */
+/*jshint -W083*/
 (function($){
 
     var FileBrowser = function(element, options){
         this.init(element, options);
-    }
+    };
 
     FileBrowser.prototype = {
         constructor: FileBrowser,
         init: function(element, options){
             this.is_initialize = false;
-            this.settings = $.extend(true, {}, $.fn.filebrowser.defaults, options),
+            this.settings = $.extend(true, {}, $.fn.filebrowser.defaults, options);
             this.$element = $(element);
             this.$dialog = $(this.settings.template.dialog);
             this.$navfile = this.$dialog.find(this.settings.selector.nav_file);
@@ -24,11 +26,11 @@
             this.$filename = null;
 
             var self = this;
-            if(this.settings.type == 'save'){
+            if(this.settings.type === 'save'){
                 this.$nav_btns.before(this.settings.template.filename);
                 this.$filename = this.$dialog.find(this.settings.selector.filename);
                 this.$filename.keydown(function(e){
-                    if(e.which == 13){
+                    if(e.which === 13){
                         if ($(this).val()){
                             self.$submit.click();
                         }
@@ -36,14 +38,12 @@
                 });
 
                 var tmp = $('<input type="text" class="foldername"/>').hide().keydown(function(e){
-                    if(e.which == 13){
+                    if(e.which === 13){
                         var value = $(this).val();
                         if (value){
+                            var path = value;
                             if(self.path){
-                                var path = self.path + '/' + value;
-                            }
-                            else{
-                                var path = value;
+                                path = self.path + '/' + value;
                             }
                             var evt = $.Event('create_folder', {path: path});
                             self.$element.trigger(evt);
@@ -53,13 +53,13 @@
                             }
                         }
                     }
-                    else if(e.which == 27){
+                    else if(e.which === 27){
                         e.preventDefault();
                         e.stopPropagation();
                         $(this).hide();
                     }
                 }).keyup(function(e){
-                    if(e.which == 27){
+                    if(e.which === 27){
                         e.preventDefault();
                         e.stopPropagation();
                     }
@@ -73,16 +73,16 @@
                 this.$nav_btns.after(this.$new_folder);
             }
 
-            this.$submit.click(function(e){self.on_submit(e)});
+            this.$submit.click(function(e){self.on_submit(e);});
 
-            var self = this;
             this.$element.on('click', function(e){
                 e.preventDefault();
 
                 var evt = $.Event('before_open');
                 self.$element.trigger(evt);
-                if(evt.isDefaultPrevented())
+                if(evt.isDefaultPrevented()) {
                     return false;
+                }
                 self.$navfile.find('li.file').removeClass(self.settings.css_class.selected_file);
                 if (self.is_initialize){
                     self.settings.func.open_dialog(self.$dialog);
@@ -135,19 +135,19 @@
             }
 
             var container = $(this.settings.template.nav_files);
-            for(var i=0; i < data.folders.length; i++){
+            for(i=0; i < data.folders.length; i++){
                 var folder = data.folders[i];
                 var span = $('<span />').html(folder.name);
                 var li = $(this.settings.template.nav_folder).append(span).on('click', function(e){self.on_click(e, this);}).data('href', folder.data_href).addClass(this.settings.css_class.folder);
                 container.append(li);
             }
 
-            for(var i=0; i < data.filenames.length; i++){
+            for(i=0; i < data.filenames.length; i++){
                 var filename = data.filenames[i];
-                var span = $('<span />').html(filename.name);
-                var li = $(this.settings.template.nav_file).append(span).data('href', filename.data_href).addClass(this.settings.css_class.file);
-                if(this.settings.type == 'open'){
-                    li.on('click', function(){
+                var span_file = $('<span />').html(filename.name);
+                var li_file = $(this.settings.template.nav_file).append(span_file).data('href', filename.data_href).addClass(this.settings.css_class.file);
+                if(this.settings.type === 'open'){
+                    li_file.on('click', function(){
                         var selected_class = self.settings.css_class.selected_file;
                         $(this).addClass(selected_class).siblings().removeClass(selected_class);
                     }).dblclick(function(){
@@ -155,12 +155,12 @@
                     });
                 }
                 else{
-                    li.on('click', function(){
+                    li_file.on('click', function(){
                         self.$filename.val($(this).text());
                     });
                 }
 
-                container.append(li);
+                container.append(li_file);
             }
             this.$navfile.html(container);
         },
@@ -170,7 +170,7 @@
         _notok_filename: function(filename){
             var is_folder = false;
             this.$navfile.find('.' + this.settings.css_class.folder).each(function(){
-                if ($(this).text() == filename){
+                if ($(this).text() === filename){
                     is_folder = true;
                 }
             });
@@ -179,7 +179,7 @@
         _exist_filename: function(filename){
             var exist = false;
             this.$navfile.find('.' + this.settings.css_class.file).each(function(){
-                if ($(this).text() == filename){
+                if ($(this).text() === filename){
                     exist = true;
                 }
             });
@@ -187,7 +187,7 @@
         },
         on_submit: function(e){
             e.preventDefault();
-            if(this.settings.type == 'open'){
+            if(this.settings.type === 'open'){
                 var href = this._get_selected_file();
                 if(href){
                     var evt = $.Event('select', {href: href});
@@ -207,23 +207,24 @@
                             return false;
                         }
                         if(this._exist_filename(filename)){
-                            if(!confirm('Do you want to overwrite ' + filename + '?'))
+                            if(!confirm('Do you want to overwrite ' + filename + '?')) {
                                 return false;
+                            }
                         }
-                        if(this.path)
-                            var path = this.path + '/' + filename
-                        else
-                            var path = filename;
-                        var evt = $.Event('select', {href: path});
-                        this.$element.trigger(evt);
-                        if(! evt.isDefaultPrevented()){
+                        var path = filename;
+                        if(this.path) {
+                            path = this.path + '/' + filename;
+                        }
+                        var evt_sel = $.Event('select', {href: path});
+                        this.$element.trigger(evt_sel);
+                        if(! evt_sel.isDefaultPrevented()){
                             this.settings.func.close_dialog(this.$dialog);
                         }
                     }
                 }
             }
         }
-    }
+    };
 
 
     $.fn.filebrowser = function(options){
@@ -231,13 +232,13 @@
         return this.each(function(){
             var $this = $(this),
                 data = $this.data('filebrowser'),
-                settings = typeof options == 'object' && options;
+                settings = typeof options === 'object' && options;
 
             if(!data){
                 data = new FileBrowser(this, settings);
-                $this.data('filebrowser', data)
+                $this.data('filebrowser', data);
             }
-            if (typeof options == 'string'){
+            if (typeof options === 'string'){
                 data[options].apply(data, Array.prototype.slice.call(args, 1));
             }
         });
@@ -304,6 +305,6 @@
             cancel: 'Cancel'
         },
         type: 'open'
-    }
+    };
 
 })(jQuery);
