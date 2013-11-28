@@ -241,14 +241,16 @@
                 data[options].apply(data, Array.prototype.slice.call(args, 1));
             }
         });
-    }
+    };
 
     $.fn.filebrowser.defaults = {
         template: {
-            dialog: '<div class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">' +
+            dialog: '<drv class="modal fade">' +
+                '<div class="modal-dialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">' +
+                '<div class="modal-content">' +
                 '<div class="modal-header">' +
                 '<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>' +
-    '<h3></h3>' +
+    '<h4 class="modal-title"></h4>' +
     '</div>' +
     '<div class="modal-body">' +
     '<div class="btn-group"></div>' +
@@ -261,9 +263,11 @@
     '<a href="#" class="btn cancel" data-dismiss="modal"></a>' +
     '<a href="#" class="btn btn-primary submit"></a>' +
     '</div>' +
+    '</div>' +
+    '</div>' +
     '</div>',
             nav_btn: '<button class="btn"/>',
-            nav_files: '<ul class="unstyled"/>',
+            nav_files: '<ul class="list-unstyled"/>',
             nav_file: '<li/>',
             nav_folder: '<li/>',
             filename: '<div class="form-inline"><label>Filename:</label><input class="filename" type="text" name="filename" /></div><br />',
@@ -276,7 +280,7 @@
             selected_file: 'selected'
         },
         selector: {
-            title: 'h3',
+            title: 'h4',
             nav_btns: '.btn-group',
             nav_file: '.navfile',
             submit: '.submit',
