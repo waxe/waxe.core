@@ -22,7 +22,7 @@ module.exports = function(grunt) {
       },
       dist: {
         src: ['src/*js'],
-        dest: 'dist/<%= pkg.name %>.js'
+        dest: '../waxe/static/js/<%= pkg.name %>.js'
       },
     },
     uglify: {
@@ -31,7 +31,7 @@ module.exports = function(grunt) {
       },
       dist: {
         src: '<%= concat.dist.dest %>',
-        dest: 'dist/<%= pkg.name %>.min.js'
+        dest: '../waxe/static/js/<%= pkg.name %>.min.js'
       },
     },
     qunit: {
@@ -57,6 +57,37 @@ module.exports = function(grunt) {
         src: ['test/**/*.js']
       },
     },
+    less: {
+        development: {
+            options: {
+                paths: ['libs/bootstrap-3.0.2/less/']
+            },
+            files: {
+                "../waxe/static/css/<%= pkg.name %>.css": "libs/less/xmltool.less"
+            }
+        },
+        production: {
+            options: {
+                paths: ['libs/bootstrap-3.0.2/less/'],
+                cleancss: true
+            },
+            files: {
+                "../waxe/static/css/<%= pkg.name %>.min.css": "libs/less/xmltool.less"
+            }
+        }
+    },
+    copy: {
+        main: {
+            files: [
+                {
+                    expand: true,
+                    cwd: 'libs/bootstrap-3.0.2/fonts',
+                    src: ['*'],
+                    dest: '../waxe/static/fonts/'
+                }
+            ]
+        }
+    },
     watch: {
       gruntfile: {
         files: '<%= jshint.gruntfile.src %>',
@@ -80,8 +111,10 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-qunit');
   grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-contrib-watch');
+  grunt.loadNpmTasks('grunt-contrib-less');
+  grunt.loadNpmTasks('grunt-contrib-copy');
 
   // Default task.
-  grunt.registerTask('default', ['jshint', 'clean', 'concat', 'uglify']);
+  grunt.registerTask('default', ['jshint', 'clean', 'concat', 'uglify', 'less', 'copy']);
 
 };
