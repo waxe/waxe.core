@@ -88,7 +88,7 @@
             if (settings.css.position != 'absolute' && settings.css.position != 'fixed')
                 return
 
-            var left = ($('body').width() - this.$element.width()) / 2;
+            var left = ($('body').width() - this.$element.outerWidth()) / 2;
             this.$element.css({left: left + 'px'});
         },
         info: function(){
