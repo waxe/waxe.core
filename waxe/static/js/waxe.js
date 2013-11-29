@@ -17121,7 +17121,7 @@ if (typeof xmltool === 'undefined') {
 
     $.fn.filebrowser.defaults = {
         template: {
-            dialog: '<drv class="modal fade">' +
+            dialog: '<div class="modal fade">' +
                 '<div class="modal-dialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">' +
                 '<div class="modal-content">' +
                 '<div class="modal-header">' +
@@ -17583,8 +17583,8 @@ var waxe = waxe || {};
     };
     $.fn.message.defaults.selector.close_btn = '.close';
 
-    $.fn.filebrowser.defaults.template.nav_file = '<li><i class="icon-file"></i></li>';
-    $.fn.filebrowser.defaults.template.nav_folder = '<li><i class="icon-folder-close"></i></li>';
+    $.fn.filebrowser.defaults.template.nav_file = '<li><i class="glyphicon glyphicon-file"></i></li>';
+    $.fn.filebrowser.defaults.template.nav_folder = '<li><i class="glyphicon glyphicon-folder-close"></i></li>';
 
     $("script").each(function () {
         if(this.src.toString().match(/waxe/)) {
