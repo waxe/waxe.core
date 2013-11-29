@@ -190,89 +190,90 @@ class SvnViewTester(object):
 
     @login_user('Bob')
     def test_commit(self):
-        with patch('os.path.exists', return_value=True), patch('os.path.isfile', return_value=True):
-            svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
-            self.user_bob.config.root_path = svn_path
-            request = self.DummyRequest(root_path=svn_path)
-            res = self.ClassView(request).commit()
-            expected = {"status": False,
-                        "error_msg": "Bad parameters!",
+        with patch('os.path.exists', return_value=True):
+            with patch('os.path.isfile', return_value=True):
+                svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
+                self.user_bob.config.root_path = svn_path
+                request = self.DummyRequest(root_path=svn_path)
+                res = self.ClassView(request).commit()
+                expected = {"status": False,
+                            "error_msg": "Bad parameters!",
+                            'editor_login': 'Bob'}
+                self.assertEqual(res, expected)
+
+                mock = MagicMock()
+                status_mock = MagicMock()
+                status_mock.text_status = pysvn.wc_status_kind.normal
+                mock.status = MagicMock(return_value=[status_mock])
+                request = self.DummyRequest(
+                    root_path=svn_path,
+                    params={'data': [{'filename': 'test.xml'}],
+                            'msg': 'my commit message'})
+                with patch(self.get_svn_client_str, return_value=mock):
+                    res = self.ClassView(request).commit()
+                    mock.checkin.assert_called_once_with(
+                        [os.path.join(svn_path, 'test.xml')],
+                        'my commit message')
+                    expected = {'status': True,
+                                'content': 'Commit done',
+                                'editor_login': 'Bob'}
+                    self.assertEqual(res, expected)
+
+                mock = MagicMock(side_effect=Exception('Error'))
+                mock.checkin = MagicMock(side_effect=Exception('Error'))
+                status_mock = MagicMock()
+                status_mock.text_status = pysvn.wc_status_kind.normal
+                mock.status = MagicMock(return_value=[status_mock])
+                with patch(self.get_svn_client_str, return_value=mock):
+                    res = self.ClassView(request).commit()
+                    expected = {'status': False,
+                                'error_msg': 'Can\'t commit test.xml',
+                                'editor_login': 'Bob'}
+                    self.assertEqual(res, expected)
+                    mock.checkin.assert_called_once_with(
+                        [os.path.join(svn_path, 'test.xml')],
+                        'my commit message')
+
+                status_mock = MagicMock()
+                status_mock.text_status = pysvn.wc_status_kind.conflicted
+                mock.status = MagicMock(return_value=[status_mock])
+                with patch(self.get_svn_client_str, return_value=mock):
+                    res = self.ClassView(request).commit()
+                    expected = {
+                        'status': False,
+                        'error_msg': "Can't commit conflicted file: test.xml",
                         'editor_login': 'Bob'}
-            self.assertEqual(res, expected)
+                    self.assertEqual(res, expected)
 
-            mock = MagicMock()
-            status_mock = MagicMock()
-            status_mock.text_status = pysvn.wc_status_kind.normal
-            mock.status = MagicMock(return_value=[status_mock])
-            request = self.DummyRequest(
-                root_path=svn_path,
-                params={'data': [{'filename': 'test.xml'}],
-                        'msg': 'my commit message'})
-            with patch(self.get_svn_client_str, return_value=mock):
-                res = self.ClassView(request).commit()
-                mock.checkin.assert_called_once_with(
-                    [os.path.join(svn_path, 'test.xml')],
-                    'my commit message')
-                expected = {'status': True,
-                            'content': 'Commit done',
-                            'editor_login': 'Bob'}
-                self.assertEqual(res, expected)
+                mock = MagicMock()
+                status_mock = MagicMock()
+                status_mock.text_status = pysvn.wc_status_kind.unversioned
+                mock.status = MagicMock(return_value=[status_mock])
+                with patch(self.get_svn_client_str, return_value=mock):
+                    res = self.ClassView(request).commit()
+                    mock.add.assert_called_once_with(
+                        os.path.join(svn_path, 'test.xml'))
+                    mock.checkin.assert_called_once_with(
+                        [os.path.join(svn_path, 'test.xml')],
+                        'my commit message')
+                    expected = {'status': True,
+                                'content': 'Commit done',
+                                'editor_login': 'Bob'}
+                    self.assertEqual(res, expected)
 
-            mock = MagicMock(side_effect=Exception('Error'))
-            mock.checkin = MagicMock(side_effect=Exception('Error'))
-            status_mock = MagicMock()
-            status_mock.text_status = pysvn.wc_status_kind.normal
-            mock.status = MagicMock(return_value=[status_mock])
-            with patch(self.get_svn_client_str, return_value=mock):
-                res = self.ClassView(request).commit()
-                expected = {'status': False,
-                            'error_msg': 'Can\'t commit test.xml',
-                            'editor_login': 'Bob'}
-                self.assertEqual(res, expected)
-                mock.checkin.assert_called_once_with(
-                    [os.path.join(svn_path, 'test.xml')],
-                    'my commit message')
+                # No permission
+                self.user_bob.roles = []
+                try:
+                    res = self.ClassView(request).commit()
+                    assert 0
+                except Exception, e:
+                    self.assertEqual(str(e), 'You are not a contributor')
 
-            status_mock = MagicMock()
-            status_mock.text_status = pysvn.wc_status_kind.conflicted
-            mock.status = MagicMock(return_value=[status_mock])
-            with patch(self.get_svn_client_str, return_value=mock):
-                res = self.ClassView(request).commit()
-                expected = {
-                    'status': False,
-                    'error_msg': "Can't commit conflicted file: test.xml",
-                    'editor_login': 'Bob'}
-                self.assertEqual(res, expected)
-
-            mock = MagicMock()
-            status_mock = MagicMock()
-            status_mock.text_status = pysvn.wc_status_kind.unversioned
-            mock.status = MagicMock(return_value=[status_mock])
-            with patch(self.get_svn_client_str, return_value=mock):
-                res = self.ClassView(request).commit()
-                mock.add.assert_called_once_with(
-                    os.path.join(svn_path, 'test.xml'))
-                mock.checkin.assert_called_once_with(
-                    [os.path.join(svn_path, 'test.xml')],
-                    'my commit message')
-                expected = {'status': True,
-                            'content': 'Commit done',
-                            'editor_login': 'Bob'}
-                self.assertEqual(res, expected)
-
-            # No permission
-            self.user_bob.roles = []
-            try:
-                res = self.ClassView(request).commit()
-                assert 0
-            except Exception, e:
-                self.assertEqual(str(e), 'You are not a contributor')
-
-            self.user_bob.roles = [self.role_contributor]
-            try:
-                res = self.ClassView(request).commit()
-            except Forbidden, e:
-                self.assertEqual(str(e), 'Restricted area')
+                self.user_bob.roles = [self.role_contributor]
+                try:
+                    res = self.ClassView(request).commit()
+                except Forbidden, e:
+                    self.assertEqual(str(e), 'Restricted area')
 
     def test_can_commit(self):
         user = User(login='user1', password='pass1')
