@@ -1,5 +1,6 @@
 import logging
 import xmltool
+from xmltool import dtd_parser
 import json
 from urllib2 import HTTPError
 from pyramid.view import view_config
@@ -80,17 +81,34 @@ class EditorView(BaseUserView):
         dtd_tag = self.request.GET.get('dtd_tag') or None
 
         if dtd_tag and dtd_url:
-            html = xmltool.new(
-                dtd_url,
-                dtd_tag,
+            try:
+                dic = dtd_parser.parse(dtd_url=dtd_url)
+            except HTTPError, e:
+                log.exception(e)
+                return {
+                    'error_msg': 'The dtd file %s can\'t be loaded.' % dtd_url
+                }
+            if dtd_tag not in dic:
+                return {
+                    'error_msg': 'Invalid dtd element: %s (%s)' % (dtd_tag,
+                                                                   dtd_url)
+                }
+            obj = dic[dtd_tag]()
+            html = xmltool.generate_form_from_obj(
+                obj,
                 form_attrs={
                     'data-add-href': self.request.route_path('add_element_json'),
                     'data-comment-href': self.request.route_path('get_comment_modal_json'),
                     'data-href': self.request.route_path('update_json'),
-                })
+                }
+            )
+            jstree_data = obj.to_jstree_dict([])
+            if not self._is_json():
+                jstree_data = json.dumps(jstree_data)
             return {
                 'content': html,
                 'breadcrumb': self._get_breadcrumb(None, force_link=True),
+                'jstree_data': jstree_data,
             }
 
         content = render('blocks/new.mak',
