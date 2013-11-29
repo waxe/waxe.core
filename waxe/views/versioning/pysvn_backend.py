@@ -83,6 +83,8 @@ class PysvnView(BaseUserView):
 
     def get_svn_client(self):
         client = pysvn.Client()
+        # Set the username in case there is no authentication
+        client.set_default_username(self.current_user.login)
         client.callback_get_login = lambda *args, **kw: self.get_svn_login()
         if self.request.registry.settings.get('versioning.auth.https'):
             client.callback_ssl_server_trust_prompt = svn_ssl_server_trust_prompt
