@@ -85,7 +85,7 @@ module.exports = function(grunt) {
                 paths: ['libs/bootstrap-3.0.2/less/']
             },
             files: {
-                "../waxe/static/css/<%= pkg.name %>.css": "libs/less/xmltool.less"
+                "../waxe/static/css/<%= pkg.name %>.css": ["libs/less/xmltool.less", "css/*.less"]
             }
         },
         production: {
