@@ -1,10 +1,10 @@
-Please the account you want to use:
+Please select the account you want to use:
 <br />
 <br />
+<ul class="list-unstyled">
 % for login in logins:
-  <ul class="list-unstyled">
-	<li>
-	  <a href="${request.route_path('login_selection', _query=[('login', login)])}">${login}</a>
-	</li>
-  </ul>
+  <li>
+    <a href="${request.route_path('login_selection', _query=[('login', login)])}">${login}</a>
+  </li>
 % endfor
+</ul>

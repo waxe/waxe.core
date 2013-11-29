@@ -33,7 +33,7 @@ class TestEditorView(LoggedBobTestCase):
         with patch('xmltool.generate_form', return_value='My form content'):
             expected_breadcrumb = (
                 '<li><a data-href="/filepath" href="/filepath">root</a> '
-                '<span class="divider">/</span></li>'
+                '</li>'
                 '<li class="active">file1.xml</li>')
             request = testing.DummyRequest(
                 params={'filename': 'file1.xml'})
@@ -112,7 +112,8 @@ class TestEditorView(LoggedBobTestCase):
         request.dtd_urls = [dtd_url]
         res = EditorView(request).new()
         self.assertEqual(len(res), 1)
-        self.assertTrue('<h3>New file</h3>' in res['content'])
+        self.assertTrue(
+            '<h4 class="modal-title">New file</h4>' in res['content'])
 
         request = testing.DummyRequest(
             params={
@@ -146,7 +147,7 @@ class TestEditorView(LoggedBobTestCase):
                 'status': True,
                 'breadcrumb': (
                     '<li><a data-href="/filepath" href="/filepath">root</a> '
-                    '<span class="divider">/</span></li>'
+                    '</li>'
                     '<li class="active">test.xml</li>')
             }
             self.assertEqual(res, expected)
@@ -332,7 +333,8 @@ class FunctionalTestEditorView(WaxeTestCase):
                         res._headerlist)
         dic = json.loads(res.body)
         self.assertEqual(len(dic), 1)
-        self.assertTrue('<h3>New file</h3>' in dic['content'])
+        self.assertTrue(
+            '<h4 class="modal-title">New file</h4>' in dic['content'])
 
         dtd_url = 'http://xmltool.lereskp.fr/static/exercise.dtd'
         dtd_tag = 'Exercise'
@@ -368,7 +370,7 @@ class FunctionalTestEditorView(WaxeTestCase):
                 "status": True,
                 "breadcrumb": (
                     "<li><a data-href=\"/home.json?path=\" href=\"/?path=\">root</a> "
-                    "<span class=\"divider\">/</span></li>"
+                    "</li>"
                     "<li class=\"active\">test.xml</li>")}
         self.assertEqual(json.loads(res.body), expected)
 

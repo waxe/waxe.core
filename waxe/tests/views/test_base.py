@@ -307,7 +307,6 @@ class TestNavigationView(LoggedBobTestCase):
         expected = (
             '<li>'
             '<a data-href="/filepath" href="/filepath">root</a> '
-            '<span class="divider">/</span>'
             '</li>'
             '<li class="active">folder1</li>'
         )

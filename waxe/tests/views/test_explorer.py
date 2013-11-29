@@ -61,13 +61,13 @@ class TestExplorerView(LoggedBobTestCase):
         request.route_path = lambda *args, **kw: '/filepath'
         res = ExplorerView(request)._get_navigation()
         expected = (
-            '<ul id="file-navigation" class="unstyled" data-path="">\n'
-            '    <li><i class="icon-folder-close"></i>'
+            '<ul id="file-navigation" class="list-unstyled" data-path="">\n'
+            '    <li><i class="glyphicon glyphicon-folder-close"></i>'
             '<a data-href="/filepath" href="/filepath" class="folder">'
             'folder1'
             '</a>'
             '</li>\n'
-            '    <li><i class="icon-file"></i>'
+            '    <li><i class="glyphicon glyphicon-file"></i>'
             '<a data-href="/filepath" href="/filepath" class="file">'
             'file1.xml'
             '</a>'
@@ -79,13 +79,13 @@ class TestExplorerView(LoggedBobTestCase):
         request.route_path = lambda *args, **kw: '/filepath'
         res = ExplorerView(request)._get_navigation()
         expected = (
-            '<ul id="file-navigation" class="unstyled" data-path="folder1">\n'
-            '    <li>'
+            '<ul id="file-navigation" class="list-unstyled" data-path="folder1">\n'
+            '    <li><i class="glyphicon glyphicon-arrow-left"></i>'
             '<a data-href="/filepath" href="/filepath" class="previous">'
             '..'
             '</a>'
             '</li>\n'
-            '    <li><i class="icon-file"></i>'
+            '    <li><i class="glyphicon glyphicon-file"></i>'
             '<a data-href="/filepath" href="/filepath" class="file">'
             'file2.xml'
             '</a>'
@@ -99,7 +99,7 @@ class TestExplorerView(LoggedBobTestCase):
         request.route_path = lambda *args, **kw: '/%s' % args[0]
         expected = {
             'breadcrumb': '<li class="active">root</li>',
-            'content': u'<ul id="file-navigation" class="unstyled" data-path="">\n</ul>\n',
+            'content': u'<ul id="file-navigation" class="list-unstyled" data-path="">\n</ul>\n',
             'editor_login': u'Bob',
         }
         with patch('waxe.views.base.BaseView._is_json', return_value=False):
@@ -108,7 +108,7 @@ class TestExplorerView(LoggedBobTestCase):
 
         expected = {
             'breadcrumb': '<li class="active">root</li>',
-            'content': u'<ul id="file-navigation" class="unstyled" data-path="">\n</ul>\n',
+            'content': u'<ul id="file-navigation" class="list-unstyled" data-path="">\n</ul>\n',
         }
         with patch('waxe.views.base.BaseView._is_json', return_value=True):
             res = ExplorerView(request).home()
@@ -188,7 +188,7 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
     def test_home(self):
         self.user_bob.config.root_path = '/unexisting'
         res = self.testapp.get('/', status=200)
-        self.assertTrue('<ul id="file-navigation" class="unstyled" data-path="">\n</ul>' in res.body)
+        self.assertTrue('<ul id="file-navigation" class="list-unstyled" data-path="">\n</ul>' in res.body)
         self.assertTrue(('Content-Type', 'text/html; charset=UTF-8') in
                         res._headerlist)
 
@@ -207,7 +207,7 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
         res = self.testapp.get('/home.json', status=200)
         expected = (
             '{"content": '
-            '"<ul id=\\"file-navigation\\" class=\\"unstyled\\" data-path=\\"\\">\\n</ul>\\n", '
+            '"<ul id=\\"file-navigation\\" class=\\"list-unstyled\\" data-path=\\"\\">\\n</ul>\\n", '
             '"breadcrumb": "<li class=\\"active\\">root</li>"'
             '}'
         )
