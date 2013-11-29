@@ -152,18 +152,13 @@ class NavigationView(BaseView):
             if index == len(tple) - 1 and not force_link:
                 html += ['<li class="active">%s</li>' % (name)]
             else:
-                divider = ''
-                if len(tple) > 1:
-                    divider = '<span class="divider">/</span>'
                 html += [(
                     '<li>'
                     '<a data-href="%s" href="%s">%s</a> '
-                    '%s'
                     '</li>') % (
                         get_data_href(relpath, 'path'),
                         get_href(relpath, 'path'),
                         name,
-                        divider
                     )]
         return ''.join(html)
 

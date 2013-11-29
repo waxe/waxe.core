@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 labels_mapping = {
     pysvn.wc_status_kind.unversioned: 'label-default',
     pysvn.wc_status_kind.modified: 'label-info',
-    pysvn.wc_status_kind.conflicted: 'label-important',
+    pysvn.wc_status_kind.conflicted: 'label-danger',
 }
 
 

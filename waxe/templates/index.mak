@@ -4,7 +4,7 @@
   Error: ${error_msg|n}
 % endif
 
-<ul class="breadcrumb navbar-fixed-top" style="top:40px; z-index: 999;">
+<ul class="breadcrumb navbar-fixed-top" style="top: 55px; z-index: 999; background-color: transparent; margin-bottom: 0px; padding-top: 4px; padding-bottom: 2px;">
 % if breadcrumb:
   ${breadcrumb|n}
 % endif
