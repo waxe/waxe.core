@@ -94,7 +94,7 @@ module.exports = function(grunt) {
                 cleancss: true
             },
             files: {
-                "../waxe/static/css/<%= pkg.name %>.min.css": "libs/less/xmltool.less"
+                "../waxe/static/css/<%= pkg.name %>.min.css": ["libs/less/xmltool.less", "css/*.less"]
             }
         }
     },

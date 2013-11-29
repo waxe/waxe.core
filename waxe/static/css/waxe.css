@@ -6209,6 +6209,9 @@ table.diff .diff_sub {
   color: #333;
   margin-left: 5px;
 }
+.alert .close {
+  margin-left: 10px;
+}
 
 .ui-layout-east {
   padding: 0 !important;
