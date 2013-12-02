@@ -55,10 +55,11 @@ var waxe = waxe || {};
                             $(document).message('success', 'Saved');
                             var modal = $(data.content);
                             modal.find('.submit').click(function(){
+                                var url = $(this).data('href');
                                 var msg = modal.find('textarea').val();
                                 if (msg !== ''){
                                     params = params + '&msg=' + msg;
-                                    waxe.versioning.commit(params);
+                                    waxe.versioning.commit(url, params);
                                     modal.modal('hide');
                                 }
                             });
@@ -69,7 +70,7 @@ var waxe = waxe || {};
                         }
                     },
                     error: function(jqXHR, textStatus, errorThrown){
-                        var msg = jqXHR.status + ' ' + jqXHR.statusText + ': ' + '/update.json';
+                        var msg = jqXHR.status + ' ' + jqXHR.statusText + ': ' + url;
                         $(document).message('error', msg);
                     }
                 });
@@ -89,17 +90,17 @@ var waxe = waxe || {};
                         waxe.dom.update(data);
                     },
                     error: function(jqXHR, textStatus, errorThrown){
-                        var msg = jqXHR.status + ' ' + jqXHR.statusText + ': ' + '/update.json';
+                        var msg = jqXHR.status + ' ' + jqXHR.statusText + ': ' + url;
                         $(document).message('error', msg);
                     }
                 });
             });
         },
-        commit: function(params){
+        commit: function(url, params){
             $(document).message('info', 'Commit in progress...', {'autohide': false});
             $.ajax({
                  type: 'POST',
-                 url: '/versioning/commit.json',
+                 url: url,
                  data: params,
                  dataType: 'json',
                  success: function(data, textStatus, jqXHR){
@@ -111,7 +112,7 @@ var waxe = waxe || {};
                     }
                 },
                 error: function(jqXHR, textStatus, errorThrown){
-                    var msg = jqXHR.status + ' ' + jqXHR.statusText + ': ' + '/versioning/commit.json';
+                    var msg = jqXHR.status + ' ' + jqXHR.statusText + ': ' + url;
                     $(document).message('error', msg);
                 }
             });

@@ -169,12 +169,15 @@ class PysvnView(BaseUserView):
 
         if can_commit:
             html = (
-                '<form data-action="/update-texts.json" '
+                '<form data-action="%s" '
                 'class="multiple-diff-submit">'
                 '%s'
                 '<input data-filename="%s" type="submit" '
                 'class="diff-submit" value="Save and commit" />'
-                '</form') % (''.join(html), filename)
+                '</form') % (
+                    self.request.route_path('update_texts_json'),
+                    ''.join(html),
+                    filename)
         return self._response({'content': html})
 
     def update(self):
