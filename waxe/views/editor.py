@@ -94,6 +94,7 @@ class EditorView(BaseUserView):
                                                                    dtd_url)
                 }
             obj = dic[dtd_tag]()
+            obj._xml_dtd_url = dtd_url
             html = xmltool.generate_form_from_obj(
                 obj,
                 form_attrs={
