@@ -21,7 +21,7 @@ class IndexView(BaseUserView):
         user = User.query.filter_by(login=login).one()
         self.request.session['editor_login'] = user.login
         self.request.session['root_path'] = user.config.root_path
-        return HTTPFound(location='/')
+        return HTTPFound(location=self.request.route_path('home'))
 
 
 class BadRequestView(BaseView):
@@ -36,16 +36,20 @@ class BadRequestView(BaseView):
         if not logins:
             if self.user_is_admin():
                 link = self.request.route_path('admin_home')
-                return {'content': 'Go to your <a href="%s">admin interface</a> '
-                                   'to insert a new user' % link}
-            return {'content': 'There is a problem with your configuration, '
-                    'please contact your administrator with '
-                    'the following message: Edit the user named \'%s\' '
-                    'and set the root_path in the config.' % self.logged_user.login}
+                return self._response(
+                    {'content': 'Go to your <a href="%s">admin interface</a> '
+                                'to insert a new user' % link})
+            return self._response(
+                {'content': 'There is a problem with your configuration, '
+                            'please contact your administrator with '
+                            'the following message: '
+                            'Edit the user named \'%s\' '
+                            'and set the root_path in the config.' %
+                            self.logged_user.login})
 
         content = render('blocks/login_selection.mak', {'logins': logins},
                          self.request)
-        return {'content': content}
+        return self._response({'content': content})
 
 
 def includeme(config):

@@ -14,6 +14,10 @@ from waxe.views.index import (
 )
 
 
+class C(object):
+    pass
+
+
 class TestIndexView(BaseTestCase):
 
     def setUp(self):
@@ -40,6 +44,7 @@ class TestIndexView(BaseTestCase):
 
         request = testing.DummyRequest(params={'login': 'editor'})
         request.context = security.RootFactory(request)
+        request.route_path = lambda *args, **kw: '/%s' % args[0]
         try:
             res = IndexView(request).login_selection()
             assert(False)
@@ -53,7 +58,7 @@ class TestIndexView(BaseTestCase):
 
         res = IndexView(request).login_selection()
         self.assertEqual(res.status, "302 Found")
-        self.assertEqual(res.location, '/')
+        self.assertEqual(res.location, '/home')
         expected = {'editor_login': 'editor', 'root_path': '/path'}
         self.assertEqual(request.session, expected)
 
@@ -62,6 +67,8 @@ class TestIndexView(BaseTestCase):
         request = testing.DummyRequest()
         request.context = security.RootFactory(request)
         request.route_path = lambda *args, **kw: '/%s' % args[0]
+        request.matched_route = C()
+        request.matched_route.name = 'route_json'
         dic = BadRequestView(request).bad_request()
         self.assertEqual(len(dic), 1)
         expected = ('Go to your <a href="/admin_home">'
@@ -94,6 +101,8 @@ class TestIndexView(BaseTestCase):
         request = testing.DummyRequest()
         request.context = security.RootFactory(request)
         request.route_path = lambda *args, **kw: '/%s' % args[0]
+        request.matched_route = C()
+        request.matched_route.name = 'route_json'
         self.user_fred.config.root_path = ''
         dic = BadRequestView(request).bad_request()
         self.assertEqual(len(dic), 1)
