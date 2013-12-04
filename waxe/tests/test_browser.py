@@ -69,8 +69,8 @@ class TestBrowser(unittest.TestCase):
         self.assertEqual(filenames, ['file1.xml'])
 
         folders, filenames = browser.get_files(abspath)
-        self.assertEqual(folders, [os.path.join(root_path, 'folder1')])
-        self.assertEqual(filenames, [os.path.join(root_path, 'file1.xml')])
+        self.assertEqual(folders, ['folder1'])
+        self.assertEqual(filenames, ['file1.xml'])
 
         abspath = os.path.join(root_path, 'folder1')
         folders, filenames = browser.get_files(abspath, root_path=abspath)
