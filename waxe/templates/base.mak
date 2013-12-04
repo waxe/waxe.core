@@ -51,6 +51,8 @@
                 % endfor
               </ul>
             </li>
+      % else:
+        <li><a>${editor_login}</a></li>
           % endif
       <li><a style="margin-right: 10px;" class="glyphicon glyphicon-log-out" title="Logout" href="${request.route_path('logout')}"></a></li>
         </ul>
