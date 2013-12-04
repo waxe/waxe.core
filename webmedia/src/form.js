@@ -10,6 +10,7 @@ var waxe = waxe || {};
         this.$element = null;
         this.status = null;
         this.$filename = null;
+        this.filename = null;
         this.auto_save_interval = null;
         this.auto_save_time = 1000 * 60;
         this.load(jstreeData);
