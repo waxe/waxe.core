@@ -1,4 +1,4 @@
-/*! Waxe - v0.1.0 - 2013-11-29
+/*! Waxe - v0.1.0 - 2013-12-04
 * https://github.com/LeResKP/waxe
 * Copyright (c) 2013 Aurélien Matouillot; Licensed MIT */
 /*!
@@ -17295,6 +17295,7 @@ var waxe = waxe || {};
         this.$element = null;
         this.status = null;
         this.$filename = null;
+        this.filename = null;
         this.auto_save_interval = null;
         this.auto_save_time = 1000 * 60;
         this.load(jstreeData);
@@ -17652,10 +17653,11 @@ var waxe = waxe || {};
                             $(document).message('success', 'Saved');
                             var modal = $(data.content);
                             modal.find('.submit').click(function(){
+                                var url = $(this).data('href');
                                 var msg = modal.find('textarea').val();
                                 if (msg !== ''){
                                     params = params + '&msg=' + msg;
-                                    waxe.versioning.commit(params);
+                                    waxe.versioning.commit(url, params);
                                     modal.modal('hide');
                                 }
                             });
@@ -17666,7 +17668,7 @@ var waxe = waxe || {};
                         }
                     },
                     error: function(jqXHR, textStatus, errorThrown){
-                        var msg = jqXHR.status + ' ' + jqXHR.statusText + ': ' + '/update.json';
+                        var msg = jqXHR.status + ' ' + jqXHR.statusText + ': ' + url;
                         $(document).message('error', msg);
                     }
                 });
@@ -17686,17 +17688,17 @@ var waxe = waxe || {};
                         waxe.dom.update(data);
                     },
                     error: function(jqXHR, textStatus, errorThrown){
-                        var msg = jqXHR.status + ' ' + jqXHR.statusText + ': ' + '/update.json';
+                        var msg = jqXHR.status + ' ' + jqXHR.statusText + ': ' + url;
                         $(document).message('error', msg);
                     }
                 });
             });
         },
-        commit: function(params){
+        commit: function(url, params){
             $(document).message('info', 'Commit in progress...', {'autohide': false});
             $.ajax({
                  type: 'POST',
-                 url: '/versioning/commit.json',
+                 url: url,
                  data: params,
                  dataType: 'json',
                  success: function(data, textStatus, jqXHR){
@@ -17708,7 +17710,7 @@ var waxe = waxe || {};
                     }
                 },
                 error: function(jqXHR, textStatus, errorThrown){
-                    var msg = jqXHR.status + ' ' + jqXHR.statusText + ': ' + '/versioning/commit.json';
+                    var msg = jqXHR.status + ' ' + jqXHR.statusText + ': ' + url;
                     $(document).message('error', msg);
                 }
             });

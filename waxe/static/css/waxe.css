@@ -6202,6 +6202,10 @@ table.diff .diff_sub {
 .navfile li a {
   padding-left: 5px;
 }
+#file-navigation li,
+.navfile li {
+  cursor: pointer;
+}
 #file-navigation a,
 .navfile a,
 #file-navigation span,
