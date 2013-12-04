@@ -98,17 +98,33 @@ class PysvnView(BaseUserView):
         changes = client.status(abspath)
         lis = []
         for f in reversed(changes):
-            if os.path.isdir(f.path.encode(locale.getpreferredencoding())):
-                continue
             if f.text_status == pysvn.wc_status_kind.normal:
                 continue
-            p = browser.relative_path(f.path, root_path)
-            label_class = labels_mapping.get(f.text_status) or None
-            link = self.request.route_path(
-                'versioning_dispatcher', method='diff', _query=[('filenames', p)])
-            json_link = self.request.route_path(
-                'versioning_dispatcher_json', method='diff', _query=[('filenames', p)])
-            lis += [(f.text_status, label_class, p, link, json_link)]
+            path = f.path.encode(locale.getpreferredencoding())
+            if os.path.isdir(path):
+                if f.text_status != pysvn.wc_status_kind.unversioned:
+                    continue
+                label_class = labels_mapping.get(
+                    pysvn.wc_status_kind.unversioned) or None
+                for p in browser.get_all_files(path, root_path)[1]:
+                    link = self.request.route_path(
+                        'versioning_dispatcher', method='diff',
+                        _query=[('filenames', p)])
+                    json_link = self.request.route_path(
+                        'versioning_dispatcher_json', method='diff',
+                        _query=[('filenames', p)])
+                    lis += [(f.text_status,
+                             label_class, p, link, json_link)]
+            else:
+                p = browser.relative_path(f.path, root_path)
+                label_class = labels_mapping.get(f.text_status) or None
+                link = self.request.route_path(
+                    'versioning_dispatcher', method='diff',
+                    _query=[('filenames', p)])
+                json_link = self.request.route_path(
+                    'versioning_dispatcher_json', method='diff',
+                    _query=[('filenames', p)])
+                lis += [(f.text_status, label_class, p, link, json_link)]
 
         content = render('blocks/versioning.mak', {
             'files_data': lis,
@@ -125,9 +141,17 @@ class PysvnView(BaseUserView):
                                  info.revision.number)
 
         new_content = open(absfilename, 'r').read()
-        status = client.status(absfilename)
-        assert len(status) == 1
-        if status[0].text_status != pysvn.wc_status_kind.unversioned:
+        try:
+            status = client.status(absfilename)
+            assert len(status) == 1
+            status = status[0].text_status
+        except pysvn.ClientError, e:
+            if str(e).endswith('is not a working copy'):
+                # The file is not versionned
+                status = pysvn.wc_status_kind.unversioned
+            else:
+                raise pysvn.ClientError(e)
+        if status != pysvn.wc_status_kind.unversioned:
             old_content = client.cat(absfilename, old_rev)
         else:
             old_content = ''
@@ -214,28 +238,48 @@ class PysvnView(BaseUserView):
         ok_filenames = []
 
         for filename in filenames:
+
+            ok_filename = None
             absfilename = browser.absolute_path(filename, root_path)
             if not self.can_commit(absfilename):
                 error_msg += ['Can\'t commit: %s' % filename]
                 continue
 
             client = self.get_svn_client()
-            status = client.status(absfilename)
-            assert len(status) == 1, status
-            status = status[0]
-            if status.text_status == pysvn.wc_status_kind.conflicted:
+            try:
+                status = client.status(absfilename)
+                assert len(status) == 1, status
+                status = status[0].text_status
+            except pysvn.ClientError, e:
+                if str(e).endswith('is not a working copy'):
+                    # The file is not versionned
+                    status = pysvn.wc_status_kind.unversioned
+                    # .. warning:: Because of svn restriction we can't commit a
+                    # file when the folder is not versioned. we only support
+                    # one level.
+                    # ..todo:: we need to support multi level!
+                    path = os.path.dirname(absfilename)
+                    client.add(path,
+                               depth=pysvn.depth.empty)
+                    ok_filename = path
+                else:
+                    raise pysvn.ClientError(e)
+            if status == pysvn.wc_status_kind.conflicted:
                 error_msg += ['Can\'t commit conflicted file: %s' % filename]
                 continue
 
-            if status.text_status == pysvn.wc_status_kind.unversioned:
+            if status == pysvn.wc_status_kind.unversioned:
                 try:
                     client.add(absfilename)
                 except Exception, e:
                     log.exception(e)
                     error_msg += ['Can\'t add %s' % filename]
                     continue
-
-            ok_filenames += [absfilename]
+            if ok_filename:
+                # We add the folder containing the file to commit
+                ok_filenames += [ok_filename]
+            else:
+                ok_filenames += [absfilename]
 
         if ok_filenames:
             try:
