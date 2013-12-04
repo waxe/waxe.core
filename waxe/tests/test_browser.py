@@ -62,19 +62,37 @@ class TestBrowser(unittest.TestCase):
             self.assertEqual(str(e), "../folder1/file.xml doesn't exist")
 
     def test_get_files(self):
-        abspath = os.path.join(os.getcwd(), 'waxe', 'tests', 'files')
-        folders, filenames = browser.get_files(abspath)
+        root_path = os.path.join(os.getcwd(), 'waxe', 'tests', 'files')
+        abspath = root_path
+        folders, filenames = browser.get_files(abspath, root_path=root_path)
         self.assertEqual(folders, ['folder1'])
         self.assertEqual(filenames, ['file1.xml'])
 
-        abspath = os.path.join(abspath, 'folder1')
         folders, filenames = browser.get_files(abspath)
+        self.assertEqual(folders, [os.path.join(root_path, 'folder1')])
+        self.assertEqual(filenames, [os.path.join(root_path, 'file1.xml')])
+
+        abspath = os.path.join(root_path, 'folder1')
+        folders, filenames = browser.get_files(abspath, root_path=abspath)
         self.assertEqual(folders, [])
         self.assertEqual(filenames, ['file2.xml'])
 
         abspath = os.path.join(os.getcwd(), 'waxe', 'tests',
                                'nonexisting')
-        folders, filenames = browser.get_files(abspath)
+        folders, filenames = browser.get_files(abspath, root_path=abspath)
         self.assertEqual(folders, [])
         self.assertEqual(filenames, [])
 
+        abspath = root_path
+        folders, filenames = browser.get_files(abspath, root_path=root_path,
+                                               root_only=False)
+        self.assertEqual(folders, ['folder1'])
+        self.assertEqual(filenames, ['file1.xml', 'folder1/file2.xml'])
+
+    def test_get_all_files(self):
+        root_path = os.path.join(os.getcwd(), 'waxe', 'tests', 'files')
+        abspath = root_path
+        folders, filenames = browser.get_all_files(abspath,
+                                                   root_path=root_path)
+        self.assertEqual(folders, ['folder1'])
+        self.assertEqual(filenames, ['file1.xml', 'folder1/file2.xml'])

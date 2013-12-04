@@ -46,12 +46,16 @@ def absolute_path(relpath, root_path):
     return abspath
 
 
-def get_files(abspath):
-    """Get the files and folder containing in relpath
+def get_files(abspath, root_path=None, root_only=True):
+    """Get the files and folder containing in abspath
 
     :param abspath: the absolute path we want to get the containing files and
                     folder.
-    :type relpath: str
+    :type abspath: str
+    :param root_path: If given we make a relative url of the files and folders
+    :type root_path: str
+    :param root_only: If True we only get the file and folder at the root.
+    :type depth: bool
 
     ;return: the files and the folders containing in abspath
     :rtype: 2-tuple of list
@@ -59,25 +63,50 @@ def get_files(abspath):
     ..note:: we don't get the hidden files/folders and for the files, we only
              get the xml ones.
     """
-    for dirpath, dirnames, filenames in os.walk(abspath):
+    folders = []
+    files = []
+    for index, (dirpath, dirnames, filenames) in enumerate(os.walk(abspath)):
         filenames.sort()
         dirnames.sort()
 
-        folders = []
-        files = []
         for d in dirnames:
             if d.startswith('.'):
                 continue
-            folders += [d]
+            p = os.path.join(dirpath, d)
+            if root_path:
+                p = relative_path(p, root_path)
+            folders += [p]
 
         for f in filenames:
-            _,ext = os.path.splitext(f)
+            _, ext = os.path.splitext(f)
             if ext != '.xml':
                 continue
             if f.startswith('.'):
                 continue
-            files += [f]
-        return folders, files
+            p = os.path.join(dirpath, f)
+            if root_path:
+                p = relative_path(p, root_path)
+            files += [p]
 
-    return [], []
+        if root_only:
+            return folders, files
 
+    return folders, files
+
+
+def get_all_files(abspath, root_path=None):
+    """Get the files and folder containing in abspath
+
+    :param abspath: the absolute path we want to get the containing files and
+                    folder.
+    :type abspath: str
+    :param root_path: If given we make a relative url of the files and folders
+    :type root_path: str
+
+    ;return: the files and the folders containing in abspath
+    :rtype: 2-tuple of list
+
+    ..note:: we don't get the hidden files/folders and for the files, we only
+             get the xml ones.
+    """
+    return get_files(abspath, root_path=root_path, root_only=False)
