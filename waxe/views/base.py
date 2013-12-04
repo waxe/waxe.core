@@ -1,6 +1,7 @@
 import os
 from pyramid.httpexceptions import HTTPBadRequest
 from pyramid.security import has_permission
+import sqlalchemy.orm.exc as sqla_exc
 from .. import security, models
 
 
@@ -117,9 +118,14 @@ class BaseView(object):
             dic['logins'] = logins
 
         if editor_login and 'versioning' in self.request.registry.settings:
-            editor = models.User.query.filter_by(login=editor_login).one()
-            if editor.config and editor.config.use_versioning:
-                dic['versioning'] = True
+            try:
+                editor = models.User.query.filter_by(login=editor_login).one()
+                if editor.config and editor.config.use_versioning:
+                    dic['versioning'] = True
+            except sqla_exc.NoResultFound:
+                # For some reasons the user is not in the DB. For example the
+                # admin user can just be in the ldap!
+                pass
 
         return dic
 

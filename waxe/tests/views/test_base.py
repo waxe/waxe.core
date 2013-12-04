@@ -261,6 +261,23 @@ class TestBaseView(BaseTestCase):
         res = BaseView(request)._response({})
         self.assertEqual(res, {'editor_login': 'Bob'})
 
+        request.registry.settings['versioning'] = True
+        res = BaseView(request)._response({})
+        self.assertEqual(res, {'editor_login': 'Bob'})
+
+        # The user which we edit support versioning!
+        self.user_bob.config.use_versioning = True
+        res = BaseView(request)._response({})
+        self.assertEqual(res, {'editor_login': 'Bob',
+                               'versioning': True})
+
+        # Will not fail even if the editor is not in the DB
+        o = BaseView(request)
+        o.root_path = None
+        o.logged_user_login = 'John'
+        res = o._response({})
+        self.assertEqual(res, {'editor_login': 'John'})
+
     @login_user('Bob')
     def test__response_bob_admin(self):
         request = self.DummyRequest()
