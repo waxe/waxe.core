@@ -195,6 +195,7 @@ class TestEditorView(LoggedBobTestCase):
         request = testing.DummyRequest(
             params={'filecontent': 'content of the file',
                     'filename': 'thefilename.xml'})
+        request.route_path = lambda *args, **kw: '/filepath'
 
         def raise_func(*args, **kw):
             raise Exception('My error')
@@ -212,6 +213,7 @@ class TestEditorView(LoggedBobTestCase):
         request = testing.DummyRequest(
             params={'filecontent': filecontent,
                     'filename': 'thefilename.xml'})
+        request.route_path = lambda *args, **kw: '/filepath'
 
         with patch('xmltool.elements.Element.write', return_value=None):
             res = EditorView(request).update_text()
@@ -256,6 +258,7 @@ class TestEditorView(LoggedBobTestCase):
         request = testing.DummyRequest(
             params={'data:0:filecontent': filecontent,
                     'data:0:filename': 'thefilename.xml'})
+        request.route_path = lambda *args, **kw: '/filepath'
 
         with patch('xmltool.elements.Element.write', return_value=None):
             res = EditorView(request).update_texts()
