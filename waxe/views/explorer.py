@@ -62,10 +62,11 @@ class ExplorerView(BaseUserView):
             dic = {
                 'name': filename,
                 'data_href': get_file_data_href(os.path.join(relpath, filename),
-                                                'filename'),
+                                                'path'),
             }
             if not only_json:
-                dic['href'] = get_file_href(os.path.join(relpath, filename), 'filename')
+                dic['href'] = get_file_href(os.path.join(relpath, filename),
+                                            'path')
             data['filenames'] += [dic]
         return data
 
@@ -81,7 +82,7 @@ class ExplorerView(BaseUserView):
         abspath = browser.absolute_path(path, self.root_path)
         if os.path.isfile(abspath):
             location = self.request.custom_route_path('edit')
-            location += '?filename=%s' % path
+            location += '?path=%s' % path
             return HTTPFound(location=location)
         return self.explore()
 

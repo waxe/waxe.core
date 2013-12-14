@@ -107,7 +107,7 @@ class TestExplorerView(LoggedBobTestCase):
         res = ExplorerView(request).home()
         self.assertEqual(res.status, "302 Found")
         self.assertEqual(res.location,
-                         '/edit/filepath?filename=file1.xml')
+                         '/edit/filepath?path=file1.xml')
 
     def test_explore(self):
         class C(object): pass
@@ -270,7 +270,7 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
                 {"data_href": "/account/Bob/open.json?path=",
                  "name": "root"}],
             "filenames": [
-                {"data_href": "/account/Bob/edit.json?filename=file1.xml",
+                {"data_href": "/account/Bob/edit.json?path=file1.xml",
                  "name": "file1.xml"}]
         }
         self.assertEqual(json.loads(res.body), expected)

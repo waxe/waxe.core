@@ -29,7 +29,7 @@ class EditorView(BaseUserView):
     @view_config(route_name='edit', renderer='index.mak', permission='edit')
     @view_config(route_name='edit_json', renderer='json', permission='edit')
     def edit(self):
-        filename = self.request.GET.get('filename') or ''
+        filename = self.request.GET.get('path')
         if not filename:
             return self._response({
                 'error_msg': 'A filename should be provided',

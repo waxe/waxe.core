@@ -39,7 +39,7 @@ class TestEditorView(LoggedBobTestCase):
                 '</li>'
                 '<li class="active">file1.xml</li>')
             request = testing.DummyRequest(
-                params={'filename': 'file1.xml'})
+                params={'path': 'file1.xml'})
             request.custom_route_path = lambda *args, **kw: '/filepath'
             request.matched_route = C()
             request.matched_route.name = 'route_json'
@@ -76,7 +76,7 @@ class TestEditorView(LoggedBobTestCase):
                 'error_msg': 'My error',
             }
             request = testing.DummyRequest(
-                params={'filename': 'file1.xml'})
+                params={'path': 'file1.xml'})
             request.matched_route = C()
             request.matched_route.name = 'route_json'
             res = EditorView(request).edit()
@@ -91,7 +91,7 @@ class TestEditorView(LoggedBobTestCase):
                 'error_msg': 'The dtd of file1.xml can\'t be loaded.',
             }
             request = testing.DummyRequest(
-                params={'filename': 'file1.xml'})
+                params={'path': 'file1.xml'})
             request.matched_route = C()
             request.matched_route.name = 'route_json'
             res = EditorView(request).edit()
@@ -337,7 +337,7 @@ class FunctionalTestEditorView(WaxeTestCase):
 
         res = self.testapp.get('/account/Bob/edit.json',
                                status=200,
-                               params={'filename': 'file1.xml'})
+                               params={'path': 'file1.xml'})
         dic = json.loads(res.body)
         self.assertEqual(len(dic), 3)
         self.assertTrue(
