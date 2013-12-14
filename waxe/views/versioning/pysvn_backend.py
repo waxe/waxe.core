@@ -106,7 +106,9 @@ class PysvnView(BaseUserView):
                     continue
                 label_class = labels_mapping.get(
                     pysvn.wc_status_kind.unversioned) or None
-                for p in browser.get_all_files(path, root_path)[1]:
+                for p in browser.get_all_files(path,
+                                               root_path,
+                                               relative=True)[1]:
                     link = self.request.custom_route_path(
                         'versioning_dispatcher', method='diff',
                         _query=[('filenames', p)])

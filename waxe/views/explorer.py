@@ -33,7 +33,7 @@ class ExplorerView(BaseUserView):
         relpath = self.request.GET.get('path') or ''
         root_path = self.root_path
         abspath = browser.absolute_path(relpath, root_path)
-        folders, filenames = browser.get_files(abspath)
+        folders, filenames = browser.get_files(abspath, root_path)
         data = {
             'folders': [],
             'filenames': [],
