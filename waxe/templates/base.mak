@@ -9,15 +9,15 @@
   <header>
   <nav class="navbar navbar-default navbar-fixed-top">
     <div class="navbar-header">
-        <a class="navbar-brand" href="${request.route_path('home')}">WAXE</a>
+        <a class="navbar-brand" href="${request.route_path('redirect')}">WAXE</a>
       </div>
 
     <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
         <ul class="nav navbar-nav">
-          <li><a class="new" title="New" data-href="${request.route_path('new_json')}" href="#">New</a></li>
-          <li><a class="open" title="Open" data-fb-href="${request.route_path('open_json')}" href="#">Open</a></li>
+          <li><a class="new" title="New" data-href="${request.custom_route_path('new_json')}" href="#">New</a></li>
+          <li><a class="open" title="Open" data-fb-href="${request.custom_route_path('open_json')}" href="#">Open</a></li>
           <li><a class="save" title="Save" href="#">Save</a></li>
-          <li><a class="saveas" title="Save as"  data-fb-href="${request.route_path('open_json')}" data-fb-folder-href="${request.route_path('create_folder_json')}" href="#">Save as</a></li>
+          <li><a class="saveas" title="Save as"  data-fb-href="${request.custom_route_path('open_json')}" data-fb-folder-href="${request.custom_route_path('create_folder_json')}" href="#">Save as</a></li>
 
           % if versioning:
           <li class="dropdown">
@@ -27,10 +27,10 @@
             </a>
             <ul class="dropdown-menu dropdown-versioning">
                 <li>
-                  <a href="${request.route_path('versioning_dispatcher', method='status')}" data-href="${request.route_path('versioning_dispatcher_json', method='status')}">Status</a>
+                  <a href="${request.custom_route_path('versioning_dispatcher', method='status')}" data-href="${request.custom_route_path('versioning_dispatcher_json', method='status')}">Status</a>
                 </i>
                 <li>
-                  <a href="${request.route_path('versioning_dispatcher', method='update')}" data-href="${request.route_path('versioning_dispatcher_json', method='update')}">Update</a>
+                  <a href="${request.custom_route_path('versioning_dispatcher', method='update')}" data-href="${request.custom_route_path('versioning_dispatcher_json', method='update')}">Update</a>
                 </li>
             </ul>
             </li>
@@ -46,7 +46,7 @@
               <ul class="dropdown-menu">
                 % for login in logins:
                   <li>
-                  <a href="${request.route_path('login_selection', _query=[('login', login)])}">${login}</a>
+                  <a href="${request.route_path('home', login=login)}">${login}</a>
                   </li>
                 % endfor
               </ul>

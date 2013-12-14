@@ -12,16 +12,16 @@ from .security import RootFactory
 
 # Add the modules you want to be include in the config
 views_modules = [
-    'waxe.views.index',
-    'waxe.views.editor',
-    'waxe.views.explorer',
+    ('waxe.views.index', False),
+    ('waxe.views.editor', True),
+    ('waxe.views.explorer', True),
 ]
 
 
 def get_views_modules(settings):
     lis = list(views_modules)
     if 'versioning' in settings:
-        lis += ['waxe.views.versioning']
+        lis += [('waxe.views.versioning', True)]
     return lis
 
 
@@ -52,6 +52,9 @@ def main(global_config, **settings):
     # TODO: not sure we need to define dtd_urls here.
     config.set_request_property(get_dtd_urls, 'dtd_urls', reify=True)
 
-    for module in get_views_modules(settings):
-        config.include(module)
+    for module, prefix in get_views_modules(settings):
+        if prefix:
+            config.include(module, route_prefix='/account/{login}')
+        else:
+            config.include(module)
     return config.make_wsgi_app()

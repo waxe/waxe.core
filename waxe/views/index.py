@@ -1,4 +1,5 @@
 import logging
+import urlparse
 from pyramid.view import view_config
 from pyramid.httpexceptions import HTTPBadRequest, HTTPFound
 from pyramid.renderers import render
@@ -10,18 +11,12 @@ log = logging.getLogger(__name__)
 
 class IndexView(BaseUserView):
 
-    @view_config(route_name='login_selection', renderer='index.mak',
-                 permission='edit')
-    def login_selection(self):
-        logins = self.get_editable_logins()
-        login = self.request.GET.get('login')
-        if not login or login not in logins:
-            raise HTTPBadRequest('Invalid login')
-
-        user = User.query.filter_by(login=login).one()
-        self.request.session['editor_login'] = user.login
-        self.request.session['root_path'] = user.config.root_path
-        return HTTPFound(location=self.request.route_path('home'))
+    @view_config(route_name='redirect', permission='edit')
+    def redirect(self):
+        location = self.request.custom_route_path('home')
+        if self.request.query_string:
+            location += '?%s' % self.request.query_string
+        return HTTPFound(location=location)
 
 
 class BadRequestView(BaseView):
@@ -47,11 +42,14 @@ class BadRequestView(BaseView):
                             'and set the root_path in the config.' %
                             self.logged_user.login})
 
-        content = render('blocks/login_selection.mak', {'logins': logins},
+        qs = self.request.query_string
+        qs = urlparse.parse_qsl(qs)
+        content = render('blocks/login_selection.mak',
+                         {'logins': logins, 'qs': qs},
                          self.request)
         return self._response({'content': content})
 
 
 def includeme(config):
-    config.add_route('login_selection', '/login-selection')
+    config.add_route('redirect', '/')
     config.scan(__name__)

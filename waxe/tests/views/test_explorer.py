@@ -10,7 +10,7 @@ class TestExplorerView(LoggedBobTestCase):
 
     def test__get_navigation_data(self):
         request = testing.DummyRequest()
-        request.route_path = lambda *args, **kw: '/%s/filepath' % args[0]
+        request.custom_route_path = lambda *args, **kw: '/%s/filepath' % args[0]
         res = ExplorerView(request)._get_navigation_data()
         expected = {
             'folders': [
@@ -26,7 +26,7 @@ class TestExplorerView(LoggedBobTestCase):
         self.assertEqual(res, expected)
 
         request = testing.DummyRequest(params={'path': 'folder1'})
-        request.route_path = lambda *args, **kw: '/%s/filepath' % args[0]
+        request.custom_route_path = lambda *args, **kw: '/%s/filepath' % args[0]
         res = ExplorerView(request)._get_navigation_data()
         expected = {
             'folders': [],
@@ -58,7 +58,7 @@ class TestExplorerView(LoggedBobTestCase):
 
     def test__get_navigation(self):
         request = testing.DummyRequest()
-        request.route_path = lambda *args, **kw: '/filepath'
+        request.custom_route_path = lambda *args, **kw: '/filepath'
         res = ExplorerView(request)._get_navigation()
         expected = (
             '<ul id="file-navigation" class="list-unstyled" data-path="">\n'
@@ -76,7 +76,7 @@ class TestExplorerView(LoggedBobTestCase):
         self.assertEqual(res, expected)
 
         request = testing.DummyRequest(params={'path': 'folder1'})
-        request.route_path = lambda *args, **kw: '/filepath'
+        request.custom_route_path = lambda *args, **kw: '/filepath'
         res = ExplorerView(request)._get_navigation()
         expected = (
             '<ul id="file-navigation" class="list-unstyled" data-path="folder1">\n'
@@ -96,7 +96,7 @@ class TestExplorerView(LoggedBobTestCase):
     def test_home(self):
         self.user_bob.config.root_path = '/unexisting'
         request = testing.DummyRequest()
-        request.route_path = lambda *args, **kw: '/%s' % args[0]
+        request.custom_route_path = lambda *args, **kw: '/%s' % args[0]
         expected = {
             'breadcrumb': '<li class="active">root</li>',
             'content': u'<ul id="file-navigation" class="list-unstyled" data-path="">\n</ul>\n',
@@ -118,7 +118,7 @@ class TestExplorerView(LoggedBobTestCase):
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
         self.user_bob.config.root_path = path
         request = testing.DummyRequest()
-        request.route_path = lambda *args, **kw: '/filepath'
+        request.custom_route_path = lambda *args, **kw: '/filepath'
         res = ExplorerView(request).open()
         expected = {
             'folders': [
@@ -160,10 +160,10 @@ class TestExplorerView(LoggedBobTestCase):
 class TestFunctionalTestExplorerView(WaxeTestCase):
 
     def test_home_forbidden(self):
-        res = self.testapp.get('/', status=302)
+        res = self.testapp.get('/account/Bob/', status=302)
         self.assertEqual(
             res.location,
-            'http://localhost/login?next=http%3A%2F%2Flocalhost%2F')
+            'http://localhost/login?next=http%3A%2F%2Flocalhost%2Faccount%2FBob%2F')
         res = res.follow()
         self.assertEqual(res.status, "200 OK")
         self.assertTrue('<form' in res.body)
@@ -171,13 +171,13 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
 
     @login_user('Fred')
     def test_home_bad_login(self):
-        res = self.testapp.get('/', status=302)
+        res = self.testapp.get('/account/Fred/', status=302)
         self.assertEqual(res.location,
                          'http://localhost/forbidden')
 
     @login_user('Admin')
     def test_home_admin(self):
-        res = self.testapp.get('/', status=200)
+        res = self.testapp.get('/account/Admin/', status=200)
         expected = ('Go to your <a href="/admin">'
                     'admin interface</a> to insert a new user')
         self.assertTrue(expected in res.body)
@@ -187,14 +187,14 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
     @login_user('Bob')
     def test_home(self):
         self.user_bob.config.root_path = '/unexisting'
-        res = self.testapp.get('/', status=200)
+        res = self.testapp.get('/account/Bob/', status=200)
         self.assertTrue('<ul id="file-navigation" class="list-unstyled" data-path="">\n</ul>' in res.body)
         self.assertTrue(('Content-Type', 'text/html; charset=UTF-8') in
                         res._headerlist)
 
     @login_user('Admin')
     def test_home_json_admin(self):
-        res = self.testapp.get('/home.json', status=200)
+        res = self.testapp.get('/account/Admin/home.json', status=200)
         expected = ('Go to your <a href=\\"/admin\\">'
                     'admin interface</a> to insert a new user')
         self.assertTrue(expected in res.body)
@@ -204,7 +204,7 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
     @login_user('Bob')
     def test_home_json(self):
         self.user_bob.config.root_path = '/unexisting'
-        res = self.testapp.get('/home.json', status=200)
+        res = self.testapp.get('/account/Bob/home.json', status=200)
         expected = (
             '{"content": '
             '"<ul id=\\"file-navigation\\" class=\\"list-unstyled\\" data-path=\\"\\">\\n</ul>\\n", '
@@ -216,10 +216,10 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
                         res._headerlist)
 
     def test_open_forbidden(self):
-        res = self.testapp.get('/open.json', status=302)
+        res = self.testapp.get('/account/Bob/open.json', status=302)
         self.assertEqual(
             res.location,
-            'http://localhost/login?next=http%3A%2F%2Flocalhost%2Fopen.json')
+            'http://localhost/login?next=http%3A%2F%2Flocalhost%2Faccount%2FBob%2Fopen.json')
         res = res.follow()
         self.assertEqual(res.status, "200 OK")
         self.assertTrue('<form' in res.body)
@@ -229,17 +229,29 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
     def test_open(self):
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
         self.user_bob.config.root_path = path
-        res = self.testapp.get('/open.json', status=200)
+        res = self.testapp.get('/account/Bob/open.json', status=200)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
-        expected = {"folders": [{"data_href": "/open.json?path=folder1", "name": "folder1"}], "path": "", "previous": None, "nav_btns": [{"data_href": "/open.json?path=", "name": "root"}], "filenames": [{"data_href": "/edit.json?filename=file1.xml", "name": "file1.xml"}]}
+        expected = {
+            "folders": [
+                {"data_href": "/account/Bob/open.json?path=folder1",
+                 "name": "folder1"}],
+            "path": "",
+            "previous": None,
+            "nav_btns": [
+                {"data_href": "/account/Bob/open.json?path=",
+                 "name": "root"}],
+            "filenames": [
+                {"data_href": "/account/Bob/edit.json?filename=file1.xml",
+                 "name": "file1.xml"}]
+        }
         self.assertEqual(json.loads(res.body), expected)
 
     def test_create_folder_forbidden(self):
-        res = self.testapp.get('/create-folder.json', status=302)
+        res = self.testapp.get('/account/Bob/create-folder.json', status=302)
         self.assertEqual(
             res.location,
-            'http://localhost/login?next=http%3A%2F%2Flocalhost%2Fcreate-folder.json')
+            'http://localhost/login?next=http%3A%2F%2Flocalhost%2Faccount%2FBob%2Fcreate-folder.json')
         res = res.follow()
         self.assertEqual(res.status, "200 OK")
         self.assertTrue('<form' in res.body)
@@ -249,21 +261,21 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
     def test_create_folder(self):
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
         self.user_bob.config.root_path = path
-        res = self.testapp.get('/create-folder.json', status=200)
+        res = self.testapp.get('/account/Bob/create-folder.json', status=200)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
         expected = {"status": False, "error_msg": "No path given"}
         self.assertEqual(json.loads(res.body), expected)
 
         try:
-            res = self.testapp.get('/create-folder.json',
+            res = self.testapp.get('/account/Bob/create-folder.json',
                                    status=200,
                                    params={'path': 'new_folder'})
             self.assertTrue(os.path.isdir(os.path.join(path, 'new_folder')))
             expected = {'status': True}
             self.assertEqual(json.loads(res.body), expected)
 
-            res = self.testapp.get('/create-folder.json',
+            res = self.testapp.get('/account/Bob/create-folder.json',
                                    status=200,
                                    params={'path': 'new_folder'})
             expected = {

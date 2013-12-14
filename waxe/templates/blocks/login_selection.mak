@@ -4,7 +4,7 @@ Please select the account you want to use:
 <ul class="list-unstyled">
 % for login in logins:
   <li>
-    <a href="${request.route_path('login_selection', _query=[('login', login)])}">${login}</a>
+    <a href="${request.route_path('home', login=login, _query=qs)}">${login}</a>
   </li>
 % endfor
 </ul>

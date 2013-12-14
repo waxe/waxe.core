@@ -49,33 +49,7 @@ class TestBaseView(BaseTestCase):
             self.assertEqual(obj.logged_user_login, self.user_bob.login)
             self.assertEqual(obj.logged_user, self.user_bob)
             self.assertEqual(obj.current_user, self.user_bob)
-            self.assertEqual(obj.root_path, self.user_bob.config.root_path)
-
-            request.session = {'editor_login': 'Admin'}
-            obj = BaseView(request)
-            self.assertEqual(obj.request, request)
-            self.assertEqual(obj.logged_user_login, self.user_bob.login)
-            self.assertEqual(obj.logged_user, self.user_bob)
-            self.assertEqual(obj.current_user, self.user_admin)
             self.assertEqual(obj.root_path, None)
-
-    def test_get_current_user(self):
-        request = self.DummyRequest()
-        res = BaseView(request)._get_current_user()
-        self.assertEqual(res, None)
-
-        request.session = {'editor_login': 'Fake User'}
-        res = BaseView(request)._get_current_user()
-        self.assertEqual(res, None)
-
-        obj = BaseView(request)
-        obj.logged_user = 'Tom'
-        res = obj._get_current_user()
-        self.assertEqual(res, 'Tom')
-
-        request.session = {'editor_login': 'Bob'}
-        res = BaseView(request)._get_current_user()
-        self.assertEqual(res.login, self.user_bob.login)
 
     def test_user_is_admin(self):
         request = self.DummyRequest()
@@ -239,11 +213,13 @@ class TestBaseView(BaseTestCase):
         res = BaseView(request)._response({})
         self.assertEqual(res, {'editor_login': self.user_fred.login})
 
-        request.session = {'editor_login': 'Bob'}
-        res = BaseView(request)._response({})
+        view = BaseView(request)
+        view.current_user = self.user_bob
+        view.root_path = 'something'
+        res = view._response({})
         self.assertEqual(res, {'editor_login': 'Bob', 'logins': ['Fred']})
 
-        res = BaseView(request)._response({'key': 'value'})
+        res = view._response({'key': 'value'})
         self.assertEqual(res, {'editor_login': 'Bob',
                                'logins': ['Fred'],
                                'key': 'value'})
@@ -257,17 +233,19 @@ class TestBaseView(BaseTestCase):
         res = BaseView(request)._response({})
         self.assertEqual(res, {'editor_login': self.user_admin.login})
 
-        request.session = {'editor_login': 'Bob'}
-        res = BaseView(request)._response({})
+        view = BaseView(request)
+        view.current_user = self.user_bob
+        view.root_path = 'something'
+        res = view._response({})
         self.assertEqual(res, {'editor_login': 'Bob'})
 
         request.registry.settings['versioning'] = True
-        res = BaseView(request)._response({})
+        res = view._response({})
         self.assertEqual(res, {'editor_login': 'Bob'})
 
         # The user which we edit support versioning!
         self.user_bob.config.use_versioning = True
-        res = BaseView(request)._response({})
+        res = view._response({})
         self.assertEqual(res, {'editor_login': 'Bob',
                                'versioning': True})
 
@@ -287,7 +265,6 @@ class TestBaseView(BaseTestCase):
         res = BaseView(request)._response({})
         self.assertEqual(res, {'editor_login': self.user_bob.login})
 
-        request.session = {'editor_login': 'Bob'}
         res = BaseView(request)._response({})
         self.assertEqual(res, {'editor_login': 'Bob'})
 
@@ -319,7 +296,7 @@ class TestNavigationView(LoggedBobTestCase):
 
     def test__get_breadcrumb(self):
         request = testing.DummyRequest()
-        request.route_path = lambda *args, **kw: '/filepath'
+        request.custom_route_path = lambda *args, **kw: '/filepath'
         res = NavigationView(request)._get_breadcrumb('folder1')
         expected = (
             '<li>'
@@ -363,7 +340,7 @@ class TestBaseUserView(BaseTestCase):
         except JSONHTTPBadRequest, e:
             self.assertEqual(str(e), 'root path not defined')
 
-        request.matched_route.name = 'login_selection'
+        request.matched_route.name = 'redirect'
         res = BaseUserView(request)
         self.assertFalse(res.root_path)
         self.assertTrue(res)
@@ -373,3 +350,32 @@ class TestBaseUserView(BaseTestCase):
         res = BaseUserView(request)
         self.assertTrue(res.root_path)
         self.assertTrue(res)
+
+    def test___init___bad_user(self):
+        request = testing.DummyRequest()
+        request.matched_route = EmptyClass()
+        request.matched_route.name = 'test'
+        request.matchdict['login'] = 'unexisting'
+        try:
+            res = BaseUserView(request)
+            assert(False)
+        except HTTPBadRequest, e:
+            self.assertEqual(str(e), "The user doesn't exist")
+
+        request.matched_route.name = 'test_json'
+        try:
+            res = BaseUserView(request)
+            assert(False)
+        except JSONHTTPBadRequest, e:
+            self.assertEqual(str(e), "The user doesn't exist")
+
+        # Current user
+        self.config.testing_securitypolicy(userid='Bob', permissive=True)
+        request.matchdict['login'] = 'Bob'
+        res = BaseUserView(request)
+        self.assertEqual(res.current_user, res.logged_user)
+
+        self.user_fred.roles += [self.role_editor]
+        request.matchdict['login'] = 'Fred'
+        res = BaseUserView(request)
+        self.assertEqual(res.current_user, self.user_fred)

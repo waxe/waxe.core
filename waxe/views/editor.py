@@ -41,9 +41,9 @@ class EditorView(BaseUserView):
                 obj,
                 form_filename=filename,
                 form_attrs={
-                    'data-add-href': self.request.route_path('add_element_json'),
-                    'data-comment-href': self.request.route_path('get_comment_modal_json'),
-                    'data-href': self.request.route_path('update_json'),
+                    'data-add-href': self.request.custom_route_path('add_element_json'),
+                    'data-comment-href': self.request.custom_route_path('get_comment_modal_json'),
+                    'data-href': self.request.custom_route_path('update_json'),
                 }
             )
             jstree_data = obj.to_jstree_dict([])
@@ -98,9 +98,9 @@ class EditorView(BaseUserView):
             html = xmltool.generate_form_from_obj(
                 obj,
                 form_attrs={
-                    'data-add-href': self.request.route_path('add_element_json'),
-                    'data-comment-href': self.request.route_path('get_comment_modal_json'),
-                    'data-href': self.request.route_path('update_json'),
+                    'data-add-href': self.request.custom_route_path('add_element_json'),
+                    'data-comment-href': self.request.custom_route_path('get_comment_modal_json'),
+                    'data-href': self.request.custom_route_path('update_json'),
                 }
             )
             jstree_data = obj.to_jstree_dict([])

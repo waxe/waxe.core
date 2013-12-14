@@ -11,7 +11,7 @@
       </div>
       <div class="modal-footer">
         <a href="#" class="btn" data-dismiss="modal">Cancel</a>
-        <a class="btn btn-primary submit" data-href="${request.route_path('versioning_dispatcher_json', method='commit')}">Commit</a>
+        <a class="btn btn-primary submit" data-href="${request.custom_route_path('versioning_dispatcher_json', method='commit')}">Commit</a>
       </div>
     </div>
   </div>

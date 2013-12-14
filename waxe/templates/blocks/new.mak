@@ -8,7 +8,7 @@
       <div class="modal-body">
     <div class="form-group">
       <label>Choose a dtd:</label>
-      <select data-href="${request.route_path('get_tags_json')}" class="dtd-urls form-control">
+      <select data-href="${request.custom_route_path('get_tags_json')}" class="dtd-urls form-control">
       % for dtd_url in dtd_urls:
         <option value="${dtd_url}">${dtd_url}</option>
       % endfor
@@ -25,7 +25,7 @@
       </div>
       <div class="modal-footer">
         <a href="#" class="btn" data-dismiss="modal">Cancel</a>
-        <a data-href="${request.route_path('new_json')}" class="btn btn-primary submit">Create</a>
+        <a data-href="${request.custom_route_path('new_json')}" class="btn btn-primary submit">Create</a>
       </div>
   </div>
   </div>

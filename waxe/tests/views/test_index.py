@@ -33,34 +33,27 @@ class TestIndexView(BaseTestCase):
         self.user_bob.config.use_versioning = True
 
     @login_user('Bob')
-    def test_login_selection(self):
+    def test_redirect(self):
         request = testing.DummyRequest()
-        request.context = security.RootFactory(request)
-        try:
-            res = IndexView(request).login_selection()
-            assert(False)
-        except HTTPBadRequest, e:
-            self.assertEqual(str(e), 'Invalid login')
-
-        request = testing.DummyRequest(params={'login': 'editor'})
-        request.context = security.RootFactory(request)
-        request.route_path = lambda *args, **kw: '/%s' % args[0]
-        try:
-            res = IndexView(request).login_selection()
-            assert(False)
-        except HTTPBadRequest, e:
-            self.assertEqual(str(e), 'Invalid login')
-
-        editor = User(login='editor', password='pass1')
-        editor.roles = [self.role_editor]
-        editor.config = UserConfig(root_path='/path')
-        DBSession.add(editor)
-
-        res = IndexView(request).login_selection()
+        request.route_path = lambda *args, **kw: (
+            ('/%s' % args[0])
+            + '/%(login)s' % kw)
+        res = IndexView(request).redirect()
         self.assertEqual(res.status, "302 Found")
-        self.assertEqual(res.location, '/home')
-        expected = {'editor_login': 'editor', 'root_path': '/path'}
-        self.assertEqual(request.session, expected)
+        self.assertEqual(res.location, '/home/Bob')
+
+    def test_redirect_not_logged(self):
+        request = testing.DummyRequest()
+        request.route_path = lambda *args, **kw: (
+            ('/%s' % args[0])
+            + '/%(login)s' % kw)
+        request.matched_route = C()
+        request.matched_route.name = 'route'
+        try:
+            IndexView(request).redirect()
+            assert(False)
+        except HTTPBadRequest, e:
+            self.assertEqual(str(e), 'root path not defined')
 
     @login_user('Admin')
     def test_bad_request(self):
@@ -112,19 +105,23 @@ class TestIndexView(BaseTestCase):
 
 class FunctionalTestIndexView(WaxeTestCase):
 
-    def test_login_selection_forbidden(self):
-        res = self.testapp.get('/login-selection', status=302)
+    def test_redirect_forbidden(self):
+        res = self.testapp.get('/', status=302)
         self.assertEqual(
             res.location,
-            'http://localhost/login?next=http%3A%2F%2Flocalhost%2Flogin-selection')
+            'http://localhost/login?next=http%3A%2F%2Flocalhost%2F')
         res = res.follow()
         self.assertEqual(res.status, "200 OK")
         self.assertTrue('<form' in res.body)
         self.assertTrue('Login' in res.body)
 
     @login_user('Admin')
-    def test_login_selection(self):
-        res = self.testapp.get('/login-selection', status=200)
+    def test_redirect(self):
+        res = self.testapp.get('/', status=302)
+        self.assertEqual(
+            res.location,
+            'http://localhost/account/Admin/')
+        res = res.follow()
         expected = ('Go to your <a href="/admin">'
                     'admin interface</a> to insert a new user')
         self.assertTrue(expected in res.body)

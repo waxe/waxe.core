@@ -373,13 +373,13 @@ class FunctionalTestViewsNoVersioning(WaxeTestCase):
 
     def test_404(self):
         for url in [
-            '/versioning/status',
-            '/versioning/status.json',
-            '/versioning/diff',
-            '/versioning/diff.json',
-            '/versioning/update',
-            '/versioning/update.json',
-            '/versioning/commit.json',
+            '/account/Bob/versioning/status',
+            '/account/Bob/versioning/status.json',
+            '/account/Bob/versioning/diff',
+            '/account/Bob/versioning/diff.json',
+            '/account/Bob/versioning/update',
+            '/account/Bob/versioning/update.json',
+            '/account/Bob/versioning/commit.json',
         ]:
             self.testapp.get(url, status=404)
 
@@ -388,13 +388,13 @@ class FunctionalTestViews(object):
 
     def test_forbidden(self):
         for url in [
-            '/versioning/status',
-            '/versioning/status.json',
-            '/versioning/diff',
-            '/versioning/diff.json',
-            '/versioning/update',
-            '/versioning/update.json',
-            '/versioning/commit.json',
+            '/account/Bob/versioning/status',
+            '/account/Bob/versioning/status.json',
+            '/account/Bob/versioning/diff',
+            '/account/Bob/versioning/diff.json',
+            '/account/Bob/versioning/update',
+            '/account/Bob/versioning/update.json',
+            '/account/Bob/versioning/commit.json',
         ]:
             res = self.testapp.get(url, status=302)
             self.assertTrue('http://localhost/login?next=' in res.location)
@@ -407,7 +407,7 @@ class FunctionalTestViews(object):
     def test_status(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         self.user_bob.config = UserConfig(root_path=svn_path)
-        res = self.testapp.get('/versioning/status', status=200)
+        res = self.testapp.get('/account/Bob/versioning/status', status=200)
         self.assertTrue(res.body)
         self.assertTrue('file1.xml' in res.body)
 
@@ -415,7 +415,7 @@ class FunctionalTestViews(object):
     def test_status_json(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         self.user_bob.config = UserConfig(root_path=svn_path)
-        res = self.testapp.get('/versioning/status.json', status=200)
+        res = self.testapp.get('/account/Bob/versioning/status.json', status=200)
         self.assertTrue(res.body)
         self.assertTrue('file1.xml' in res.body)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
@@ -425,10 +425,10 @@ class FunctionalTestViews(object):
     def test_diff(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         self.user_bob.config = UserConfig(root_path=svn_path)
-        res = self.testapp.get('/versioning/diff', status=200)
+        res = self.testapp.get('/account/Bob/versioning/diff', status=200)
         self.assertTrue('Error: You should provide at least one filename' in res.body)
 
-        res = self.testapp.get('/versioning/diff', status=200,
+        res = self.testapp.get('/account/Bob/versioning/diff', status=200,
                                params={'filenames': 'file1.xml'})
         self.assertTrue('diff' in res.body)
 
@@ -436,10 +436,10 @@ class FunctionalTestViews(object):
     def test_diff_json(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         self.user_bob.config = UserConfig(root_path=svn_path)
-        res = self.testapp.get('/versioning/diff.json', status=200)
+        res = self.testapp.get('/account/Bob/versioning/diff.json', status=200)
         self.assertTrue('You should provide at least one filename' in res.body)
 
-        res = self.testapp.get('/versioning/diff.json', status=200,
+        res = self.testapp.get('/account/Bob/versioning/diff.json', status=200,
                                params={'filenames': 'file1.xml'})
         self.assertTrue('diff' in res.body)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
@@ -449,7 +449,7 @@ class FunctionalTestViews(object):
     def test_commit_json(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         self.user_bob.config = UserConfig(root_path=svn_path)
-        res = self.testapp.get('/versioning/commit.json', status=200)
+        res = self.testapp.get('/account/Bob/versioning/commit.json', status=200)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
         expected = {"status": False, "error_msg": "Bad parameters!"}
@@ -465,7 +465,7 @@ class FunctionalTestViews(object):
 #         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
 #         self.user_bob.config = UserConfig(root_path=svn_path,
 #                                           versioning_password='secret_bob')
-#         res = self.testapp.get('/versioning/update', status=200)
+#         res = self.testapp.get('/account/Bob/versioning/update', status=200)
 #         self.assertTrue('The repository has been updated!' in res.body)
 # 
 #     @login_user('Bob')
@@ -473,7 +473,7 @@ class FunctionalTestViews(object):
 #         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
 #         self.user_bob.config = UserConfig(root_path=svn_path,
 #                                           versioning_password='secret_bob')
-#         res = self.testapp.get('/versioning/update.json', status=200)
+#         res = self.testapp.get('/account/Bob/versioning/update.json', status=200)
 #         self.assertTrue('The repository has been updated!' in res.body)
 #         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
 #                         res._headerlist)
@@ -487,7 +487,7 @@ class FunctionalPythonSvnTestViews(FunctionalTestViews, WaxeTestCaseVersioning):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         self.user_bob.config = UserConfig(root_path=svn_path,
                                           versioning_password='secret_bob')
-        res = self.testapp.get('/versioning/update', status=200)
+        res = self.testapp.get('/account/Bob/versioning/update', status=200)
         self.assertTrue('At revision 1.' in res.body)
 
     @login_user('Bob')
@@ -495,7 +495,7 @@ class FunctionalPythonSvnTestViews(FunctionalTestViews, WaxeTestCaseVersioning):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         self.user_bob.config = UserConfig(root_path=svn_path,
                                           versioning_password='secret_bob')
-        res = self.testapp.get('/versioning/update.json', status=200)
+        res = self.testapp.get('/account/Bob/versioning/update.json', status=200)
         self.assertTrue('At revision 1.' in res.body)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)

@@ -37,7 +37,7 @@ class TestEditorView(LoggedBobTestCase):
                 '<li class="active">file1.xml</li>')
             request = testing.DummyRequest(
                 params={'filename': 'file1.xml'})
-            request.route_path = lambda *args, **kw: '/filepath'
+            request.custom_route_path = lambda *args, **kw: '/filepath'
             request.matched_route = C()
             request.matched_route.name = 'route_json'
             res = EditorView(request).edit()
@@ -109,7 +109,7 @@ class TestEditorView(LoggedBobTestCase):
         class C(object): pass
         dtd_url = 'http://xmltool.lereskp.fr/static/exercise.dtd'
         request = testing.DummyRequest()
-        request.route_path = lambda *args, **kw: '/filepath'
+        request.custom_route_path = lambda *args, **kw: '/filepath'
         request.matched_route = C()
         request.matched_route.name = 'route_json'
         request.dtd_urls = [dtd_url]
@@ -123,7 +123,7 @@ class TestEditorView(LoggedBobTestCase):
                 'dtd_url': dtd_url,
                 'dtd_tag': 'Exercise'
             })
-        request.route_path = lambda *args, **kw: '/filepath'
+        request.custom_route_path = lambda *args, **kw: '/filepath'
         request.matched_route = C()
         request.matched_route.name = 'route_json'
         res = EditorView(request).new()
@@ -158,7 +158,7 @@ class TestEditorView(LoggedBobTestCase):
         with patch('xmltool.update', return_value=False):
             request = testing.DummyRequest(
                 params={'_xml_filename': 'test.xml'})
-            request.route_path = lambda *args, **kw: '/filepath'
+            request.custom_route_path = lambda *args, **kw: '/filepath'
             res = EditorView(request).update()
             expected = {
                 'status': True,
@@ -176,7 +176,7 @@ class TestEditorView(LoggedBobTestCase):
             m.side_effect = raise_func
             request = testing.DummyRequest(
                 params={'_xml_filename': 'test.xml'})
-            request.route_path = lambda *args, **kw: '/filepath'
+            request.custom_route_path = lambda *args, **kw: '/filepath'
             expected = {
                 'status': False,
                 'error_msg': 'My error',
@@ -195,7 +195,7 @@ class TestEditorView(LoggedBobTestCase):
         request = testing.DummyRequest(
             params={'filecontent': 'content of the file',
                     'filename': 'thefilename.xml'})
-        request.route_path = lambda *args, **kw: '/filepath'
+        request.custom_route_path = lambda *args, **kw: '/filepath'
 
         def raise_func(*args, **kw):
             raise Exception('My error')
@@ -213,7 +213,7 @@ class TestEditorView(LoggedBobTestCase):
         request = testing.DummyRequest(
             params={'filecontent': filecontent,
                     'filename': 'thefilename.xml'})
-        request.route_path = lambda *args, **kw: '/filepath'
+        request.custom_route_path = lambda *args, **kw: '/filepath'
 
         with patch('xmltool.elements.Element.write', return_value=None):
             res = EditorView(request).update_text()
@@ -258,7 +258,7 @@ class TestEditorView(LoggedBobTestCase):
         request = testing.DummyRequest(
             params={'data:0:filecontent': filecontent,
                     'data:0:filename': 'thefilename.xml'})
-        request.route_path = lambda *args, **kw: '/filepath'
+        request.custom_route_path = lambda *args, **kw: '/filepath'
 
         with patch('xmltool.elements.Element.write', return_value=None):
             res = EditorView(request).update_texts()
@@ -292,14 +292,14 @@ class FunctionalTestEditorView(WaxeTestCase):
     def test_forbidden(self):
 
         for url in [
-            '/edit.json',
-            '/get-tags.json',
-            '/new.json',
-            '/update.json',
-            '/update-text.json',
-            '/update-texts.json',
-            '/add-element.json',
-            '/get-comment-modal.json',
+            '/account/Bob/edit.json',
+            '/account/Bob/get-tags.json',
+            '/account/Bob/new.json',
+            '/account/Bob/update.json',
+            '/account/Bob/update-text.json',
+            '/account/Bob/update-texts.json',
+            '/account/Bob/add-element.json',
+            '/account/Bob/get-comment-modal.json',
         ]:
             res = self.testapp.get(url, status=302)
             self.assertTrue('http://localhost/login?next=' in res.location)
@@ -312,22 +312,22 @@ class FunctionalTestEditorView(WaxeTestCase):
     def test_edit(self):
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
         self.user_bob.config.root_path = path
-        res = self.testapp.get('/edit.json', status=200)
+        res = self.testapp.get('/account/Bob/edit.json', status=200)
         expected = '{"error_msg": "A filename should be provided"}'
         self.assertEqual(res.body,  expected)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
 
-        res = self.testapp.get('/edit.json',
+        res = self.testapp.get('/account/Bob/edit.json',
                                status=200,
                                params={'filename': 'file1.xml'})
         dic = json.loads(res.body)
         self.assertEqual(len(dic), 3)
         self.assertTrue(
             '<form method="POST" id="xmltool-form" '
-            'data-comment-href="/get-comment-modal.json" '
-            'data-add-href="/add-element.json" '
-            'data-href="/update.json">' in dic['content'])
+            'data-comment-href="/account/Bob/get-comment-modal.json" '
+            'data-add-href="/account/Bob/add-element.json" '
+            'data-href="/account/Bob/update.json">' in dic['content'])
         self.assertTrue(isinstance(dic['jstree_data'], dict))
 
     @login_user('Bob')
@@ -335,10 +335,10 @@ class FunctionalTestEditorView(WaxeTestCase):
         dtd_url = 'http://xmltool.lereskp.fr/static/exercise.dtd'
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
         self.user_bob.config.root_path = path
-        res = self.testapp.get('/get-tags.json', status=200)
+        res = self.testapp.get('/account/Bob/get-tags.json', status=200)
         self.assertEqual(json.loads(res.body), {})
 
-        res = self.testapp.get('/get-tags.json',
+        res = self.testapp.get('/account/Bob/get-tags.json',
                                status=200,
                                params={'dtd_url': dtd_url})
         expected = {'tags': ['Exercise', 'comments', 'mqm', 'qcm', 'test']}
@@ -348,7 +348,7 @@ class FunctionalTestEditorView(WaxeTestCase):
     def test_new(self):
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
         self.user_bob.config.root_path = path
-        res = self.testapp.get('/new.json', status=200)
+        res = self.testapp.get('/account/Bob/new.json', status=200)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
         dic = json.loads(res.body)
@@ -358,7 +358,7 @@ class FunctionalTestEditorView(WaxeTestCase):
 
         dtd_url = 'http://xmltool.lereskp.fr/static/exercise.dtd'
         dtd_tag = 'Exercise'
-        res = self.testapp.get('/new.json',
+        res = self.testapp.get('/account/Bob/new.json',
                                status=200,
                                params={'dtd_url': dtd_url,
                                        'dtd_tag': dtd_tag})
@@ -366,31 +366,31 @@ class FunctionalTestEditorView(WaxeTestCase):
         self.assertEqual(len(dic), 3)
         self.assertTrue(
             '<form method="POST" id="xmltool-form" '
-            'data-comment-href="/get-comment-modal.json" '
-            'data-add-href="/add-element.json" '
-            'data-href="/update.json">' in dic['content'])
+            'data-comment-href="/account/Bob/get-comment-modal.json" '
+            'data-add-href="/account/Bob/add-element.json" '
+            'data-href="/account/Bob/update.json">' in dic['content'])
         self.assertTrue(dic['breadcrumb'])
-        self.assertTrue('data-href="/home.json?path="' in dic['breadcrumb'])
+        self.assertTrue('data-href="/account/Bob/home.json?path="' in dic['breadcrumb'])
         self.assertTrue(isinstance(dic['jstree_data'], dict))
 
     @login_user('Bob')
     def test_update(self):
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
         self.user_bob.config.root_path = path
-        res = self.testapp.post('/update.json', status=200)
+        res = self.testapp.post('/account/Bob/update.json', status=200)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
         expected = {"status": False, "error_msg": "No filename given"}
         self.assertEqual(json.loads(res.body), expected)
 
         with patch('xmltool.update', return_value=False):
-            res = self.testapp.post('/update.json',
+            res = self.testapp.post('/account/Bob/update.json',
                                     status=200,
                                     params={'_xml_filename': 'test.xml'})
             expected = {
                 "status": True,
                 "breadcrumb": (
-                    "<li><a data-href=\"/home.json?path=\" href=\"/?path=\">root</a> "
+                    "<li><a data-href=\"/account/Bob/home.json?path=\" href=\"/account/Bob/?path=\">root</a> "
                     "</li>"
                     "<li class=\"active\">test.xml</li>")}
         self.assertEqual(json.loads(res.body), expected)
@@ -399,7 +399,7 @@ class FunctionalTestEditorView(WaxeTestCase):
     def test_update_text(self):
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
         self.user_bob.config.root_path = path
-        res = self.testapp.post('/update-text.json', status=200)
+        res = self.testapp.post('/account/Bob/update-text.json', status=200)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
         expected = {"status": False, "error_msg": "Missing parameters!"}
@@ -409,7 +409,7 @@ class FunctionalTestEditorView(WaxeTestCase):
     def test_update_texts(self):
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
         self.user_bob.config.root_path = path
-        res = self.testapp.post('/update-texts.json', status=200)
+        res = self.testapp.post('/account/Bob/update-texts.json', status=200)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
         expected = {"status": False, "error_msg": "Missing parameters!"}
@@ -419,14 +419,14 @@ class FunctionalTestEditorView(WaxeTestCase):
     def test_add_element_json(self):
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
         self.user_bob.config.root_path = path
-        res = self.testapp.get('/add-element.json', status=200)
+        res = self.testapp.get('/account/Bob/add-element.json', status=200)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
         expected = {"status": False, "error_msg": "Bad parameter"}
         self.assertEqual(json.loads(res.body), expected)
 
         dtd_url = os.path.join(path, 'exercise.dtd')
-        res = self.testapp.get('/add-element.json', status=200,
+        res = self.testapp.get('/account/Bob/add-element.json', status=200,
                                params={'dtd_url': dtd_url,
                                        'elt_id': 'Exercise'})
 
@@ -437,7 +437,7 @@ class FunctionalTestEditorView(WaxeTestCase):
     def test_get_comment_modal_json(self):
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
         self.user_bob.config.root_path = path
-        res = self.testapp.get('/get-comment-modal.json', status=200)
+        res = self.testapp.get('/account/Bob/get-comment-modal.json', status=200)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
         body = json.loads(res.body)

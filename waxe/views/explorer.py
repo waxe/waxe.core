@@ -15,19 +15,19 @@ class ExplorerView(BaseUserView):
                              file_route='edit', only_json=False):
 
         def get_data_href(path, key):
-            return self.request.route_path(
+            return self.request.custom_route_path(
                 '%s_json' % folder_route, _query=[(key, path)])
 
         def get_href(path, key):
-            return self.request.route_path(
+            return self.request.custom_route_path(
                 folder_route, _query=[(key, path)])
 
         def get_file_data_href(path, key):
-            return self.request.route_path(
+            return self.request.custom_route_path(
                 '%s_json' % file_route, _query=[(key, path)])
 
         def get_file_href(path, key):
-            return self.request.route_path(
+            return self.request.custom_route_path(
                 file_route, _query=[(key, path)])
 
         relpath = self.request.GET.get('path') or ''
@@ -90,7 +90,7 @@ class ExplorerView(BaseUserView):
         lis = []
 
         def get_data_href(path, key):
-            return self.request.route_path(
+            return self.request.custom_route_path(
                 'open_json', _query=[(key, path)])
         for name, path in bdata:
             lis += [{

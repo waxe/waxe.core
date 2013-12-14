@@ -107,10 +107,10 @@ class PysvnView(BaseUserView):
                 label_class = labels_mapping.get(
                     pysvn.wc_status_kind.unversioned) or None
                 for p in browser.get_all_files(path, root_path)[1]:
-                    link = self.request.route_path(
+                    link = self.request.custom_route_path(
                         'versioning_dispatcher', method='diff',
                         _query=[('filenames', p)])
-                    json_link = self.request.route_path(
+                    json_link = self.request.custom_route_path(
                         'versioning_dispatcher_json', method='diff',
                         _query=[('filenames', p)])
                     lis += [(f.text_status,
@@ -118,10 +118,10 @@ class PysvnView(BaseUserView):
             else:
                 p = browser.relative_path(f.path, root_path)
                 label_class = labels_mapping.get(f.text_status) or None
-                link = self.request.route_path(
+                link = self.request.custom_route_path(
                     'versioning_dispatcher', method='diff',
                     _query=[('filenames', p)])
-                json_link = self.request.route_path(
+                json_link = self.request.custom_route_path(
                     'versioning_dispatcher_json', method='diff',
                     _query=[('filenames', p)])
                 lis += [(f.text_status, label_class, p, link, json_link)]
@@ -157,8 +157,8 @@ class PysvnView(BaseUserView):
             old_content = ''
 
         d = diff.HtmlDiff()
-        link = self.request.route_path('edit', _query=[('filename', filename)])
-        json_link = self.request.route_path('edit_json', _query=[('filename', filename)])
+        link = self.request.custom_route_path('edit', _query=[('filename', filename)])
+        json_link = self.request.custom_route_path('edit_json', _query=[('filename', filename)])
         html = '<h3><a data-href="%s" href="%s">%s</a></h3>' % (json_link, link, filename)
         if editable:
             html += '<input type="text" name="data:%i:filename" value="%s" />' % (
@@ -199,7 +199,7 @@ class PysvnView(BaseUserView):
                 '<input data-filename="%s" type="submit" '
                 'class="diff-submit" value="Save and commit" />'
                 '</form') % (
-                    self.request.route_path('update_texts_json'),
+                    self.request.custom_route_path('update_texts_json'),
                     ''.join(html),
                     filename)
         return self._response({'content': html})
