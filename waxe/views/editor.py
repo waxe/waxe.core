@@ -30,9 +30,9 @@ class EditorView(BaseUserView):
     def edit(self):
         filename = self.request.GET.get('filename') or ''
         if not filename:
-            return {
+            return self._response({
                 'error_msg': 'A filename should be provided',
-            }
+            })
         root_path = self.root_path
         absfilename = browser.absolute_path(filename, root_path)
         try:
@@ -51,14 +51,14 @@ class EditorView(BaseUserView):
                 jstree_data = json.dumps(jstree_data)
         except HTTPError, e:
             log.exception(e)
-            return {
+            return self._response({
                 'error_msg': 'The dtd of %s can\'t be loaded.' % filename
-            }
+            })
         except Exception, e:
             log.exception(e)
-            return {
+            return self._response({
                 'error_msg': str(e)
-            }
+            })
         breadcrumb = self._get_breadcrumb(filename)
         return self._response({
             'content': html,
