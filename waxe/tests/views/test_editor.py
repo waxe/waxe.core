@@ -3,6 +3,7 @@ import json
 from pyramid import testing
 from mock import patch
 from urllib2 import HTTPError
+from lxml import etree
 from ..testing import WaxeTestCase, login_user, LoggedBobTestCase
 
 from waxe.views.editor import (
@@ -96,6 +97,52 @@ class TestEditorView(LoggedBobTestCase):
             request.matched_route.name = 'route_json'
             res = EditorView(request).edit()
             self.assertEqual(res, expected)
+
+        def raise_xml_error(*args, **kw):
+            raise etree.XMLSyntaxError('Invalid XML', None, None, None)
+
+        with patch('xmltool.load') as m:
+            m.side_effect = raise_xml_error
+            request = testing.DummyRequest(
+                params={'path': 'file1.xml'})
+            request.matched_route = C()
+            request.matched_route.name = 'route'
+            request.custom_route_path = lambda *args, **kw: '/%s/filepath' % args[0]
+            res = EditorView(request).edit()
+            self.assertTrue(len(res), 3)
+            expected = (
+                '<form id="xmltool-form" '
+                'data-href="/update_text_json/filepath" method="POST">')
+            self.assertTrue(expected in res['content'])
+            self.assertEqual(res['error_msg'], 'Invalid XML')
+
+    def test_edit_text(self):
+        class C(object): pass
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        self.user_bob.config.root_path = path
+        request = testing.DummyRequest()
+        request.matched_route = C()
+        request.matched_route.name = 'route'
+        expected = {
+            'editor_login': 'Bob',
+            'error_msg': 'A filename should be provided',
+        }
+        res = EditorView(request).edit_text()
+        self.assertEqual(res, expected)
+
+        request = testing.DummyRequest(params={'path': 'file1.xml'})
+        request.matched_route = C()
+        request.matched_route.name = 'route'
+        request.custom_route_path = lambda *args, **kw: '/%s/filepath' % args[0]
+        res = EditorView(request).edit_text()
+        expected = ('<form id="xmltool-form" '
+                    'data-href="/update_text_json/filepath" method="POST">')
+        self.assertTrue(expected in res['content'])
+        expected = '<textarea class="form-control" name="filecontent">'
+        self.assertTrue(expected in res['content'])
+        expected = ('<input type="hidden" id="_xml_filename" '
+                    'name="filename" value="file1.xml" />')
+        self.assertTrue(expected in res['content'])
 
     def test_get_tags(self):
         request = testing.DummyRequest()
@@ -346,6 +393,31 @@ class FunctionalTestEditorView(WaxeTestCase):
             'data-add-href="/account/Bob/add-element.json" '
             'data-href="/account/Bob/update.json">' in dic['content'])
         self.assertTrue(isinstance(dic['jstree_data'], dict))
+
+    @login_user('Bob')
+    def test_edit_text(self):
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        self.user_bob.config.root_path = path
+        res = self.testapp.get('/account/Bob/edit-text.json', status=200)
+        expected = '{"error_msg": "A filename should be provided"}'
+        self.assertEqual(res.body,  expected)
+        self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
+                        res._headerlist)
+
+        res = self.testapp.get('/account/Bob/edit-text.json',
+                               status=200,
+                               params={'path': 'file1.xml'})
+        dic = json.loads(res.body)
+        self.assertEqual(len(dic), 2)
+
+        expected = ('<form id="xmltool-form" '
+                    'data-href="/account/Bob/update-text.json" method="POST">')
+        self.assertTrue(expected in dic['content'])
+        expected = '<textarea class="form-control" name="filecontent">'
+        self.assertTrue(expected in dic['content'])
+        expected = ('<input type="hidden" id="_xml_filename" '
+                    'name="filename" value="file1.xml" />')
+        self.assertTrue(expected in dic['content'])
 
     @login_user('Bob')
     def test_get_tags(self):

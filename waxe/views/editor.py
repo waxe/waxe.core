@@ -2,7 +2,9 @@ import logging
 import os
 import xmltool
 from xmltool import dtd_parser
+from lxml import etree
 import json
+
 from urllib2 import HTTPError
 from pyramid.view import view_config
 from pyramid.renderers import render
@@ -55,6 +57,9 @@ class EditorView(BaseUserView):
             return self._response({
                 'error_msg': 'The dtd of %s can\'t be loaded.' % filename
             })
+        except etree.XMLSyntaxError, e:
+            log.exception(e)
+            return self.edit_text(e)
         except Exception, e:
             log.exception(e)
             return self._response({
@@ -66,6 +71,40 @@ class EditorView(BaseUserView):
             'breadcrumb': breadcrumb,
             'jstree_data': jstree_data,
         })
+
+    @view_config(route_name='edit_text', renderer='index.mak', permission='edit')
+    @view_config(route_name='edit_text_json', renderer='json', permission='edit')
+    def edit_text(self, exception=None):
+        filename = self.request.GET.get('path')
+        if not filename:
+            return self._response({
+                'error_msg': 'A filename should be provided',
+            })
+        root_path = self.root_path
+        absfilename = browser.absolute_path(filename, root_path)
+        try:
+            content = open(absfilename, 'r').read()
+        except Exception, e:
+            log.exception(e)
+            return self._response({
+                'error_msg': str(e)
+            })
+
+        html = '<form id="xmltool-form" data-href="%s" method="POST">' % (
+            self.request.custom_route_path('update_text_json'),
+        )
+        html += '<input type="hidden" id="_xml_filename" name="filename" value="%s" />' % filename
+        html += '<textarea class="form-control" name="filecontent">%s</textarea>' % content
+        html += '</form>'
+
+        breadcrumb = self._get_breadcrumb(filename)
+        dic = {
+            'content': html,
+            'breadcrumb': breadcrumb,
+        }
+        if exception:
+            dic['error_msg'] = str(exception)
+        return self._response(dic)
 
     @view_config(route_name='get_tags_json', renderer='json', permission='edit')
     def get_tags(self):
@@ -140,6 +179,11 @@ class EditorView(BaseUserView):
         absfilename = browser.absolute_path(filename, root_path)
         try:
             xmltool.update(absfilename, self.request.POST)
+        except HTTPError, e:
+            log.exception(e)
+            return self._response({
+                'error_msg': 'The dtd of %s can\'t be loaded.' % filename
+            })
         except Exception, e:
             log.exception(e)
             return {'status': False, 'error_msg': str(e)}
@@ -225,6 +269,8 @@ class EditorView(BaseUserView):
 def includeme(config):
     config.add_route('edit', '/edit')
     config.add_route('edit_json', '/edit.json')
+    config.add_route('edit_text', '/edit-text')
+    config.add_route('edit_text_json', '/edit-text.json')
     config.add_route('get_tags_json', '/get-tags.json')
     config.add_route('new_json', '/new.json')
     config.add_route('update_json', '/update.json')
