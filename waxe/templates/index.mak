@@ -1,9 +1,5 @@
 <%inherit file="base.mak" />
 
-% if error_msg:
-  Error: ${error_msg|n}
-% endif
-
 <ul class="breadcrumb navbar-fixed-top" style="top: 55px; z-index: 999; background-color: transparent; margin-bottom: 0px; padding-top: 4px; padding-bottom: 2px;">
 % if breadcrumb:
   ${breadcrumb|n}
@@ -12,6 +8,12 @@
 
 <div class="ui-layout-center">
   <div class="content">
+	% if error_msg:
+	<div class="alert alert-danger">
+	  ${error_msg|n}
+	</div>
+	% endif
+
     % if content:
 	    ${content|n}
 	  % endif
