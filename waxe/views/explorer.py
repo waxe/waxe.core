@@ -77,8 +77,14 @@ class ExplorerView(BaseUserView):
     @view_config(route_name='home_json', renderer='json', permission='edit')
     def home(self):
         path = self.request.GET.get('path') or ''
+        try:
+            content = self._get_navigation()
+        except IOError, e:
+            return self._response({
+                'error_msg': str(e),
+            })
         return self._response({
-            'content': self._get_navigation(),
+            'content': content,
             'breadcrumb': self._get_breadcrumb(path)
         })
 

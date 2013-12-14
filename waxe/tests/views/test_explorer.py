@@ -98,8 +98,7 @@ class TestExplorerView(LoggedBobTestCase):
         request = testing.DummyRequest()
         request.custom_route_path = lambda *args, **kw: '/%s' % args[0]
         expected = {
-            'breadcrumb': '<li class="active">root</li>',
-            'content': u'<ul id="file-navigation" class="list-unstyled" data-path="">\n</ul>\n',
+            'error_msg': "Directory . doesn't exist",
             'editor_login': u'Bob',
         }
         with patch('waxe.views.base.BaseView._is_json', return_value=False):
@@ -107,8 +106,7 @@ class TestExplorerView(LoggedBobTestCase):
             self.assertEqual(res, expected)
 
         expected = {
-            'breadcrumb': '<li class="active">root</li>',
-            'content': u'<ul id="file-navigation" class="list-unstyled" data-path="">\n</ul>\n',
+            'error_msg': "Directory . doesn't exist",
         }
         with patch('waxe.views.base.BaseView._is_json', return_value=True):
             res = ExplorerView(request).home()
@@ -188,7 +186,7 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
     def test_home(self):
         self.user_bob.config.root_path = '/unexisting'
         res = self.testapp.get('/account/Bob/', status=200)
-        self.assertTrue('<ul id="file-navigation" class="list-unstyled" data-path="">\n</ul>' in res.body)
+        self.assertTrue('Directory . doesn\'t exist' in res.body)
         self.assertTrue(('Content-Type', 'text/html; charset=UTF-8') in
                         res._headerlist)
 
@@ -205,12 +203,7 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
     def test_home_json(self):
         self.user_bob.config.root_path = '/unexisting'
         res = self.testapp.get('/account/Bob/home.json', status=200)
-        expected = (
-            '{"content": '
-            '"<ul id=\\"file-navigation\\" class=\\"list-unstyled\\" data-path=\\"\\">\\n</ul>\\n", '
-            '"breadcrumb": "<li class=\\"active\\">root</li>"'
-            '}'
-        )
+        expected = '{"error_msg": "Directory . doesn\'t exist"}'
         self.assertEqual(res.body,  expected)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
