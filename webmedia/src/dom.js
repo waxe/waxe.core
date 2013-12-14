@@ -20,11 +20,6 @@ var waxe = waxe || {};
         update: function(data){
             $(document).scrollTop(0);
 
-            if (data.error_msg){
-                $(document).message('error', data.error_msg);
-                return;
-            }
-
             if ('content' in data){
                 var $content = $('.content');
                 $content.html(data.content);
@@ -46,6 +41,11 @@ var waxe = waxe || {};
             if(!('jstree_data' in data)){
                 $('body').data('layout').hide('east');
             }
+
+            if (data.error_msg){
+                $(document).message('error', data.error_msg);
+            }
+
         },
         load: function(url){
             $(document).message('info', 'Loading...', {'autohide': false});

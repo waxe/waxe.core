@@ -1,4 +1,4 @@
-/*! Waxe - v0.1.0 - 2013-12-12
+/*! Waxe - v0.1.0 - 2013-12-14
 * https://github.com/LeResKP/waxe
 * Copyright (c) 2013 Aurélien Matouillot; Licensed MIT */
 /*!
@@ -17295,11 +17295,6 @@ var waxe = waxe || {};
         update: function(data){
             $(document).scrollTop(0);
 
-            if (data.error_msg){
-                $(document).message('error', data.error_msg);
-                return;
-            }
-
             if ('content' in data){
                 var $content = $('.content');
                 $content.html(data.content);
@@ -17321,6 +17316,11 @@ var waxe = waxe || {};
             if(!('jstree_data' in data)){
                 $('body').data('layout').hide('east');
             }
+
+            if (data.error_msg){
+                $(document).message('error', data.error_msg);
+            }
+
         },
         load: function(url){
             $(document).message('info', 'Loading...', {'autohide': false});
