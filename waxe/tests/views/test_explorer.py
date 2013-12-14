@@ -14,8 +14,8 @@ class TestExplorerView(LoggedBobTestCase):
         res = ExplorerView(request)._get_navigation_data()
         expected = {
             'folders': [
-                {'data_href': '/home_json/filepath',
-                 'href': '/home/filepath',
+                {'data_href': '/explore_json/filepath',
+                 'href': '/explore/filepath',
                  'name': 'folder1'}],
             'path': '',
             'previous': None,
@@ -94,23 +94,50 @@ class TestExplorerView(LoggedBobTestCase):
         self.assertEqual(res, expected)
 
     def test_home(self):
-        self.user_bob.config.root_path = '/unexisting'
+        class C(object): pass
         request = testing.DummyRequest()
-        request.custom_route_path = lambda *args, **kw: '/%s' % args[0]
+        request.custom_route_path = lambda *args, **kw: '/%s/filepath' % args[0]
+        request.matched_route = C()
+        request.matched_route.name = 'route'
+        res = ExplorerView(request).home()
+        expected = ExplorerView(request).explore()
+        self.assertEqual(res, expected)
+
+        request.params['path'] = 'file1.xml'
+        res = ExplorerView(request).home()
+        self.assertEqual(res.status, "302 Found")
+        self.assertEqual(res.location,
+                         '/edit/filepath?filename=file1.xml')
+
+    def test_explore(self):
+        class C(object): pass
+        request = testing.DummyRequest()
+        request.custom_route_path = lambda *args, **kw: '/%s/filepath' % args[0]
+        request.matched_route = C()
+        request.matched_route.name = 'route'
+        res = ExplorerView(request).explore()
+        expected = {
+            'content': (
+                u'<ul id="file-navigation" class="list-unstyled" '
+                u'data-path="">\n    '
+                u'<li><i class="glyphicon glyphicon-folder-close"></i>'
+                u'<a data-href="/explore_json/filepath" '
+                u'href="/explore/filepath" class="folder">folder1</a>'
+                u'</li>\n    '
+                u'<li><i class="glyphicon glyphicon-file"></i>'
+                u'<a data-href="/edit_json/filepath" href="/edit/filepath" '
+                u'class="file">file1.xml</a></li>\n</ul>\n'),
+            'breadcrumb': '<li class="active">root</li>',
+            'editor_login': 'Bob'}
+        self.assertEqual(res, expected)
+
+        self.user_bob.config.root_path = '/unexisting'
+        res = ExplorerView(request).explore()
         expected = {
             'error_msg': "Directory . doesn't exist",
             'editor_login': u'Bob',
         }
-        with patch('waxe.views.base.BaseView._is_json', return_value=False):
-            res = ExplorerView(request).home()
-            self.assertEqual(res, expected)
-
-        expected = {
-            'error_msg': "Directory . doesn't exist",
-        }
-        with patch('waxe.views.base.BaseView._is_json', return_value=True):
-            res = ExplorerView(request).home()
-            self.assertEqual(res, expected)
+        self.assertEqual(res, expected)
 
     def test_open(self):
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
@@ -190,9 +217,17 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
         self.assertTrue(('Content-Type', 'text/html; charset=UTF-8') in
                         res._headerlist)
 
+    @login_user('Bob')
+    def test_explore(self):
+        self.user_bob.config.root_path = '/unexisting'
+        res = self.testapp.get('/account/Bob/explore', status=200)
+        self.assertTrue('Directory . doesn\'t exist' in res.body)
+        self.assertTrue(('Content-Type', 'text/html; charset=UTF-8') in
+                        res._headerlist)
+
     @login_user('Admin')
-    def test_home_json_admin(self):
-        res = self.testapp.get('/account/Admin/home.json', status=200)
+    def test_explore_json_admin(self):
+        res = self.testapp.get('/account/Admin/explore.json', status=200)
         expected = ('Go to your <a href=\\"/admin\\">'
                     'admin interface</a> to insert a new user')
         self.assertTrue(expected in res.body)
@@ -200,9 +235,9 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
                         res._headerlist)
 
     @login_user('Bob')
-    def test_home_json(self):
+    def test_explore_json(self):
         self.user_bob.config.root_path = '/unexisting'
-        res = self.testapp.get('/account/Bob/home.json', status=200)
+        res = self.testapp.get('/account/Bob/explore.json', status=200)
         expected = '{"error_msg": "Directory . doesn\'t exist"}'
         self.assertEqual(res.body,  expected)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in

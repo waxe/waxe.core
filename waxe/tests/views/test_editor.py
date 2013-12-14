@@ -387,7 +387,7 @@ class FunctionalTestEditorView(WaxeTestCase):
             'data-add-href="/account/Bob/add-element.json" '
             'data-href="/account/Bob/update.json">' in dic['content'])
         self.assertTrue(dic['breadcrumb'])
-        self.assertTrue('data-href="/account/Bob/home.json?path="' in dic['breadcrumb'])
+        self.assertTrue('data-href="/account/Bob/explore.json?path="' in dic['breadcrumb'])
         self.assertTrue(isinstance(dic['jstree_data'], dict))
 
     @login_user('Bob')
@@ -407,10 +407,11 @@ class FunctionalTestEditorView(WaxeTestCase):
             expected = {
                 "status": True,
                 "breadcrumb": (
-                    "<li><a data-href=\"/account/Bob/home.json?path=\" href=\"/account/Bob/?path=\">root</a> "
+                    "<li><a data-href=\"/account/Bob/explore.json?path=\" "
+                    "href=\"/account/Bob/explore?path=\">root</a> "
                     "</li>"
                     "<li class=\"active\">test.xml</li>")}
-        self.assertEqual(json.loads(res.body), expected)
+            self.assertEqual(json.loads(res.body), expected)
 
     @login_user('Bob')
     def test_update_text(self):

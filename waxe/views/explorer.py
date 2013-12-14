@@ -3,6 +3,7 @@ import logging
 from subprocess import Popen, PIPE
 from pyramid.view import view_config
 from pyramid.renderers import render
+from pyramid.httpexceptions import HTTPFound
 from base import BaseUserView
 from .. import browser
 
@@ -11,7 +12,7 @@ log = logging.getLogger(__name__)
 
 class ExplorerView(BaseUserView):
 
-    def _get_navigation_data(self, add_previous=False, folder_route='home',
+    def _get_navigation_data(self, add_previous=False, folder_route='explore',
                              file_route='edit', only_json=False):
 
         def get_data_href(path, key):
@@ -77,6 +78,17 @@ class ExplorerView(BaseUserView):
     @view_config(route_name='home_json', renderer='json', permission='edit')
     def home(self):
         path = self.request.GET.get('path') or ''
+        abspath = browser.absolute_path(path, self.root_path)
+        if os.path.isfile(abspath):
+            location = self.request.custom_route_path('edit')
+            location += '?filename=%s' % path
+            return HTTPFound(location=location)
+        return self.explore()
+
+    @view_config(route_name='explore', renderer='index.mak', permission='edit')
+    @view_config(route_name='explore_json', renderer='json', permission='edit')
+    def explore(self):
+        path = self.request.GET.get('path') or ''
         try:
             content = self._get_navigation()
         except IOError, e:
@@ -125,6 +137,8 @@ class ExplorerView(BaseUserView):
 def includeme(config):
     config.add_route('home', '/')
     config.add_route('home_json', '/home.json')
+    config.add_route('explore', '/explore')
+    config.add_route('explore_json', '/explore.json')
     config.add_route('open_json', '/open.json')
     config.add_route('create_folder_json', '/create-folder.json')
     config.scan(__name__)

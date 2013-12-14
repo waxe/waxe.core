@@ -144,11 +144,11 @@ class NavigationView(BaseView):
     def _get_breadcrumb(self, relpath, force_link=False):
         def get_data_href(path, key):
             return self.request.custom_route_path(
-                'home_json', _query=[(key, path)])
+                'explore_json', _query=[(key, path)])
 
         def get_href(path, key):
             return self.request.custom_route_path(
-                'home', _query=[(key, path)])
+                'explore', _query=[(key, path)])
 
         tple = self._get_breadcrumb_data(relpath)
         html = []
