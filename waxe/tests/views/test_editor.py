@@ -24,7 +24,10 @@ class TestEditorView(LoggedBobTestCase):
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
         self.user_bob.config.root_path = path
         request = testing.DummyRequest()
+        request.matched_route = C()
+        request.matched_route.name = 'route'
         expected = {
+            'editor_login': 'Bob',
             'error_msg': 'A filename should be provided',
         }
         res = EditorView(request).edit()

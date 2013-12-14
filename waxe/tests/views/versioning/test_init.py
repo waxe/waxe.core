@@ -426,7 +426,7 @@ class FunctionalTestViews(object):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         self.user_bob.config = UserConfig(root_path=svn_path)
         res = self.testapp.get('/account/Bob/versioning/diff', status=200)
-        self.assertTrue('Error: You should provide at least one filename' in res.body)
+        self.assertTrue('You should provide at least one filename' in res.body)
 
         res = self.testapp.get('/account/Bob/versioning/diff', status=200,
                                params={'filenames': 'file1.xml'})
