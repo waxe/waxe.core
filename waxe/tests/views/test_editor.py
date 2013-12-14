@@ -158,6 +158,20 @@ class TestEditorView(LoggedBobTestCase):
         expected = {'status': False, 'error_msg': 'No filename given'}
         self.assertEqual(res, expected)
 
+        request = testing.DummyRequest(params={'_xml_filename': 'test'})
+        res = EditorView(request).update()
+        expected = {
+            'status': False,
+            'error_msg': "No filename extension. It should be '.xml'"}
+        self.assertEqual(res, expected)
+
+        request = testing.DummyRequest(params={'_xml_filename': 'test.doc'})
+        res = EditorView(request).update()
+        expected = {
+            'status': False,
+            'error_msg': "Bad filename extension '.doc'. It should be '.xml'"}
+        self.assertEqual(res, expected)
+
         with patch('xmltool.update', return_value=False):
             request = testing.DummyRequest(
                 params={'_xml_filename': 'test.xml'})

@@ -1,4 +1,5 @@
 import logging
+import os
 import xmltool
 from xmltool import dtd_parser
 import json
@@ -123,6 +124,17 @@ class EditorView(BaseUserView):
         filename = self.request.POST.pop('_xml_filename', None)
         if not filename:
             return {'status': False, 'error_msg': 'No filename given'}
+
+        root, ext = os.path.splitext(filename)
+        if ext != '.xml':
+            error_msg = 'No filename extension.'
+            if ext:
+                error_msg = "Bad filename extension '%s'." % ext
+            error_msg += " It should be '.xml'"
+            return {
+                'status': False,
+                'error_msg': error_msg
+            }
 
         root_path = self.root_path
         absfilename = browser.absolute_path(filename, root_path)
