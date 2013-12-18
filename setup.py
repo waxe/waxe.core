@@ -48,6 +48,7 @@ setup(name='waxe',
       include_package_data=True,
       zip_safe=False,
       test_suite='nose.collector',
+      setup_requires=['nose'],
       install_requires=requires,
       tests_require=[
           'nose',
