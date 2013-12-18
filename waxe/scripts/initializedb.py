@@ -15,6 +15,7 @@ from ..models import (
     Base,
     Role,
     User,
+    UserConfig,
     ROLE_ADMIN,
     ROLE_EDITOR,
     ROLE_CONTRIBUTOR,
@@ -49,3 +50,27 @@ def main(argv=sys.argv):
         DBSession.add(editor_role)
         contributor_role = Role(name=ROLE_CONTRIBUTOR)
         DBSession.add(contributor_role)
+
+        lereskp_user = User(login='lereskp', password=pwd)
+        lereskp_user.config = UserConfig(
+            root_path='/home/lereskp/temp/waxe/client1',
+            use_versioning=True
+        )
+        lereskp_user.roles = [editor_role]
+        DBSession.add(lereskp_user)
+
+        editor_user = User(login='editor', password=pwd)
+        editor_user.config = UserConfig(
+            root_path='/home/lereskp/temp/waxe/client1',
+            use_versioning=True
+        )
+        editor_user.roles = [editor_role]
+        DBSession.add(editor_user)
+
+        contributor_user = User(login='contributor', password=pwd)
+        contributor_user.config = UserConfig(
+            root_path='/home/lereskp/temp/waxe/client1',
+            use_versioning=True
+        )
+        contributor_user.roles = [contributor_role]
+        DBSession.add(contributor_user)
