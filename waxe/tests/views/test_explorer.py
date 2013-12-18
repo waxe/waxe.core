@@ -128,7 +128,9 @@ class TestExplorerView(LoggedBobTestCase):
                 u'<a data-href="/edit_json/filepath" href="/edit/filepath" '
                 u'class="file">file1.xml</a></li>\n</ul>\n'),
             'breadcrumb': '<li class="active">root</li>',
-            'editor_login': 'Bob'}
+            'editor_login': 'Bob',
+            'versioning': False,
+        }
         self.assertEqual(res, expected)
 
         self.user_bob.config.root_path = '/unexisting'
@@ -136,6 +138,7 @@ class TestExplorerView(LoggedBobTestCase):
         expected = {
             'error_msg': "Directory . doesn't exist",
             'editor_login': u'Bob',
+            'versioning': False,
         }
         self.assertEqual(res, expected)
 

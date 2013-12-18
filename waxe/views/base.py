@@ -24,7 +24,10 @@ class BaseView(object):
 
         def custom_route_path(request):
             def func(name, *args, **kw):
-                kw['login'] = self.current_user.login
+                if self.current_user:
+                    kw['login'] = self.current_user.login
+                else:
+                    kw['login'] = self.logged_user_login
                 return request.route_path(name, *args, **kw)
             return func
         request.set_property(custom_route_path,
@@ -94,6 +97,17 @@ class BaseView(object):
 
         return list(set(lis))
 
+    def has_versioning(self):
+        """Returns True if the current_user root path is versionned and he can
+        use it!
+        """
+        if self.request.registry.settings.get('versioning') == 'true':
+            if (self.current_user and
+               self.current_user.config and
+               self.current_user.config.use_versioning):
+                return True
+        return False
+
     def _response(self, dic):
         """Update the given dic for non json request with some data needed in
         the navbar.
@@ -107,7 +121,7 @@ class BaseView(object):
             return dic
 
         editor_login = self.logged_user_login
-        if self.root_path:
+        if self.current_user:
             editor_login = self.current_user.login
         dic['editor_login'] = editor_login
 
@@ -115,16 +129,7 @@ class BaseView(object):
         if logins:
             dic['logins'] = logins
 
-        if editor_login and 'versioning' in self.request.registry.settings:
-            try:
-                editor = models.User.query.filter_by(login=editor_login).one()
-                if editor.config and editor.config.use_versioning:
-                    dic['versioning'] = True
-            except sqla_exc.NoResultFound:
-                # For some reasons the user is not in the DB. For example the
-                # admin user can just be in the ldap!
-                pass
-
+        dic['versioning'] = self.has_versioning()
         return dic
 
 

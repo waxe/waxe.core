@@ -130,8 +130,8 @@ class SvnViewTester(object):
         self.user_bob.config.root_path = svn_path
         request = self.DummyRequest()
         res = self.ClassView(request).status()
-        self.assertEqual(len(res), 2)
-        self.assertEqual(res.keys(), ['content', 'editor_login'])
+        self.assertEqual(len(res), 3)
+        self.assertEqual(res.keys(), ['content', 'editor_login', 'versioning'])
         self.assertTrue('<form' in res['content'])
         self.assertTrue('file1.xml' in res['content'])
         self.assertTrue('file3.xml' in res['content'])
@@ -144,16 +144,19 @@ class SvnViewTester(object):
         request = self.DummyRequest()
         request.GET = MultiDict()
         res = self.ClassView(request).diff()
-        expected = {'error_msg': 'You should provide at least one filename.',
-                    'editor_login': 'Bob'}
+        expected = {
+            'error_msg': 'You should provide at least one filename.',
+            'editor_login': 'Bob',
+            'versioning': False,
+        }
         self.assertEqual(res, expected)
 
         request = self.DummyRequest(root_path=svn_path,
                                        params={'filenames': 'file1.xml'})
         request.GET = MultiDict({'filenames': 'file1.xml'})
         res = self.ClassView(request).diff()
-        self.assertEqual(len(res), 2)
-        self.assertEqual(res.keys(), ['content', 'editor_login'])
+        self.assertEqual(len(res), 3)
+        self.assertEqual(res.keys(), ['content', 'editor_login', 'versioning'])
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 1)
         self.assertTrue('submit' in res['content'])
@@ -162,8 +165,8 @@ class SvnViewTester(object):
                                        params={'filenames': 'file3.xml'})
         request.GET = MultiDict({'filenames': 'file3.xml'})
         res = self.ClassView(request).diff()
-        self.assertEqual(len(res), 2)
-        self.assertEqual(res.keys(), ['content', 'editor_login'])
+        self.assertEqual(len(res), 3)
+        self.assertEqual(res.keys(), ['content', 'editor_login', 'versioning'])
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 1)
         self.assertTrue('submit' in res['content'])
@@ -173,8 +176,8 @@ class SvnViewTester(object):
         request.GET = MultiDict({'filenames': 'file3.xml'})
         self.user_bob.roles = [self.role_contributor]
         res = self.ClassView(request).diff()
-        self.assertEqual(len(res), 2)
-        self.assertEqual(res.keys(), ['content', 'editor_login'])
+        self.assertEqual(len(res), 3)
+        self.assertEqual(res.keys(), ['content', 'editor_login', 'versioning'])
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 1)
         self.assertTrue('submit' not in res['content'])
@@ -182,8 +185,8 @@ class SvnViewTester(object):
         request.GET = MultiDict([('filenames', 'file1.xml'),
                                  ('filenames', 'file3.xml')])
         res = self.ClassView(request).diff()
-        self.assertEqual(len(res), 2)
-        self.assertEqual(res.keys(), ['content', 'editor_login'])
+        self.assertEqual(len(res), 3)
+        self.assertEqual(res.keys(), ['content', 'editor_login', 'versioning'])
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 2)
         self.assertTrue('submit' not in res['content'])
@@ -198,7 +201,9 @@ class SvnViewTester(object):
                 res = self.ClassView(request).commit()
                 expected = {"status": False,
                             "error_msg": "Bad parameters!",
-                            'editor_login': 'Bob'}
+                            'editor_login': 'Bob',
+                            'versioning': False,
+                           }
                 self.assertEqual(res, expected)
 
                 mock = MagicMock()
@@ -216,7 +221,9 @@ class SvnViewTester(object):
                         'my commit message')
                     expected = {'status': True,
                                 'content': 'Commit done',
-                                'editor_login': 'Bob'}
+                                'editor_login': 'Bob',
+                                'versioning': False
+                               }
                     self.assertEqual(res, expected)
 
                 mock = MagicMock(side_effect=Exception('Error'))
@@ -228,7 +235,9 @@ class SvnViewTester(object):
                     res = self.ClassView(request).commit()
                     expected = {'status': False,
                                 'error_msg': 'Can\'t commit test.xml',
-                                'editor_login': 'Bob'}
+                                'editor_login': 'Bob',
+                                'versioning': False,
+                               }
                     self.assertEqual(res, expected)
                     mock.checkin.assert_called_once_with(
                         [os.path.join(svn_path, 'test.xml')],
@@ -242,7 +251,9 @@ class SvnViewTester(object):
                     expected = {
                         'status': False,
                         'error_msg': "Can't commit conflicted file: test.xml",
-                        'editor_login': 'Bob'}
+                        'editor_login': 'Bob',
+                        'versioning': False,
+                    }
                     self.assertEqual(res, expected)
 
                 mock = MagicMock()
@@ -258,7 +269,9 @@ class SvnViewTester(object):
                         'my commit message')
                     expected = {'status': True,
                                 'content': 'Commit done',
-                                'editor_login': 'Bob'}
+                                'editor_login': 'Bob',
+                                'versioning': False,
+                               }
                     self.assertEqual(res, expected)
 
                 # No permission
@@ -351,7 +364,8 @@ class TestPysvnView(SvnViewTester, BaseTestCase):
         request = self.DummyRequest()
         res = self.ClassView(request).update()
         expected = {'content': 'The repository has been updated!',
-                    'editor_login': 'Fred'}
+                    'editor_login': 'Fred',
+                    'versioning': False}
         self.assertEqual(res, expected)
 
 
@@ -365,7 +379,8 @@ class TestPythonSvnView(SvnViewTester, BaseTestCase):
         request = self.DummyRequest()
         res = self.ClassView(request).update()
         expected = {'content': '<pre>At revision 1.\n</pre>',
-                    'editor_login': 'Fred'}
+                    'editor_login': 'Fred',
+                    'versioning': False}
         self.assertEqual(res, expected)
 
 

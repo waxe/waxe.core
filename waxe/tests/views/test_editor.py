@@ -30,6 +30,7 @@ class TestEditorView(LoggedBobTestCase):
         expected = {
             'editor_login': 'Bob',
             'error_msg': 'A filename should be provided',
+            'versioning': False,
         }
         res = EditorView(request).edit()
         self.assertEqual(res, expected)
@@ -60,7 +61,8 @@ class TestEditorView(LoggedBobTestCase):
             keys = res.keys()
             keys.sort()
             self.assertEqual(keys, ['breadcrumb', 'content',
-                                    'editor_login', 'jstree_data'])
+                                    'editor_login', 'jstree_data',
+                                    'versioning'])
             self.assertEqual(res['breadcrumb'],  expected_breadcrumb)
             self.assertTrue(
                 '<form method="POST" id="xmltool-form" '
@@ -126,6 +128,7 @@ class TestEditorView(LoggedBobTestCase):
         expected = {
             'editor_login': 'Bob',
             'error_msg': 'A filename should be provided',
+            'versioning': False,
         }
         res = EditorView(request).edit_text()
         self.assertEqual(res, expected)
