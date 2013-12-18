@@ -36,6 +36,13 @@ from waxe.views.versioning.python_svn_backend import (
 from waxe.views.versioning import helper
 
 
+class FakeSvnStatus(object):
+
+    def __init__(self, path, status):
+        self.path = path
+        self.text_status = getattr(pysvn.wc_status_kind, status)
+
+
 class EmptyClass(object):
     pass
 
@@ -646,3 +653,49 @@ class TestHelper(unittest.TestCase):
                                 helper.STATUS_UNVERSIONED),
         ]
         self.assertEqual(o.status('folder2'), expected)
+
+
+class TestHelperNoRepo(unittest.TestCase):
+
+    def setUp(self):
+        self.client = EmptyClass()
+
+    def test__status(self):
+        directory = os.path.dirname(__file__)
+        self.client_dir = os.path.join(directory, 'fake_repo')
+        abspath = self.client_dir
+        file1 = os.path.join(self.client_dir, 'file1.xml')
+        folder1 = os.path.join(self.client_dir, 'folder1')
+        folder2 = os.path.join(self.client_dir, 'folder2')
+        changes = [
+            FakeSvnStatus(self.client_dir, 'modified'),
+            FakeSvnStatus(file1, 'added'),
+            FakeSvnStatus(folder1, 'unversioned'),
+            FakeSvnStatus(folder2, 'normal')
+        ]
+
+        o = helper.PysvnVersioning(self.client, self.client_dir)
+        self.client.status = lambda *args, **kw: []
+        res = o._status(abspath, changes)
+
+        expected = [
+            helper.StatusObject(folder1, 'folder1', helper.STATUS_UNVERSIONED),
+            helper.StatusObject(file1, 'file1.xml', helper.STATUS_ADDED),
+        ]
+
+        self.assertEqual(res, expected)
+
+        subchanges = [
+            FakeSvnStatus(
+                os.path.join(self.client_dir, 'folder2', 'sub21'),
+                'unversioned'),
+        ]
+
+        o = helper.PysvnVersioning(self.client, self.client_dir)
+        self.client.status = lambda *args, **kw: subchanges
+        res = o._status(abspath, changes)
+        expected = [
+            helper.StatusObject(folder2, 'folder2', helper.STATUS_MODIFED),
+            helper.StatusObject(folder1, 'folder1', helper.STATUS_UNVERSIONED),
+            helper.StatusObject(file1, 'file1.xml', helper.STATUS_ADDED),
+        ]

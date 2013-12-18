@@ -46,18 +46,14 @@ class PysvnVersioning(object):
         self.client = client
         self.root_path = root_path
 
-    def status(self, path=None):
-        abspath = self.root_path
-        if path:
-            abspath = browser.absolute_path(path, self.root_path)
-        changes = self.client.status(abspath, recurse=False, get_all=True)
+    def _status(self, abspath, changes):
         lis = []
         for f in reversed(changes):
             status = PYSVN_STATUS_MAPPING[f.text_status]
             if f.path == abspath:
                 continue
-            abspath = f.path.encode(locale.getpreferredencoding())
-            if status == STATUS_NORMAL and os.path.isdir(abspath):
+            fpath = f.path.encode(locale.getpreferredencoding())
+            if status == STATUS_NORMAL and os.path.isdir(fpath):
                 res = self.client.status(f.path, recurse=False, get_all=False)
                 if res:
                     relpath = browser.relative_path(f.path, self.root_path)
@@ -70,3 +66,10 @@ class PysvnVersioning(object):
             lis += [StatusObject(f.path, relpath, status)]
 
         return lis
+
+    def status(self, path=None):
+        abspath = self.root_path
+        if path:
+            abspath = browser.absolute_path(path, self.root_path)
+        changes = self.client.status(abspath, recurse=False, get_all=True)
+        return self._status(abspath, changes)
