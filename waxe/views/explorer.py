@@ -51,6 +51,7 @@ class ExplorerView(BaseUserView):
 
         for folder in folders:
             dic = {
+                'data_relpath': os.path.join(relpath, folder),
                 'name': folder,
                 'data_href': get_data_href(os.path.join(relpath, folder), 'path'),
             }
@@ -60,6 +61,7 @@ class ExplorerView(BaseUserView):
 
         for filename in filenames:
             dic = {
+                'data_relpath': os.path.join(relpath, filename),
                 'name': filename,
                 'data_href': get_file_data_href(os.path.join(relpath, filename),
                                                 'path'),
@@ -72,8 +74,16 @@ class ExplorerView(BaseUserView):
 
     def _get_navigation(self):
         data = self._get_navigation_data(add_previous=True)
+        versioning_status_url = None
+        if self.has_versioning():
+            versioning_status_url = self.request.custom_route_path(
+                'versioning_dispatcher_json',
+                method='short_status',
+                _query=[('path', data['path'])])
         return render('blocks/file_navigation.mak',
-                      {'data': data}, self.request)
+                      {'data': data,
+                       'versioning_status_url': versioning_status_url},
+                      self.request)
 
     @view_config(route_name='home', renderer='index.mak', permission='edit')
     @view_config(route_name='home_json', renderer='json', permission='edit')

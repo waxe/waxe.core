@@ -15,12 +15,14 @@ class TestExplorerView(LoggedBobTestCase):
         expected = {
             'folders': [
                 {'data_href': '/explore_json/filepath',
+                 'data_relpath': 'folder1',
                  'href': '/explore/filepath',
                  'name': 'folder1'}],
             'path': '',
             'previous': None,
             'filenames': [
                 {'data_href': '/edit_json/filepath',
+                 'data_relpath': 'file1.xml',
                  'href': '/edit/filepath', 'name': 'file1.xml'}]
         }
         self.assertEqual(res, expected)
@@ -34,6 +36,7 @@ class TestExplorerView(LoggedBobTestCase):
             'previous': None,
             'filenames': [
                 {'data_href': '/edit_json/filepath',
+                 'data_relpath': 'folder1/file2.xml',
                  'href': '/edit/filepath',
                  'name': 'file2.xml'}]
         }
@@ -52,6 +55,7 @@ class TestExplorerView(LoggedBobTestCase):
             },
             'filenames': [{
                 'data_href': '/file_route_json/filepath',
+                'data_relpath': 'folder1/file2.xml',
                 'name': 'file2.xml'}]
         }
         self.assertTrue(res, expected)
@@ -63,12 +67,14 @@ class TestExplorerView(LoggedBobTestCase):
         expected = (
             '<ul id="file-navigation" class="list-unstyled" data-path="">\n'
             '    <li><i class="glyphicon glyphicon-folder-close"></i>'
-            '<a data-href="/filepath" href="/filepath" class="folder">'
+            '<a data-href="/filepath" href="/filepath" class="folder" '
+            'data-relpath="folder1">'
             'folder1'
             '</a>'
             '</li>\n'
             '    <li><i class="glyphicon glyphicon-file"></i>'
-            '<a data-href="/filepath" href="/filepath" class="file">'
+            '<a data-href="/filepath" href="/filepath" class="file" '
+            'data-relpath="file1.xml">'
             'file1.xml'
             '</a>'
             '</li>\n'
@@ -86,12 +92,23 @@ class TestExplorerView(LoggedBobTestCase):
             '</a>'
             '</li>\n'
             '    <li><i class="glyphicon glyphicon-file"></i>'
-            '<a data-href="/filepath" href="/filepath" class="file">'
+            '<a data-href="/filepath" href="/filepath" class="file" '
+            'data-relpath="folder1/file2.xml">'
             'file2.xml'
             '</a>'
             '</li>\n'
             '</ul>\n')
         self.assertEqual(res, expected)
+
+        request.custom_route_path = lambda *args, **kw: '/%s' % args[0]
+        o = ExplorerView(request)
+        res = o._get_navigation()
+        expected = 'data-versioning-path="/versioning_dispatcher_json"'
+        self.assertFalse(expected in res)
+
+        o.has_versioning = lambda *args: True
+        res = o._get_navigation()
+        self.assertTrue(expected in res)
 
     def test_home(self):
         class C(object): pass
@@ -122,11 +139,13 @@ class TestExplorerView(LoggedBobTestCase):
                 u'data-path="">\n    '
                 u'<li><i class="glyphicon glyphicon-folder-close"></i>'
                 u'<a data-href="/explore_json/filepath" '
-                u'href="/explore/filepath" class="folder">folder1</a>'
+                u'href="/explore/filepath" class="folder" '
+                u'data-relpath="folder1">folder1</a>'
                 u'</li>\n    '
                 u'<li><i class="glyphicon glyphicon-file"></i>'
                 u'<a data-href="/edit_json/filepath" href="/edit/filepath" '
-                u'class="file">file1.xml</a></li>\n</ul>\n'),
+                u'class="file" '
+                u'data-relpath="file1.xml">file1.xml</a></li>\n</ul>\n'),
             'breadcrumb': '<li class="active">root</li>',
             'editor_login': 'Bob',
             'versioning': False,
@@ -151,12 +170,15 @@ class TestExplorerView(LoggedBobTestCase):
         expected = {
             'folders': [
                 {'data_href': '/filepath',
+                 'data_relpath': 'folder1',
                  'name': 'folder1'}
             ],
             'path': '',
             'previous': None,
             'nav_btns': [{'data_href': '/filepath', 'name': 'root'}],
-            'filenames': [{'data_href': '/filepath', 'name': 'file1.xml'}]
+            'filenames': [{'data_href': '/filepath',
+                           'data_relpath': 'file1.xml',
+                           'name': 'file1.xml'}]
         }
         self.assertEqual(res, expected)
 
@@ -266,6 +288,7 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
         expected = {
             "folders": [
                 {"data_href": "/account/Bob/open.json?path=folder1",
+                 "data_relpath": "folder1",
                  "name": "folder1"}],
             "path": "",
             "previous": None,
@@ -274,6 +297,7 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
                  "name": "root"}],
             "filenames": [
                 {"data_href": "/account/Bob/edit.json?path=file1.xml",
+                 "data_relpath": "file1.xml",
                  "name": "file1.xml"}]
         }
         self.assertEqual(json.loads(res.body), expected)

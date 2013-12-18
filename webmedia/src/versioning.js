@@ -5,6 +5,21 @@ var waxe = waxe || {};
 
     ns.versioning = {
         init: function(){
+            var navfile = $('#file-navigation').each(function() {
+                var that = this;
+                var url = $(that).data('versioning-path');
+                if (typeof(url) === 'undefined') {
+                    return false;
+                }
+                waxe.ajax.GET(url, function(data, textStatus, jqXHR){
+                    $(that).find('a').each(function() {
+                        var status = data[$(this).data('relpath')];
+                        if (typeof(status) !== 'undefined') {
+                            $(this).parent().addClass('versioning-' + status);
+                        }
+                    });
+                });
+            });
 
             $('a.select-all').click(function(e){
                 e.preventDefault();
