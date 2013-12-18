@@ -4,6 +4,7 @@ from . import python_svn_backend
 
 
 CALLABLE_VIEWS = [
+    'short_status',
     'status',
     'diff',
     'update',

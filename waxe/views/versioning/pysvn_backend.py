@@ -9,6 +9,7 @@ from waxe import diff
 from waxe import models
 from waxe.utils import unflatten_params
 from ..base import BaseUserView
+from . import helper
 
 
 log = logging.getLogger(__name__)
@@ -89,6 +90,15 @@ class PysvnView(BaseUserView):
         if self.request.registry.settings.get('versioning.auth.https'):
             client.callback_ssl_server_trust_prompt = svn_ssl_server_trust_prompt
         return client
+
+    def short_status(self):
+        relpath = self.request.GET.get('path', '')
+        client = self.get_svn_client()
+        c = helper.PysvnVersioning(client, self.root_path)
+        dic = {}
+        for o in c.status(relpath):
+            dic[o.relpath] = o.status
+        return dic
 
     def status(self):
         root_path = self.root_path

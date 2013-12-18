@@ -1,5 +1,9 @@
 import os
+import sys
 import json
+import unittest
+import shutil
+from subprocess import Popen, PIPE
 from pyramid import testing
 from pyramid.exceptions import Forbidden
 from webob.multidict import MultiDict
@@ -28,6 +32,8 @@ from waxe.views.versioning.pysvn_backend import (
 from waxe.views.versioning.python_svn_backend import (
     PythonSvnView,
 )
+
+from waxe.views.versioning import helper
 
 
 class EmptyClass(object):
@@ -514,3 +520,129 @@ class FunctionalPythonSvnTestViews(FunctionalTestViews, WaxeTestCaseVersioning):
         self.assertTrue('At revision 1.' in res.body)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
+
+
+class TestHelper(unittest.TestCase):
+
+    def setUp(self):
+        directory = os.path.dirname(__file__)
+        self.repo = os.path.join(directory, 'svn_waxe_repo')
+        p = Popen('svnadmin create %s' % self.repo,
+                  shell=True,
+                  stderr=PIPE,
+                  close_fds=True)
+        error = p.stderr.read()
+        if error:
+            print >> sys.stderr,  error
+
+        self.client_dir = 'svn_waxe_client'
+        self.client = pysvn.Client()
+        self.client.checkout('file://%s' % self.repo, self.client_dir)
+
+    def tearDown(self):
+        if os.path.isdir(self.repo):
+            shutil.rmtree(self.repo)
+        if os.path.isdir(self.client_dir):
+            shutil.rmtree(self.client_dir)
+        if os.path.isdir('svn_waxe_client1'):
+            shutil.rmtree('svn_waxe_client1')
+
+    def test_status(self):
+        o = helper.PysvnVersioning(self.client, self.client_dir)
+        self.assertEqual(o.status(), [])
+        # Add new file
+        file1 = os.path.join(self.client_dir, 'file1.xml')
+        file2 = os.path.join(self.client_dir, 'file2.xml')
+        file3 = os.path.join(self.client_dir, 'file3.xml')
+        file4 = os.path.join(self.client_dir, 'file4.xml')
+        file5 = os.path.join(self.client_dir, 'file5.xml')
+        file6 = os.path.join(self.client_dir, 'file6.xml')
+        file7 = os.path.join(self.client_dir, 'file7.xml')
+        open(file1, 'w').write('Hello')
+        open(file2, 'w').write('Hello')
+        open(file3, 'w').write('Hello')
+        open(file4, 'w').write('Hello')
+        open(file5, 'w').write('Hello')
+        open(file6, 'w').write('Hello')
+        open(file7, 'w').write('Hello')
+        self.client.add(file1)
+        self.client.add(file2)
+        self.client.add(file3)
+        self.client.add(file4)
+        self.client.add(file5)
+        self.client.add(file6)
+        self.client.checkin([file1, file2, file3, file4, file5], 'Initial commit')
+        self.client.remove(file3)
+        open(file2, 'w').write('Hello world')
+        open(file5, 'w').write('Hello world')
+        # Create a conflict
+        self.client.checkout('file://%s' % self.repo, 'svn_waxe_client1')
+        open(os.path.join('svn_waxe_client1', 'file5.xml'), 'w').write('Hello Bob')
+        self.client.checkin([os.path.join('svn_waxe_client1', 'file5.xml')],
+                            'create conflict')
+        self.client.update(self.client_dir)
+        os.remove(file4)
+        expected = [
+            helper.StatusObject('svn_waxe_client/file2.xml',
+                                'file2.xml',
+                                helper.STATUS_MODIFED),
+            helper.StatusObject('svn_waxe_client/file3.xml',
+                                'file3.xml',
+                                helper.STATUS_DELETED),
+            helper.StatusObject('svn_waxe_client/file4.xml',
+                                'file4.xml',
+                                helper.STATUS_MISSING),
+            helper.StatusObject('svn_waxe_client/file5.xml',
+                                'file5.xml',
+                                helper.STATUS_CONFLICTED),
+            helper.StatusObject('svn_waxe_client/file5.xml.mine',
+                                'file5.xml.mine',
+                                helper.STATUS_UNVERSIONED),
+            helper.StatusObject('svn_waxe_client/file5.xml.r1',
+                                'file5.xml.r1',
+                                helper.STATUS_UNVERSIONED),
+            helper.StatusObject('svn_waxe_client/file5.xml.r2',
+                                'file5.xml.r2',
+                                helper.STATUS_UNVERSIONED),
+            helper.StatusObject('svn_waxe_client/file6.xml',
+                                'file6.xml',
+                                helper.STATUS_ADDED),
+            helper.StatusObject('svn_waxe_client/file7.xml',
+                                'file7.xml',
+                                helper.STATUS_UNVERSIONED),
+        ]
+        self.assertEqual(o.status(), expected)
+
+    def test_status_subfolder(self):
+        o = helper.PysvnVersioning(self.client, self.client_dir)
+        self.assertEqual(o.status(), [])
+        folder1 = os.path.join(self.client_dir, 'folder1')
+        folder2 = os.path.join(self.client_dir, 'folder2')
+        folder3 = os.path.join(self.client_dir, 'folder3')
+        os.mkdir(folder1)
+        os.mkdir(folder2)
+        os.mkdir(folder3)
+        file1 = os.path.join(folder1, 'file1.xml')
+        file2 = os.path.join(folder2, 'file2.xml')
+        open(file1, 'w').write('Hello')
+        self.client.add(folder1)
+        self.client.add(folder2)
+        self.client.checkin([folder1, folder2], 'Add folders')
+        open(file2, 'w').write('Hello')
+        self.client.update(self.client_dir)
+        expected = [
+            helper.StatusObject('svn_waxe_client/folder2',
+                                'folder2',
+                                helper.STATUS_MODIFED),
+            helper.StatusObject('svn_waxe_client/folder3',
+                                'folder3',
+                                helper.STATUS_UNVERSIONED),
+        ]
+        self.assertEqual(o.status(), expected)
+
+        expected = [
+            helper.StatusObject('svn_waxe_client/folder2/file2.xml',
+                                'folder2/file2.xml',
+                                helper.STATUS_UNVERSIONED),
+        ]
+        self.assertEqual(o.status('folder2'), expected)
