@@ -8,7 +8,7 @@ STATUS_NORMAL = 'normal'
 STATUS_ADDED = 'added'
 STATUS_DELETED = 'deleted'
 STATUS_MODIFED = 'modified'
-STATUS_CONFLICTED = 'conflited'
+STATUS_CONFLICTED = 'conflicted'
 STATUS_UNVERSIONED = 'unversioned'
 STATUS_MISSING = 'missing'
 

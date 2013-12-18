@@ -9,3 +9,25 @@
     <li><i class="glyphicon glyphicon-file"></i><a data-href="${dic['data_href']}" href="${dic['href']}" class="file" data-relpath="${dic['data_relpath']}">${dic['name']}</a></li>
   % endfor
 </ul>
+
+
+% if versioning_status_url:
+<div class="alert alert-info versioning-legend">
+<p><strong>Legend of the different colors:</strong></p>
+<br />
+<ul class="list-unstyled">
+  <li class="versioning-modified">
+	<i class="glyphicon glyphicon-file"></i>
+	This file/folder is modified.
+  </li>
+  <li class="versioning-conflicted">
+	<i class="glyphicon glyphicon-file"></i>
+	This file is conflicted. It comes when someone else update the same part of XML than you, you need to fix it.
+  </li>
+  <li class="versioning-unversioned">
+	<i class="glyphicon glyphicon-file"></i>
+	This file/folder is new.
+  </li>
+</ul>
+</div>
+% endif

@@ -78,7 +78,7 @@ class TestExplorerView(LoggedBobTestCase):
             'file1.xml'
             '</a>'
             '</li>\n'
-            '</ul>\n')
+            '</ul>\n\n\n')
         self.assertEqual(res, expected)
 
         request = testing.DummyRequest(params={'path': 'folder1'})
@@ -97,7 +97,7 @@ class TestExplorerView(LoggedBobTestCase):
             'file2.xml'
             '</a>'
             '</li>\n'
-            '</ul>\n')
+            '</ul>\n\n\n')
         self.assertEqual(res, expected)
 
         request.custom_route_path = lambda *args, **kw: '/%s' % args[0]
@@ -145,7 +145,7 @@ class TestExplorerView(LoggedBobTestCase):
                 u'<li><i class="glyphicon glyphicon-file"></i>'
                 u'<a data-href="/edit_json/filepath" href="/edit/filepath" '
                 u'class="file" '
-                u'data-relpath="file1.xml">file1.xml</a></li>\n</ul>\n'),
+                u'data-relpath="file1.xml">file1.xml</a></li>\n</ul>\n\n\n'),
             'breadcrumb': '<li class="active">root</li>',
             'editor_login': 'Bob',
             'versioning': False,
