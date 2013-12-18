@@ -5,7 +5,7 @@ from xmltool import dtd_parser
 from lxml import etree
 import json
 
-from urllib2 import HTTPError
+from urllib2 import HTTPError, URLError
 from pyramid.view import view_config
 from pyramid.renderers import render
 from .. import browser
@@ -52,7 +52,7 @@ class EditorView(BaseUserView):
             jstree_data = obj.to_jstree_dict([])
             if not self._is_json():
                 jstree_data = json.dumps(jstree_data)
-        except HTTPError, e:
+        except (HTTPError, URLError), e:
             log.exception(e)
             return self._response({
                 'error_msg': 'The dtd of %s can\'t be loaded.' % filename
@@ -123,7 +123,7 @@ class EditorView(BaseUserView):
         if dtd_tag and dtd_url:
             try:
                 dic = dtd_parser.parse(dtd_url=dtd_url)
-            except HTTPError, e:
+            except (HTTPError, URLError), e:
                 log.exception(e)
                 return {
                     'error_msg': 'The dtd file %s can\'t be loaded.' % dtd_url
@@ -179,7 +179,7 @@ class EditorView(BaseUserView):
         absfilename = browser.absolute_path(filename, root_path)
         try:
             xmltool.update(absfilename, self.request.POST)
-        except HTTPError, e:
+        except (HTTPError, URLError), e:
             log.exception(e)
             return self._response({
                 'error_msg': 'The dtd of %s can\'t be loaded.' % filename
