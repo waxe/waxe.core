@@ -620,6 +620,13 @@ class TestHelper(unittest.TestCase):
         ]
         self.assertEqual(o.status(), expected)
 
+        expected = [
+            helper.StatusObject('svn_waxe_client/file7.xml',
+                                'file7.xml',
+                                helper.STATUS_UNVERSIONED),
+        ]
+        self.assertEqual(o.status('file7.xml'), expected)
+
     def test_status_subfolder(self):
         o = helper.PysvnVersioning(self.client, self.client_dir)
         self.assertEqual(o.status(), [])
@@ -654,13 +661,46 @@ class TestHelper(unittest.TestCase):
         ]
         self.assertEqual(o.status('folder2'), expected)
 
+    def test_full_status(self):
+        o = helper.PysvnVersioning(self.client, self.client_dir)
+        self.assertEqual(o.full_status(), [])
+        folder1 = os.path.join(self.client_dir, 'folder1')
+        os.mkdir(folder1)
+        self.assertEqual(o.full_status(), [])
+
+        folder2 = os.path.join(self.client_dir, 'folder2')
+        os.mkdir(folder2)
+        self.assertEqual(o.full_status(), [])
+
+        file2 = os.path.join(folder2, 'file2.xml')
+        open(file2, 'w').write('Hello')
+        expected = [
+            helper.StatusObject('svn_waxe_client/folder2/file2.xml',
+                                'folder2/file2.xml',
+                                helper.STATUS_UNVERSIONED),
+        ]
+        self.assertEqual(o.full_status(), expected)
+        expected = [
+            helper.StatusObject('svn_waxe_client/folder2/file2.xml',
+                                'file2.xml',
+                                helper.STATUS_UNVERSIONED),
+        ]
+        self.assertEqual(o.full_status('folder2'), expected)
+
+        expected = [
+            helper.StatusObject('svn_waxe_client/folder2/file2.xml',
+                                'folder2/file2.xml',
+                                helper.STATUS_UNVERSIONED),
+        ]
+        self.assertEqual(o.full_status('folder2/file2.xml'), expected)
+
 
 class TestHelperNoRepo(unittest.TestCase):
 
     def setUp(self):
         self.client = EmptyClass()
 
-    def test__status(self):
+    def test__status_short(self):
         directory = os.path.dirname(__file__)
         self.client_dir = os.path.join(directory, 'fake_repo')
         abspath = self.client_dir
@@ -699,3 +739,35 @@ class TestHelperNoRepo(unittest.TestCase):
             helper.StatusObject(folder1, 'folder1', helper.STATUS_UNVERSIONED),
             helper.StatusObject(file1, 'file1.xml', helper.STATUS_ADDED),
         ]
+
+    def test__status_unversioned(self):
+        directory = os.path.dirname(__file__)
+        self.client_dir = os.path.join(directory, 'fake_repo')
+        abspath = self.client_dir
+        file1 = os.path.join(self.client_dir, 'file1.xml')
+        folder1 = os.path.join(self.client_dir, 'folder1')
+        file211 = os.path.join(self.client_dir, 'folder2', 'sub21',
+                               'file211.xml')
+        changes = [
+            FakeSvnStatus(self.client_dir, 'unversioned'),
+        ]
+
+        o = helper.PysvnVersioning(self.client, self.client_dir)
+        res = o._status(abspath, changes)
+        self.assertEqual(res, [])
+
+        res = o._status(abspath, changes, short=False)
+        expected = [
+            helper.StatusObject(file1, 'file1.xml', helper.STATUS_UNVERSIONED),
+            helper.StatusObject(file211, 'folder2/sub21/file211.xml', helper.STATUS_UNVERSIONED),
+        ]
+        self.assertEqual(res, expected)
+
+        changes = [
+            FakeSvnStatus(folder1, 'unversioned'),
+        ]
+        res = o._status(folder1, changes, short=False)
+        self.assertEqual(res, [])
+
+        res = o._status(folder1, changes, short=True)
+        self.assertEqual(res, [])

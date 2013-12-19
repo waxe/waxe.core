@@ -46,19 +46,35 @@ class PysvnVersioning(object):
         self.client = client
         self.root_path = root_path
 
-    def _status(self, abspath, changes):
+    def _status(self, abspath, changes, short=True):
         lis = []
         for f in reversed(changes):
             status = PYSVN_STATUS_MAPPING[f.text_status]
-            if f.path == abspath:
-                continue
             fpath = f.path.encode(locale.getpreferredencoding())
-            if status == STATUS_NORMAL and os.path.isdir(fpath):
+            isdir = os.path.isdir(fpath)
+            # Don't skip the root if it's a file, we want to get the file
+            # status
+            if f.path == abspath and short and isdir:
+                continue
+            if short and status == STATUS_NORMAL and isdir:
+                # For short status we just want to know if a normal folder has
+                # some updates
                 res = self.client.status(f.path, recurse=False, get_all=False)
                 if res:
                     relpath = browser.relative_path(f.path, self.root_path)
                     lis += [StatusObject(f.path, relpath, STATUS_MODIFED)]
-                    continue
+                continue
+
+            if not short and status == STATUS_UNVERSIONED and isdir:
+                # For full status we want to get all the files under an
+                # unversioned folder
+                for sf in browser.get_all_files(f.path,
+                                                abspath,
+                                                relative=False)[1]:
+                    relpath = browser.relative_path(sf, abspath)
+                    lis += [StatusObject(sf, relpath, STATUS_UNVERSIONED)]
+                continue
+
             if status == STATUS_NORMAL:
                 continue
 
@@ -71,5 +87,30 @@ class PysvnVersioning(object):
         abspath = self.root_path
         if path:
             abspath = browser.absolute_path(path, self.root_path)
-        changes = self.client.status(abspath, recurse=False, get_all=True)
-        return self._status(abspath, changes)
+        try:
+            changes = self.client.status(abspath, recurse=False, get_all=True)
+            return self._status(abspath, changes)
+        except pysvn.ClientError, e:
+            if not str(e).endswith('is not a working copy'):
+                raise
+            # The file/folder is not in working copy so we force the status to
+            # unversioned
+            return [
+                StatusObject(abspath, path, STATUS_UNVERSIONED)
+            ]
+
+    def full_status(self, path=None):
+        abspath = self.root_path
+        if path:
+            abspath = browser.absolute_path(path, self.root_path)
+        try:
+            changes = self.client.status(abspath, recurse=True, get_all=False)
+            return self._status(abspath, changes, short=False)
+        except pysvn.ClientError, e:
+            if not str(e).endswith('is not a working copy'):
+                raise
+            # The file/folder is not in working copy so we force the status to
+            # unversioned
+            return [
+                StatusObject(abspath, path, STATUS_UNVERSIONED)
+            ]
