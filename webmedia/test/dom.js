@@ -168,6 +168,21 @@ var waxe = waxe || {};
         equal(cnt, 4);
         equal(modal_nb_called, 1);
 
+        data = {
+            info_msg: 'My info message'
+        };
+        // Nothing has changed, we just display the modal!
+        waxe.dom.update(data);
+        equal(content.html(), 'My new content', 'content not updated');
+        equal(breadcrumb.html(), '', 'breadcrumb updated');
+        equal(layout.$elt.is(':visible'), false, 'layout is always hidden');
+        equal(versioning_nb_called, 2);
+        equal(message_error_nb_called,  1);
+        equal(message_success_nb_called,  0);
+        equal(message_info_nb_called, 4);
+        equal(cnt, 4);
+        equal(modal_nb_called, 1);
+
         waxe.dom.addPushStateOnLinks = old_waxe_dom_addPushStateOnLinks;
         $.fn.modal = old_modal;
     });

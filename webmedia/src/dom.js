@@ -51,6 +51,9 @@ var waxe = waxe || {};
             if (data.error_msg){
                 $(document).message('error', data.error_msg);
             }
+            else if (data.info_msg){
+                $(document).message('info', data.info_msg);
+            }
 
         },
         load: function(url){
