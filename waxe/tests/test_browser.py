@@ -65,17 +65,19 @@ class TestBrowser(unittest.TestCase):
         root_path = os.path.join(os.getcwd(), 'waxe', 'tests', 'files')
         abspath = root_path
         folders, filenames = browser.get_files(abspath, root_path=root_path)
-        self.assertEqual(folders, ['folder1'])
-        self.assertEqual(filenames, ['file1.xml'])
+        self.assertEqual(folders, [os.path.join(root_path, 'folder1')])
+        self.assertEqual(filenames, [os.path.join(root_path, 'file1.xml')])
 
         folders, filenames = browser.get_files(abspath, root_path=root_path)
-        self.assertEqual(folders, ['folder1'])
-        self.assertEqual(filenames, ['file1.xml'])
+        self.assertEqual(folders, [os.path.join(root_path, 'folder1')])
+        self.assertEqual(filenames, [os.path.join(root_path, 'file1.xml')])
 
         abspath = os.path.join(root_path, 'folder1')
         folders, filenames = browser.get_files(abspath, root_path=root_path)
         self.assertEqual(folders, [])
-        self.assertEqual(filenames, ['file2.xml'])
+        self.assertEqual(filenames, [os.path.join(root_path,
+                                                  'folder1',
+                                                  'file2.xml')])
 
         abspath = os.path.join(os.getcwd(), 'waxe', 'tests', 'files',
                                'nonexisting')
@@ -88,8 +90,11 @@ class TestBrowser(unittest.TestCase):
         abspath = root_path
         folders, filenames = browser.get_files(abspath, root_path=root_path,
                                                root_only=False, relative=False)
-        self.assertEqual(folders, ['folder1'])
-        self.assertEqual(filenames, ['file1.xml', 'file2.xml'])
+        self.assertEqual(folders, [os.path.join(root_path, 'folder1')])
+        self.assertEqual(filenames, [os.path.join(root_path, 'file1.xml'),
+                                     os.path.join(root_path,
+                                                  'folder1',
+                                                  'file2.xml')])
         folders, filenames = browser.get_files(abspath, root_path=root_path,
                                                root_only=False, relative=True)
 

@@ -78,10 +78,9 @@ def get_files(abspath, root_path, root_only=True, relative=False):
         for d in dirnames:
             if d.startswith('.'):
                 continue
-            p = d
+            p = os.path.join(dirpath, d)
             if relative:
-                p = os.path.join(dirpath, d)
-                p = relative_path(p, root_path)
+                p = relative_path(p, abspath)
             folders += [p]
 
         for f in filenames:
@@ -90,10 +89,9 @@ def get_files(abspath, root_path, root_only=True, relative=False):
                 continue
             if f.startswith('.'):
                 continue
-            p = f
+            p = os.path.join(dirpath, f)
             if relative:
-                p = os.path.join(dirpath, f)
-                p = relative_path(p, root_path)
+                p = relative_path(p, abspath)
             files += [p]
 
         if root_only:
