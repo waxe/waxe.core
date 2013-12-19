@@ -29,6 +29,12 @@ var waxe = waxe || {};
                 $(document).message('info', 'Loaded!');
             }
 
+            if ('modal' in data){
+                var modal = $(data.modal);
+                modal.modal('show');
+                $(document).message('info', 'Loaded!');
+            }
+
             var $breadcrumb = $('.breadcrumb');
             if ('breadcrumb' in data){
                 $breadcrumb.html(data.breadcrumb);
