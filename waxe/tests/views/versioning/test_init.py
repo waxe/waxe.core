@@ -554,6 +554,49 @@ class TestHelper(unittest.TestCase):
         if os.path.isdir('svn_waxe_client1'):
             shutil.rmtree('svn_waxe_client1')
 
+    def test_empty_status(self):
+        o = helper.PysvnVersioning(self.client, self.client_dir)
+        expected = helper.StatusObject(self.client_dir, '.',
+                                       helper.STATUS_NORMAL)
+        self.assertEqual(o.empty_status(self.client_dir), expected)
+        folder1 = os.path.join(self.client_dir, 'folder1')
+        os.mkdir(folder1)
+        file1 = os.path.join(folder1, 'file1.xml')
+        open(file1, 'w').write('Hello')
+
+        expected = helper.StatusObject(file1,
+                                       'folder1/file1.xml',
+                                       helper.STATUS_UNVERSIONED)
+        self.assertEqual(o.empty_status(file1), expected)
+
+        expected = helper.StatusObject(folder1,
+                                       'folder1',
+                                       helper.STATUS_UNVERSIONED)
+        self.assertEqual(o.empty_status(folder1), expected)
+
+        self.client.add(folder1, depth=pysvn.depth.empty)
+        expected = helper.StatusObject(folder1,
+                                       'folder1',
+                                       helper.STATUS_ADDED)
+        self.assertEqual(o.empty_status(folder1), expected)
+
+        expected = helper.StatusObject(file1,
+                                       'folder1/file1.xml',
+                                       helper.STATUS_UNVERSIONED)
+        self.assertEqual(o.empty_status(file1), expected)
+        self.client.checkin(folder1, 'commit folder')
+        self.client.update(self.client_dir)
+
+        expected = helper.StatusObject(folder1,
+                                       'folder1',
+                                       helper.STATUS_NORMAL)
+        self.assertEqual(o.empty_status(folder1), expected)
+
+        expected = helper.StatusObject(file1,
+                                       'folder1/file1.xml',
+                                       helper.STATUS_UNVERSIONED)
+        self.assertEqual(o.empty_status(file1), expected)
+
     def test_status(self):
         o = helper.PysvnVersioning(self.client, self.client_dir)
         self.assertEqual(o.status(), [])
@@ -694,6 +737,18 @@ class TestHelper(unittest.TestCase):
         ]
         self.assertEqual(o.full_status('folder2/file2.xml'), expected)
 
+    def test_update(self):
+        o = helper.PysvnVersioning(self.client, self.client_dir)
+        file1 = os.path.join(self.client_dir, 'file1.xml')
+        self.assertFalse(os.path.isfile(file1))
+        self.client.checkout('file://%s' % self.repo, 'svn_waxe_client1')
+        rfile1 = os.path.join('svn_waxe_client1', 'file1.xml')
+        open(rfile1, 'w').write('Hello Bob')
+        self.client.add(rfile1)
+        self.client.checkin(rfile1, 'Commit file')
+        o.update()
+        self.assertTrue(os.path.isfile(file1))
+
     def test_get_commitable_files(self):
         o = helper.PysvnVersioning(self.client, self.client_dir)
         self.assertEqual(o.get_commitable_files(), [])
@@ -767,6 +822,96 @@ class TestHelper(unittest.TestCase):
                                 helper.STATUS_UNVERSIONED),
         ]
         self.assertEqual(o.get_commitable_files('file7.xml'), expected)
+
+    def test_unversioned_parents(self):
+        o = helper.PysvnVersioning(self.client, self.client_dir)
+        self.assertEqual(o.unversioned_parents(self.client_dir), [])
+        folder1 = os.path.join(self.client_dir, 'folder1')
+        folder2 = os.path.join(self.client_dir, 'folder2')
+        subfolder21 = os.path.join(folder2, 'sub21')
+        os.mkdir(folder1)
+        os.mkdir(folder2)
+        os.mkdir(subfolder21)
+        file1 = os.path.join(folder1, 'file1.xml')
+        file2 = os.path.join(subfolder21, 'file2.xml')
+        file3 = os.path.join(self.client_dir, 'file3.xml')
+        open(file1, 'w').write('Hello')
+        open(file2, 'w').write('Hello')
+        open(file3, 'w').write('Hello')
+        self.assertEqual(list(o.unversioned_parents(file3)), [])
+
+        self.assertEqual(list(o.unversioned_parents(file1)), [folder1])
+        self.assertEqual(list(o.unversioned_parents(file2)), [folder2,
+                                                              subfolder21])
+        self.client.add(folder2, depth=pysvn.depth.empty)
+        self.assertEqual(list(o.unversioned_parents(file2)), [subfolder21])
+
+        self.client.add(subfolder21, depth=pysvn.depth.empty)
+        self.assertEqual(list(o.unversioned_parents(file2)), [])
+
+    def test_add(self):
+        o = helper.PysvnVersioning(self.client, self.client_dir)
+        self.assertEqual(o.unversioned_parents(self.client_dir), [])
+        folder1 = os.path.join(self.client_dir, 'folder1')
+        folder2 = os.path.join(self.client_dir, 'folder2')
+        subfolder21 = os.path.join(folder2, 'sub21')
+        os.mkdir(folder1)
+        os.mkdir(folder2)
+        os.mkdir(subfolder21)
+        file1 = os.path.join(folder1, 'file1.xml')
+        file2 = os.path.join(subfolder21, 'file2.xml')
+        file3 = os.path.join(self.client_dir, 'file3.xml')
+        open(file1, 'w').write('Hello')
+        open(file2, 'w').write('Hello')
+        open(file3, 'w').write('Hello')
+
+        files = ['folder1/file1.xml',
+                 'folder2/sub21/file2.xml',
+                 'file3.xml']
+        res = o.add(files)
+        for f in [folder1, folder2, subfolder21, file1, file2, file3]:
+            so = o.empty_status(f)
+            self.assertEqual(so.status, helper.STATUS_ADDED)
+        self.assertEqual(
+            res, [folder1, file1, folder2, subfolder21, file2, file3])
+
+        # Just to make sure we can call with one file and it will not fail if
+        # the file is already added
+        res = o.add('file3.xml')
+        self.assertEqual(res, [])
+
+        # Fail if file doesn't exist
+        res = o.add('unexisting.xml')
+        self.assertEqual(res, [])
+
+    def test_commit(self):
+        o = helper.PysvnVersioning(self.client, self.client_dir)
+        self.assertEqual(o.unversioned_parents(self.client_dir), [])
+        folder1 = os.path.join(self.client_dir, 'folder1')
+        folder2 = os.path.join(self.client_dir, 'folder2')
+        subfolder21 = os.path.join(folder2, 'sub21')
+        os.mkdir(folder1)
+        os.mkdir(folder2)
+        os.mkdir(subfolder21)
+        file1 = os.path.join(folder1, 'file1.xml')
+        file2 = os.path.join(subfolder21, 'file2.xml')
+        file3 = os.path.join(self.client_dir, 'file3.xml')
+        file4 = os.path.join(subfolder21, 'file4.xml')
+        open(file1, 'w').write('Hello')
+        open(file2, 'w').write('Hello')
+        open(file3, 'w').write('Hello')
+        open(file4, 'w').write('Hello')
+
+        files = ['folder1/file1.xml',
+                 'folder2/sub21/file2.xml',
+                 'file3.xml']
+        o.commit(files, 'Test commit')
+        self.client.update(self.client_dir)
+        for f in [folder1, folder2, subfolder21, file1, file2, file3]:
+            so = o.empty_status(f)
+            self.assertEqual(so.status, helper.STATUS_NORMAL)
+        res = o.empty_status(file4)
+        self.assertEqual(res.status, helper.STATUS_UNVERSIONED)
 
 
 class TestHelperNoRepo(unittest.TestCase):

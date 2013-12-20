@@ -100,6 +100,28 @@ class PysvnVersioning(object):
 
         return lis
 
+    def empty_status(self, abspath):
+        """Get the status of the given abspath. We don't care of any child is
+        it is a folder
+        """
+        try:
+            changes = self.client.status(abspath,
+                                         depth=pysvn.depth.empty,
+                                         get_all=False)
+            if not changes:
+                status = STATUS_NORMAL
+            else:
+                assert(len(changes) == 1)
+                status = PYSVN_STATUS_MAPPING[changes[0].text_status]
+        except pysvn.ClientError, e:
+            if str(e).endswith('is not a working copy'):
+                status = STATUS_UNVERSIONED
+            else:
+                raise
+
+        relpath = browser.relative_path(abspath, self.root_path)
+        return StatusObject(abspath, relpath, status)
+
     def status(self, path=None):
         abspath = self.root_path
         if path:
@@ -132,6 +154,13 @@ class PysvnVersioning(object):
                 StatusObject(abspath, path, STATUS_UNVERSIONED)
             ]
 
+    def update(self, path=None):
+        abspath = self.root_path
+        if path:
+            abspath = browser.absolute_path(path, self.root_path)
+        # NOTE: use pysvn.depth.unknown to follow the client repo depths
+        self.client.update(abspath, depth=pysvn.depth.unknown)
+
     def get_commitable_files(self, path=None):
         lis = self.full_status(path)
         # For now we just skip the conflicted file.
@@ -143,3 +172,71 @@ class PysvnVersioning(object):
             else:
                 tmps += [so]
         return [so for so in tmps if not is_conflicted(so, conflicteds)]
+
+    def unversioned_parents(self, abspath):
+        lis = []
+        if abspath == self.root_path:
+            return lis
+        dirpath = os.path.dirname(abspath)
+        while dirpath != self.root_path:
+            so = self.empty_status(dirpath)
+            if so.status == STATUS_UNVERSIONED:
+                lis += [dirpath]
+                dirpath = os.path.dirname(dirpath)
+            else:
+                return reversed(lis)
+        return reversed(lis)
+
+    def add(self, paths):
+        """Add the file(s) to be commited
+
+        :param paths: path of the file(s) to commit
+        :param paths: str or list
+        """
+        if not isinstance(paths, list):
+            paths = [paths]
+
+        abspaths = []
+        for path in paths:
+            abspath = browser.absolute_path(path, self.root_path)
+            if self.empty_status(abspath).status != STATUS_UNVERSIONED:
+                continue
+            for dirpath in self.unversioned_parents(abspath):
+                # add the unversioned directory
+                self.client.add(dirpath, depth=pysvn.depth.empty)
+                abspaths += [dirpath]
+            self.client.add(abspath)
+            abspaths += [abspath]
+        return abspaths
+
+    def commit(self, paths, msg):
+        """Commit file(s)
+
+        :param paths: path of the file(s) to commit
+        :type paths: str or list
+        :param msg: the commit message
+        :type msg: str
+        """
+        if not isinstance(paths, list):
+            paths = [paths]
+
+        errors = []
+        abspaths = []
+        for path in paths:
+            abspath = browser.absolute_path(path, self.root_path)
+            if os.path.isfile(abspath):
+                abspaths += [abspath]
+            if self.empty_status(abspath).status == STATUS_CONFLICTED:
+                errors += ['Can\'t commit conflicted file: %s' % path]
+
+        if errors:
+            # TODO: create a custom expection?
+            raise Exception('\n'.join(errors))
+
+        # Add all the files
+        # TODO: we should make a cache of the versioning status
+        rpaths = self.add(paths)
+        for rpath in rpaths:
+            if rpath not in abspaths:
+                abspaths += [rpath]
+        self.client.checkin(abspaths, msg)
