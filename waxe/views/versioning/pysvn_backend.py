@@ -55,13 +55,6 @@ class PysvnView(BaseUserView):
                 return False
         return False
 
-    def svn_cmd(self, cmd):
-        lis = ['svn', cmd, '--non-interactive']
-        auth, login, pwd, keep = self.get_svn_login()
-        if auth:
-            lis += ['--username', login, '--password', pwd]
-        return ' '.join(lis)
-
     def get_svn_login(self):
         auth = False
         if 'versioning.auth.active' in self.request.registry.settings:
@@ -222,7 +215,7 @@ class PysvnView(BaseUserView):
         abspath = browser.absolute_path(relpath, root_path)
         client = self.get_svn_client()
         try:
-            revisions = client.update(abspath)
+            revisions = client.update(abspath, depth=pysvn.depth.unknown)
         except pysvn.ClientError, e:
             return self._response({
                 'error_msg': str(e).replace(root_path + '/', ''),

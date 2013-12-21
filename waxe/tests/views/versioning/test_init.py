@@ -25,14 +25,7 @@ from waxe.models import (
     VERSIONING_PATH_STATUS_FORBIDDEN,
 )
 
-from waxe.views.versioning.pysvn_backend import (
-    PysvnView,
-)
-
-from waxe.views.versioning.python_svn_backend import (
-    PythonSvnView,
-)
-
+from waxe.views.versioning.pysvn_backend import PysvnView
 from waxe.views.versioning import helper
 
 
@@ -47,8 +40,8 @@ class EmptyClass(object):
     pass
 
 
-class SvnViewTester(object):
-    ClassView = None
+class TestPysvnView(BaseTestCase):
+    ClassView = PysvnView
 
     get_svn_client_str = ('waxe.views.versioning.'
                           'pysvn_backend.PysvnView.get_svn_client')
@@ -62,36 +55,13 @@ class SvnViewTester(object):
         return request
 
     def setUp(self):
-        super(SvnViewTester, self).setUp()
+        super(TestPysvnView, self).setUp()
         self.config.registry.settings.update({
             'authentication.cookie.secret': 'scrt',
             'authentication.cookie.callback': ('waxe.security.'
                                                'get_user_permissions')
         })
         self.config.include('pyramid_auth')
-
-    def test_svn_cmd(self):
-        self.config.testing_securitypolicy(userid='Fred', permissive=True)
-        request = self.DummyRequest()
-        res = self.ClassView(request).svn_cmd('update')
-        expected = 'svn update --non-interactive'
-        self.assertEqual(res, expected)
-
-        request.registry.settings['versioning.auth.active'] = True
-        res = self.ClassView(request).svn_cmd('update')
-        expected = ('svn update --non-interactive '
-                    '--username Fred --password secret_fred')
-        self.assertEqual(res, expected)
-
-    def test_svn_cmd_failed(self):
-        self.config.testing_securitypolicy(userid='Bob', permissive=True)
-        request = self.DummyRequest()
-        request.registry.settings['versioning.auth.active'] = True
-        try:
-            self.ClassView(request).svn_cmd('update')
-            assert(False)
-        except Exception, e:
-            self.assertEqual(str(e), 'No versioning password set for Bob')
 
     @login_user('Bob')
     def test_get_svn_login(self):
@@ -366,10 +336,6 @@ class SvnViewTester(object):
                 res = view.can_commit('/home/test/folder1.xml')
                 self.assertEqual(res, True)
 
-
-class TestPysvnView(SvnViewTester, BaseTestCase):
-    ClassView = PysvnView
-
     @login_user('Fred')
     def test_update(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
@@ -377,21 +343,6 @@ class TestPysvnView(SvnViewTester, BaseTestCase):
         request = self.DummyRequest()
         res = self.ClassView(request).update()
         expected = {'content': 'The repository has been updated!',
-                    'editor_login': 'Fred',
-                    'versioning': False}
-        self.assertEqual(res, expected)
-
-
-class TestPythonSvnView(SvnViewTester, BaseTestCase):
-    ClassView = PythonSvnView
-
-    @login_user('Fred')
-    def test_update(self):
-        svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
-        self.user_fred.config.root_path = svn_path
-        request = self.DummyRequest()
-        res = self.ClassView(request).update()
-        expected = {'content': '<pre>At revision 1.\n</pre>',
                     'editor_login': 'Fred',
                     'versioning': False}
         self.assertEqual(res, expected)
@@ -412,7 +363,8 @@ class FunctionalTestViewsNoVersioning(WaxeTestCase):
             self.testapp.get(url, status=404)
 
 
-class FunctionalTestViews(object):
+class FunctionalPysvnTestViews(WaxeTestCaseVersioning):
+    ClassView = PysvnView
 
     def test_forbidden(self):
         for url in [
@@ -483,40 +435,13 @@ class FunctionalTestViews(object):
         expected = {"status": False, "error_msg": "Bad parameters!"}
         self.assertEqual(json.loads(res.body), expected)
 
-
-# Uncomment this test when we will be able to choose the versioning backend!
-# class FunctionalPysvnTestViews(FunctionalTestViews, WaxeTestCaseVersioning):
-#     ClassView = PysvnView
-# 
-#     @login_user('Bob')
-#     def test_update(self):
-#         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
-#         self.user_bob.config = UserConfig(root_path=svn_path,
-#                                           versioning_password='secret_bob')
-#         res = self.testapp.get('/account/Bob/versioning/update', status=200)
-#         self.assertTrue('The repository has been updated!' in res.body)
-# 
-#     @login_user('Bob')
-#     def test_update_json(self):
-#         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
-#         self.user_bob.config = UserConfig(root_path=svn_path,
-#                                           versioning_password='secret_bob')
-#         res = self.testapp.get('/account/Bob/versioning/update.json', status=200)
-#         self.assertTrue('The repository has been updated!' in res.body)
-#         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
-#                         res._headerlist)
-
-
-class FunctionalPythonSvnTestViews(FunctionalTestViews, WaxeTestCaseVersioning):
-    ClassView = PythonSvnView
-
     @login_user('Bob')
     def test_update(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         self.user_bob.config = UserConfig(root_path=svn_path,
                                           versioning_password='secret_bob')
         res = self.testapp.get('/account/Bob/versioning/update', status=200)
-        self.assertTrue('At revision 1.' in res.body)
+        self.assertTrue('The repository has been updated!' in res.body)
 
     @login_user('Bob')
     def test_update_json(self):
@@ -524,7 +449,7 @@ class FunctionalPythonSvnTestViews(FunctionalTestViews, WaxeTestCaseVersioning):
         self.user_bob.config = UserConfig(root_path=svn_path,
                                           versioning_password='secret_bob')
         res = self.testapp.get('/account/Bob/versioning/update.json', status=200)
-        self.assertTrue('At revision 1.' in res.body)
+        self.assertTrue('The repository has been updated!' in res.body)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
 
