@@ -725,7 +725,7 @@ class TestHelper(unittest.TestCase):
         self.assertEqual(o.full_status(), expected)
         expected = [
             helper.StatusObject('svn_waxe_client/folder2/file2.xml',
-                                'file2.xml',
+                                'folder2/file2.xml',
                                 helper.STATUS_UNVERSIONED),
         ]
         self.assertEqual(o.full_status('folder2'), expected)
@@ -983,20 +983,27 @@ class TestHelperNoRepo(unittest.TestCase):
         abspath = self.client_dir
         file1 = os.path.join(self.client_dir, 'file1.xml')
         folder1 = os.path.join(self.client_dir, 'folder1')
-        file211 = os.path.join(self.client_dir, 'folder2', 'sub21',
-                               'file211.xml')
+        sub11 = os.path.join(folder1, 'sub11')
+        folder2 = os.path.join(self.client_dir, 'folder2')
+        file211 = os.path.join(folder2,  'sub21', 'file211.xml')
         changes = [
             FakeSvnStatus(self.client_dir, 'unversioned'),
         ]
 
         o = helper.PysvnVersioning(self.client, self.client_dir)
         res = o._status(abspath, changes)
-        self.assertEqual(res, [])
+        expected = [
+            helper.StatusObject(folder1, 'folder1', helper.STATUS_UNVERSIONED),
+            helper.StatusObject(folder2, 'folder2', helper.STATUS_UNVERSIONED),
+            helper.StatusObject(file1, 'file1.xml', helper.STATUS_UNVERSIONED),
+        ]
+        self.assertEqual(res, expected)
 
         res = o._status(abspath, changes, short=False)
         expected = [
             helper.StatusObject(file1, 'file1.xml', helper.STATUS_UNVERSIONED),
-            helper.StatusObject(file211, 'folder2/sub21/file211.xml', helper.STATUS_UNVERSIONED),
+            helper.StatusObject(file211, 'folder2/sub21/file211.xml',
+                                helper.STATUS_UNVERSIONED),
         ]
         self.assertEqual(res, expected)
 
@@ -1006,5 +1013,9 @@ class TestHelperNoRepo(unittest.TestCase):
         res = o._status(folder1, changes, short=False)
         self.assertEqual(res, [])
 
+        expected = [
+            helper.StatusObject(sub11, 'folder1/sub11',
+                                helper.STATUS_UNVERSIONED),
+        ]
         res = o._status(folder1, changes, short=True)
-        self.assertEqual(res, [])
+        self.assertEqual(res, expected)

@@ -72,11 +72,20 @@ class PysvnVersioning(object):
             # Don't skip the root if it's a file, we want to get the file
             # status
             if f.path == abspath and short and isdir:
+                if status == STATUS_UNVERSIONED:
+                    # The root path is unversioned so all children are
+                    # unversioned
+                    for sf in sum(browser.get_files(f.path,
+                                                    abspath,
+                                                    relative=False), []):
+                        relpath = browser.relative_path(sf, self.root_path)
+                        lis += [StatusObject(sf, relpath, STATUS_UNVERSIONED)]
                 continue
+
             if short and status == STATUS_NORMAL and isdir:
                 # For short status we just want to know if a normal folder has
                 # some updates
-                res = self.client.status(f.path, recurse=False, get_all=False)
+                res = self.client.status(f.path, recurse=True, get_all=False)
                 if res:
                     relpath = browser.relative_path(f.path, self.root_path)
                     lis += [StatusObject(f.path, relpath, STATUS_MODIFED)]
@@ -85,10 +94,12 @@ class PysvnVersioning(object):
             if not short and status == STATUS_UNVERSIONED and isdir:
                 # For full status we want to get all the files under an
                 # unversioned folder
+                # NOTE: we don't get the folders here since we don't care of
+                # the empty ones
                 for sf in browser.get_all_files(f.path,
-                                                abspath,
-                                                relative=False)[1]:
-                    relpath = browser.relative_path(sf, abspath)
+                                                    abspath,
+                                                    relative=False)[1]:
+                    relpath = browser.relative_path(sf, self.root_path)
                     lis += [StatusObject(sf, relpath, STATUS_UNVERSIONED)]
                 continue
 
