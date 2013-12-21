@@ -52,9 +52,9 @@ class ExplorerView(BaseUserView):
 
         for folder in folders:
             dic = {
-                'data_relpath': os.path.join(relpath, folder),
-                'name': folder,
-                'data_href': get_data_href(os.path.join(relpath, folder), 'path'),
+                'data_relpath': folder,
+                'name': os.path.basename(folder),
+                'data_href': get_data_href(folder, 'path'),
             }
             if not only_json:
                 dic['href'] = get_href(os.path.join(relpath, folder), 'path')
@@ -62,13 +62,12 @@ class ExplorerView(BaseUserView):
 
         for filename in filenames:
             dic = {
-                'data_relpath': os.path.join(relpath, filename),
-                'name': filename,
-                'data_href': get_file_data_href(os.path.join(relpath, filename),
-                                                'path'),
+                'data_relpath': filename,
+                'name': os.path.basename(filename),
+                'data_href': get_file_data_href(filename, 'path'),
             }
             if not only_json:
-                dic['href'] = get_file_href(os.path.join(relpath, filename),
+                dic['href'] = get_file_href(filename,
                                             'path')
             data['filenames'] += [dic]
         return data

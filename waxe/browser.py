@@ -80,7 +80,7 @@ def get_files(abspath, root_path, root_only=True, relative=False):
                 continue
             p = os.path.join(dirpath, d)
             if relative:
-                p = relative_path(p, abspath)
+                p = relative_path(p, root_path)
             folders += [p]
 
         for f in filenames:
@@ -91,7 +91,7 @@ def get_files(abspath, root_path, root_only=True, relative=False):
                 continue
             p = os.path.join(dirpath, f)
             if relative:
-                p = relative_path(p, abspath)
+                p = relative_path(p, root_path)
             files += [p]
 
         if root_only:
