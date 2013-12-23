@@ -115,7 +115,6 @@ class TestPysvnView(BaseTestCase):
         res = self.ClassView(request).status()
         self.assertEqual(len(res), 3)
         self.assertEqual(res.keys(), ['content', 'editor_login', 'versioning'])
-        self.assertTrue('<form' in res['content'])
         self.assertTrue('file1.xml' in res['content'])
         self.assertTrue('file3.xml' in res['content'])
         self.assertTrue('file4.xml' in res['content'])

@@ -84,55 +84,43 @@ class PysvnView(BaseUserView):
             client.callback_ssl_server_trust_prompt = svn_ssl_server_trust_prompt
         return client
 
-    def short_status(self):
-        relpath = self.request.GET.get('path', '')
+    def get_versioning_obj(self):
         client = self.get_svn_client()
-        c = helper.PysvnVersioning(client, self.root_path)
+        return helper.PysvnVersioning(client, self.root_path)
+
+    def short_status(self):
+        """Status of the given path without any depth.
+        """
+        relpath = self.request.GET.get('path', '')
+        vobj = self.get_versioning_obj()
         dic = {}
-        for o in c.status(relpath):
+        for o in vobj.status(relpath):
             dic[o.relpath] = o.status
         return dic
 
     def status(self):
-        root_path = self.root_path
+        """Full status of the repo. We want to get all files
+        """
         relpath = self.request.GET.get('path', '')
-        abspath = browser.absolute_path(relpath, root_path)
-        client = self.get_svn_client()
-        changes = client.status(abspath)
-        lis = []
-        for f in reversed(changes):
-            if f.text_status == pysvn.wc_status_kind.normal:
-                continue
-            path = f.path.encode(locale.getpreferredencoding())
-            if os.path.isdir(path):
-                if f.text_status != pysvn.wc_status_kind.unversioned:
-                    continue
-                label_class = labels_mapping.get(
-                    pysvn.wc_status_kind.unversioned) or None
-                for p in browser.get_all_files(path,
-                                               root_path,
-                                               relative=True)[1]:
-                    link = self.request.custom_route_path(
-                        'versioning_dispatcher', method='diff',
-                        _query=[('filenames', p)])
-                    json_link = self.request.custom_route_path(
-                        'versioning_dispatcher_json', method='diff',
-                        _query=[('filenames', p)])
-                    lis += [(f.text_status,
-                             label_class, p, link, json_link)]
-            else:
-                p = browser.relative_path(f.path, root_path)
-                label_class = labels_mapping.get(f.text_status) or None
-                link = self.request.custom_route_path(
-                    'versioning_dispatcher', method='diff',
-                    _query=[('filenames', p)])
-                json_link = self.request.custom_route_path(
-                    'versioning_dispatcher_json', method='diff',
-                    _query=[('filenames', p)])
-                lis += [(f.text_status, label_class, p, link, json_link)]
+        vobj = self.get_versioning_obj()
+        lis = vobj.full_status(relpath)
 
-        content = render('blocks/versioning.mak', {
-            'files_data': lis,
+        conflicteds = []
+        conflicteds_abspath = []
+        tmps = []
+        for so in lis:
+            if so.status == helper.STATUS_CONFLICTED:
+                conflicteds += [so]
+                conflicteds_abspath += [so.abspath]
+            else:
+                tmps += [so]
+
+        others = [so for so in tmps
+                  if not helper.is_conflicted(so, conflicteds_abspath)]
+
+        content = render('blocks/versioning_status.mak', {
+            'conflicteds': conflicteds,
+            'others': others
         }, self.request)
         return self._response({
             'content': content,
