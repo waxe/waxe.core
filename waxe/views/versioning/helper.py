@@ -2,6 +2,8 @@ import os
 import locale
 import pysvn
 from waxe import browser
+from waxe import diff
+import tempfile
 
 
 STATUS_NORMAL = 'normal'
@@ -112,7 +114,7 @@ class PysvnVersioning(object):
         return lis
 
     def empty_status(self, abspath):
-        """Get the status of the given abspath. We don't care of any child is
+        """Get the status of the given abspath. We don't care of any child if
         it is a folder
         """
         try:
@@ -171,6 +173,50 @@ class PysvnVersioning(object):
             abspath = browser.absolute_path(path, self.root_path)
         # NOTE: use pysvn.depth.unknown to follow the client repo depths
         self.client.update(abspath, depth=pysvn.depth.unknown)
+
+    def diff(self, path=None):
+        diffs = []
+        lis = self.full_status(path)
+        tmp = tempfile.mkdtemp()
+        for so in lis:
+            if so.status == STATUS_CONFLICTED:
+                continue
+            if so.status in [STATUS_UNVERSIONED, STATUS_ADDED]:
+                content = open(so.abspath, 'r').read()
+                diffs += ['New file %s\n\n%s' % (so.relpath, content)]
+            elif so.status in [STATUS_DELETED, STATUS_MISSING]:
+                diffs += ['Deleted file %s' % so.relpath]
+            else:
+                s = self.client.diff(tmp, so.abspath)
+                s = s.replace(self.root_path + '/', '')
+                diffs += [s]
+        return diffs
+
+    def full_diff(self, path=None):
+        diffs = []
+        lis = self.full_status(path)
+        d = diff.HtmlDiff()
+        for so in lis:
+            if so.status == STATUS_CONFLICTED:
+                continue
+            if so.status in [STATUS_DELETED, STATUS_MISSING]:
+                new_content = ''
+            else:
+                new_content = open(so.abspath, 'r').read()
+            if so.status in [STATUS_UNVERSIONED, STATUS_ADDED]:
+                old_content = ''
+            else:
+                # old_content = self.client.cat(so.abspath)
+                info = self.client.info(so.abspath)
+                old_rev = pysvn.Revision(pysvn.opt_revision_kind.number,
+                                         info.revision.number)
+                old_content = self.client.cat(so.abspath, old_rev)
+            diffs += [
+                d.make_table(
+                    old_content.decode('utf-8').splitlines(),
+                    new_content.decode('utf-8').splitlines())
+            ]
+        return diffs
 
     def get_commitable_files(self, path=None):
         lis = self.full_status(path)

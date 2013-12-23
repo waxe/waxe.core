@@ -3,6 +3,7 @@ import sys
 import json
 import unittest
 import shutil
+import difflib
 from subprocess import Popen, PIPE
 from pyramid import testing
 from pyramid.exceptions import Forbidden
@@ -672,6 +673,100 @@ class TestHelper(unittest.TestCase):
         self.client.checkin(rfile1, 'Commit file')
         o.update()
         self.assertTrue(os.path.isfile(file1))
+
+    def test_diff(self):
+        o = helper.PysvnVersioning(self.client, self.client_dir)
+        self.assertEqual(o.diff(), [])
+        folder1 = os.path.join(self.client_dir, 'folder1')
+        folder2 = os.path.join(folder1, 'folder2')
+        os.mkdir(folder1)
+        os.mkdir(folder2)
+        file1 = os.path.join(folder1, 'file1.xml')
+        file2 = os.path.join(folder2, 'file2.xml')
+        open(file1, 'w').write('Hello')
+        self.client.add(folder1)
+        self.client.checkin([folder1], 'Add folder')
+        open(file1, 'w').write('Hello World')
+        res = o.diff('folder1/file1.xml')
+        self.assertEqual(len(res), 1)
+        self.assertTrue('-Hello' in res[0])
+        self.assertTrue('+Hello World' in res[0])
+
+        res1 = o.diff()
+        self.assertEqual(res, res1)
+
+        # Unversioned files are not taken into account
+        open(file2, 'w').write('Hello')
+        res2 = o.diff()
+        self.assertEqual(res[0], res2[0])
+        self.assertTrue('New file folder1/folder2/file2.xml' in res2[1])
+
+        res3 = o.diff('folder1/folder2/file2.xml')
+        self.assertEqual(res3[0], res2[1])
+
+        self.client.add(file2)
+        res = o.diff()
+        self.assertEqual(len(res), 2)
+        self.assertTrue('-Hello' in res[0])
+        self.assertTrue('+Hello World' in res[0])
+        self.assertTrue('New file ' in res[1])
+
+        self.client.revert(file1)
+        self.client.remove(file1)
+        res = o.diff()
+        self.assertEqual(len(res), 2)
+        self.assertTrue('Deleted file ' in res[0])
+        self.assertTrue('New file ' in res[1])
+
+    def test_full_diff(self):
+        o = helper.PysvnVersioning(self.client, self.client_dir)
+        self.assertEqual(o.full_diff(), [])
+        folder1 = os.path.join(self.client_dir, 'folder1')
+        folder2 = os.path.join(folder1, 'folder2')
+        os.mkdir(folder1)
+        os.mkdir(folder2)
+        file1 = os.path.join(folder1, 'file1.xml')
+        file2 = os.path.join(folder2, 'file2.xml')
+        open(file1, 'w').write('Hello')
+        self.client.add(folder1)
+        self.client.checkin([folder1], 'Add folder')
+        open(file1, 'w').write('Hello World')
+        res = o.full_diff('folder1/file1.xml')
+        self.assertEqual(len(res), 1)
+        self.assertTrue('<span class="diff_sub">Hello</span>' in res[0])
+        self.assertTrue('<span class="diff_add">Hello World</span>' in res[0])
+
+        difflib.HtmlDiff._default_prefix = 0
+        res1 = o.full_diff()
+        self.assertEqual(res, res1)
+
+        # Unversioned files are not taken into account
+        open(file2, 'w').write('Hello')
+        difflib.HtmlDiff._default_prefix = 0
+        res2 = o.full_diff()
+        self.assertEqual(res[0], res2[0])
+        self.assertTrue('<span class="diff_add">Hello</span>' in res2[1])
+
+        difflib.HtmlDiff._default_prefix = 0
+        res3 = o.full_diff('folder1/folder2/file2.xml')
+        self.assertEqual(len(res3), 1)
+        self.assertTrue('<span class="diff_add">Hello</span>' in res3[0])
+
+        self.client.add(file2)
+        difflib.HtmlDiff._default_prefix = 0
+        res = o.full_diff()
+        self.assertEqual(len(res), 2)
+        self.assertTrue('<span class="diff_sub">Hello</span>' in res[0])
+        self.assertTrue('<span class="diff_add">Hello World</span>' in res[0])
+        self.assertTrue('<span class="diff_add">Hello</span>' in res[1])
+
+        self.client.revert(file1)
+        self.client.remove(file1)
+        difflib.HtmlDiff._default_prefix = 0
+        res = o.full_diff()
+        self.assertEqual(len(res), 2)
+        self.assertTrue('<span class="diff_sub">Hello</span>' in res[0])
+        self.assertTrue('<span class="diff_add">Hello</span>' in res[1])
 
     def test_get_commitable_files(self):
         o = helper.PysvnVersioning(self.client, self.client_dir)
