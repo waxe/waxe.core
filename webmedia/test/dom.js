@@ -200,4 +200,43 @@ var waxe = waxe || {};
         waxe.ajax.GET = old_waxe_ajax_GET;
     });
 
+    test("submit", function() {
+        var old_waxe_ajax_POST = waxe.ajax.POST;
+        waxe.ajax.POST = function(url, params, callback){
+            callback({'content': url + ' was submited'});
+        };
+
+        var modal_nb_called = 0;
+        var old_modal = $.fn.modal;
+        $.fn.modal = function() {
+            modal_nb_called += 1;
+        };
+        waxe.dom.submit('http://plop', {'toto': 'titi'});
+        equal(content.html(), 'http://plop was submited');
+        equal(message_error_nb_called,  0);
+        equal(message_success_nb_called,  0);
+        equal(message_info_nb_called, 2);
+        equal(modal_nb_called, 0);
+
+        waxe.dom.submit('http://plop', {'toto': 'titi'}, undefined, $('<div>'));
+        equal(content.html(), 'http://plop was submited');
+        equal(message_error_nb_called,  0);
+        equal(message_success_nb_called,  0);
+        equal(message_info_nb_called, 4);
+        equal(modal_nb_called, 1);
+
+        waxe.ajax.POST = function(url, params, callback){
+            callback({'error_msg': 'Error during the submit'});
+        };
+
+        waxe.dom.submit('http://plop', {'toto': 'titi'}, undefined, $('<div>'));
+        equal(message_error_nb_called,  1);
+        equal(message_success_nb_called,  0);
+        equal(message_info_nb_called, 5);
+        equal(modal_nb_called, 1);
+
+        waxe.ajax.POST = old_waxe_ajax_POST;
+        $.fn.modal = old_modal;
+    });
+
 })(window.jQuery);
