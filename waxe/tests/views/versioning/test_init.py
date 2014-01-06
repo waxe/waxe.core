@@ -733,8 +733,10 @@ class TestHelper(unittest.TestCase):
         open(file1, 'w').write('Hello World')
         res = o.full_diff('folder1/file1.xml')
         self.assertEqual(len(res), 1)
-        self.assertTrue('<span class="diff_sub">Hello</span>' in res[0])
-        self.assertTrue('<span class="diff_add">Hello World</span>' in res[0])
+        relpath, html = res[0]
+        self.assertEqual(relpath, 'folder1/file1.xml')
+        self.assertTrue('<span class="diff_sub">Hello</span>' in html)
+        self.assertTrue('<span class="diff_add">Hello World</span>' in html)
 
         difflib.HtmlDiff._default_prefix = 0
         res1 = o.full_diff()
@@ -745,28 +747,42 @@ class TestHelper(unittest.TestCase):
         difflib.HtmlDiff._default_prefix = 0
         res2 = o.full_diff()
         self.assertEqual(res[0], res2[0])
-        self.assertTrue('<span class="diff_add">Hello</span>' in res2[1])
+        relpath, html = res2[1]
+        self.assertEqual(relpath, 'folder1/folder2/file2.xml')
+        self.assertTrue('<span class="diff_add">Hello</span>' in html)
 
         difflib.HtmlDiff._default_prefix = 0
         res3 = o.full_diff('folder1/folder2/file2.xml')
         self.assertEqual(len(res3), 1)
-        self.assertTrue('<span class="diff_add">Hello</span>' in res3[0])
+        relpath, html = res3[0]
+        self.assertEqual(relpath, 'folder1/folder2/file2.xml')
+        self.assertTrue('<span class="diff_add">Hello</span>' in html)
 
         self.client.add(file2)
         difflib.HtmlDiff._default_prefix = 0
         res = o.full_diff()
         self.assertEqual(len(res), 2)
-        self.assertTrue('<span class="diff_sub">Hello</span>' in res[0])
-        self.assertTrue('<span class="diff_add">Hello World</span>' in res[0])
-        self.assertTrue('<span class="diff_add">Hello</span>' in res[1])
+        relpath, html = res[0]
+        self.assertEqual(relpath, 'folder1/file1.xml')
+        self.assertTrue('<span class="diff_sub">Hello</span>' in html)
+        self.assertTrue('<span class="diff_add">Hello World</span>' in html)
+
+        relpath, html = res[1]
+        self.assertEqual(relpath, 'folder1/folder2/file2.xml')
+        self.assertTrue('<span class="diff_add">Hello</span>' in html)
 
         self.client.revert(file1)
         self.client.remove(file1)
         difflib.HtmlDiff._default_prefix = 0
         res = o.full_diff()
         self.assertEqual(len(res), 2)
-        self.assertTrue('<span class="diff_sub">Hello</span>' in res[0])
-        self.assertTrue('<span class="diff_add">Hello</span>' in res[1])
+        relpath, html = res[0]
+        self.assertEqual(relpath, 'folder1/file1.xml')
+        self.assertTrue('<span class="diff_sub">Hello</span>' in html)
+
+        relpath, html = res[1]
+        self.assertEqual(relpath, 'folder1/folder2/file2.xml')
+        self.assertTrue('<span class="diff_add">Hello</span>' in html)
 
     def test_get_commitable_files(self):
         o = helper.PysvnVersioning(self.client, self.client_dir)

@@ -211,11 +211,12 @@ class PysvnVersioning(object):
                 old_rev = pysvn.Revision(pysvn.opt_revision_kind.number,
                                          info.revision.number)
                 old_content = self.client.cat(so.abspath, old_rev)
-            diffs += [
+            diffs += [(
+                so.relpath,
                 d.make_table(
                     old_content.decode('utf-8').splitlines(),
                     new_content.decode('utf-8').splitlines())
-            ]
+            )]
         return diffs
 
     def get_commitable_files(self, path=None):
