@@ -109,6 +109,19 @@ class TestPysvnView(BaseTestCase):
         self.assertEqual(res, expected)
 
     @login_user('Bob')
+    def test_short_status(self):
+        svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
+        self.user_bob.config.root_path = svn_path
+        request = self.DummyRequest()
+        res = self.ClassView(request).short_status()
+        expected = {
+            'file3.xml': helper.STATUS_UNVERSIONED,
+            'file4.xml': helper.STATUS_ADDED,
+            'file1.xml': helper.STATUS_MODIFED
+        }
+        self.assertEqual(res, expected)
+
+    @login_user('Bob')
     def test_status(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         self.user_bob.config.root_path = svn_path
@@ -125,7 +138,7 @@ class TestPysvnView(BaseTestCase):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         self.user_bob.config.root_path = svn_path
         request = self.DummyRequest()
-        request.GET = MultiDict()
+        request.POST = MultiDict()
         res = self.ClassView(request).diff()
         expected = {
             'error_msg': 'You should provide at least one filename.',
@@ -135,44 +148,48 @@ class TestPysvnView(BaseTestCase):
         self.assertEqual(res, expected)
 
         request = self.DummyRequest(root_path=svn_path,
-                                       params={'filenames': 'file1.xml'})
-        request.GET = MultiDict({'filenames': 'file1.xml'})
+                                    params={'filenames': 'file1.xml'})
+        request.POST = MultiDict({'filenames': 'file1.xml'})
         res = self.ClassView(request).diff()
         self.assertEqual(len(res), 3)
         self.assertEqual(res.keys(), ['content', 'editor_login', 'versioning'])
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 1)
         self.assertTrue('submit' in res['content'])
+        self.assertTrue('name="commit" ' in res['content'])
 
         request = self.DummyRequest(root_path=svn_path,
-                                       params={'filenames': 'file3.xml'})
-        request.GET = MultiDict({'filenames': 'file3.xml'})
+                                    params={'filenames': 'file3.xml'})
+        request.POST = MultiDict({'filenames': 'file3.xml'})
         res = self.ClassView(request).diff()
         self.assertEqual(len(res), 3)
         self.assertEqual(res.keys(), ['content', 'editor_login', 'versioning'])
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 1)
         self.assertTrue('submit' in res['content'])
+        self.assertTrue('name="commit" ' in res['content'])
 
         request = self.DummyRequest(root_path=svn_path,
-                                       params={'filenames': 'file3.xml'})
-        request.GET = MultiDict({'filenames': 'file3.xml'})
+                                    params={'filenames': 'file3.xml'})
+        request.POST = MultiDict({'filenames': 'file3.xml'})
         self.user_bob.roles = [self.role_contributor]
         res = self.ClassView(request).diff()
         self.assertEqual(len(res), 3)
         self.assertEqual(res.keys(), ['content', 'editor_login', 'versioning'])
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 1)
-        self.assertTrue('submit' not in res['content'])
+        self.assertTrue('submit' in res['content'])
+        self.assertTrue('name="commit" ' not in res['content'])
 
-        request.GET = MultiDict([('filenames', 'file1.xml'),
+        request.POST = MultiDict([('filenames', 'file1.xml'),
                                  ('filenames', 'file3.xml')])
         res = self.ClassView(request).diff()
         self.assertEqual(len(res), 3)
         self.assertEqual(res.keys(), ['content', 'editor_login', 'versioning'])
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 2)
-        self.assertTrue('submit' not in res['content'])
+        self.assertTrue('submit' in res['content'])
+        self.assertTrue('name="commit" ' not in res['content'])
 
     @login_user('Bob')
     def test_commit(self):
@@ -181,87 +198,55 @@ class TestPysvnView(BaseTestCase):
                 svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
                 self.user_bob.config.root_path = svn_path
                 request = self.DummyRequest(root_path=svn_path)
+                request.POST = MultiDict()
                 res = self.ClassView(request).commit()
-                expected = {"status": False,
-                            "error_msg": "Bad parameters!",
-                            'editor_login': 'Bob',
-                            'versioning': False,
-                           }
+                expected = {
+                    'error_msg': "No file selected!",
+                    'editor_login': 'Bob',
+                    'versioning': False,
+                }
                 self.assertEqual(res, expected)
 
-                mock = MagicMock()
-                status_mock = MagicMock()
-                status_mock.text_status = pysvn.wc_status_kind.normal
-                mock.status = MagicMock(return_value=[status_mock])
-                request = self.DummyRequest(
-                    root_path=svn_path,
-                    params={'data': [{'filename': 'test.xml'}],
-                            'msg': 'my commit message'})
-                with patch(self.get_svn_client_str, return_value=mock):
-                    res = self.ClassView(request).commit()
-                    mock.checkin.assert_called_once_with(
-                        [os.path.join(svn_path, 'test.xml')],
-                        'my commit message')
-                    expected = {'status': True,
-                                'content': 'Commit done',
-                                'editor_login': 'Bob',
-                                'versioning': False
-                               }
-                    self.assertEqual(res, expected)
+                request = self.DummyRequest(root_path=svn_path)
+                request.POST = MultiDict(path='test.xml')
+                res = self.ClassView(request).commit()
+                expected = {
+                    'error_msg': "No commit message!",
+                    'editor_login': 'Bob',
+                    'versioning': False,
+                }
+                self.assertEqual(res, expected)
+                request.POST = MultiDict(path='test.xml',
+                                         msg='my commit message')
 
-                mock = MagicMock(side_effect=Exception('Error'))
-                mock.checkin = MagicMock(side_effect=Exception('Error'))
-                status_mock = MagicMock()
-                status_mock.text_status = pysvn.wc_status_kind.normal
-                mock.status = MagicMock(return_value=[status_mock])
-                with patch(self.get_svn_client_str, return_value=mock):
+                with patch('waxe.views.versioning.helper.PysvnVersioning.commit', return_value=True):
                     res = self.ClassView(request).commit()
-                    expected = {'status': False,
-                                'error_msg': 'Can\'t commit test.xml',
-                                'editor_login': 'Bob',
-                                'versioning': False,
-                               }
-                    self.assertEqual(res, expected)
-                    mock.checkin.assert_called_once_with(
-                        [os.path.join(svn_path, 'test.xml')],
-                        'my commit message')
+                    self.assertEqual(res, self.ClassView(request).status())
 
-                status_mock = MagicMock()
-                status_mock.text_status = pysvn.wc_status_kind.conflicted
-                mock.status = MagicMock(return_value=[status_mock])
-                with patch(self.get_svn_client_str, return_value=mock):
+                with patch('waxe.views.versioning.helper.PysvnVersioning.commit', side_effect=Exception('Error')):
                     res = self.ClassView(request).commit()
                     expected = {
-                        'status': False,
-                        'error_msg': "Can't commit conflicted file: test.xml",
+                        'error_msg': 'Error during the commit Error',
                         'editor_login': 'Bob',
                         'versioning': False,
                     }
                     self.assertEqual(res, expected)
 
-                mock = MagicMock()
-                status_mock = MagicMock()
-                status_mock.text_status = pysvn.wc_status_kind.unversioned
-                mock.status = MagicMock(return_value=[status_mock])
-                with patch(self.get_svn_client_str, return_value=mock):
+                with patch('waxe.views.versioning.pysvn_backend.PysvnView.can_commit', return_value=False):
                     res = self.ClassView(request).commit()
-                    mock.add.assert_called_once_with(
-                        os.path.join(svn_path, 'test.xml'))
-                    mock.checkin.assert_called_once_with(
-                        [os.path.join(svn_path, 'test.xml')],
-                        'my commit message')
-                    expected = {'status': True,
-                                'content': 'Commit done',
-                                'editor_login': 'Bob',
-                                'versioning': False,
-                               }
+                    expected = {
+                        'error_msg': ('You don\'t have the permission '
+                                      'to commit: test.xml'),
+                        'editor_login': 'Bob',
+                        'versioning': False,
+                    }
                     self.assertEqual(res, expected)
 
                 # No permission
                 self.user_bob.roles = []
                 try:
                     res = self.ClassView(request).commit()
-                    assert 0
+                    assert(False)
                 except Exception, e:
                     self.assertEqual(str(e), 'You are not a contributor')
 
@@ -347,6 +332,66 @@ class TestPysvnView(BaseTestCase):
                     'versioning': False}
         self.assertEqual(res, expected)
 
+    @login_user('Bob')
+    def test_update_texts(self):
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        self.user_bob.config.root_path = path
+        request = self.DummyRequest(params={})
+        res = self.ClassView(request).update_texts()
+        expected = {
+            'error_msg': 'Missing parameters!',
+            'editor_login': 'Bob',
+            'versioning': False,
+        }
+        self.assertEqual(res, expected)
+
+        request = self.DummyRequest(
+            params={
+                'data:0:filecontent': 'content of the file 1',
+                'data:0:filename': 'thefilename1.xml',
+                'data:1:filecontent': 'content of the file 2',
+                'data:1:filename': 'thefilename2.xml',
+            })
+
+        def raise_func(*args, **kw):
+            raise Exception('My error')
+
+        with patch('xmltool.load_string') as m:
+            m.side_effect = raise_func
+            res = self.ClassView(request).update_texts()
+            expected = {
+                'error_msg': ('thefilename1.xml: My error<br />'
+                              'thefilename2.xml: My error'),
+                'editor_login': 'Bob',
+                'versioning': False,
+            }
+            self.assertEqual(res,  expected)
+
+        filecontent = open(os.path.join(path, 'file1.xml'), 'r').read()
+        filecontent = filecontent.replace('exercise.dtd',
+                                          os.path.join(path, 'exercise.dtd'))
+        request = self.DummyRequest(
+            params={'data:0:filecontent': filecontent,
+                    'data:0:filename': 'thefilename.xml'})
+        request.custom_route_path = lambda *args, **kw: '/filepath'
+
+        with patch('xmltool.elements.Element.write', return_value=None):
+            res = self.ClassView(request).update_texts()
+            expected = {
+                'content': 'Files updated',
+                'editor_login': 'Bob',
+                'versioning': False,
+            }
+            self.assertEqual(res,  expected)
+
+            request.params['commit'] = True
+            res = self.ClassView(request).update_texts()
+            self.assertEqual(len(res), 3)
+            self.assertEqual(res['versioning'], False)
+            self.assertEqual(res['editor_login'], 'Bob')
+            self.assertTrue('class="modal' in res['modal'])
+            self.assertTrue('commit message' in res['modal'])
+
 
 class FunctionalTestViewsNoVersioning(WaxeTestCase):
 
@@ -359,6 +404,7 @@ class FunctionalTestViewsNoVersioning(WaxeTestCase):
             '/account/Bob/versioning/update',
             '/account/Bob/versioning/update.json',
             '/account/Bob/versioning/commit.json',
+            '/account/Bob/versioning/update_texts.json',
         ]:
             self.testapp.get(url, status=404)
 
@@ -375,6 +421,7 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning):
             '/account/Bob/versioning/update',
             '/account/Bob/versioning/update.json',
             '/account/Bob/versioning/commit.json',
+            '/account/Bob/versioning/update_texts.json',
         ]:
             res = self.testapp.get(url, status=302)
             self.assertTrue('http://localhost/login?next=' in res.location)
@@ -382,6 +429,19 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning):
             self.assertEqual(res.status, "200 OK")
             self.assertTrue('<form' in res.body)
             self.assertTrue('Login' in res.body)
+
+    @login_user('Bob')
+    def test_short_status(self):
+        svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
+        self.user_bob.config = UserConfig(root_path=svn_path)
+        res = self.testapp.get('/account/Bob/versioning/short_status.json',
+                               status=200)
+        expected = {
+            'file3.xml': helper.STATUS_UNVERSIONED,
+            'file4.xml': helper.STATUS_ADDED,
+            'file1.xml': helper.STATUS_MODIFED
+        }
+        self.assertEqual(json.loads(res.body), expected)
 
     @login_user('Bob')
     def test_status(self):
@@ -408,8 +468,11 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning):
         res = self.testapp.get('/account/Bob/versioning/diff', status=200)
         self.assertTrue('You should provide at least one filename' in res.body)
 
-        res = self.testapp.get('/account/Bob/versioning/diff', status=200,
-                               params={'filenames': 'file1.xml'})
+        res = self.testapp.post('/account/Bob/versioning/diff', status=200)
+        self.assertTrue('You should provide at least one filename' in res.body)
+
+        res = self.testapp.post('/account/Bob/versioning/diff', status=200,
+                                params={'filenames': 'file1.xml'})
         self.assertTrue('diff' in res.body)
 
     @login_user('Bob')
@@ -419,8 +482,11 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning):
         res = self.testapp.get('/account/Bob/versioning/diff.json', status=200)
         self.assertTrue('You should provide at least one filename' in res.body)
 
-        res = self.testapp.get('/account/Bob/versioning/diff.json', status=200,
-                               params={'filenames': 'file1.xml'})
+        res = self.testapp.post('/account/Bob/versioning/diff.json', status=200)
+        self.assertTrue('You should provide at least one filename' in res.body)
+
+        res = self.testapp.post('/account/Bob/versioning/diff.json', status=200,
+                                params={'filenames': 'file1.xml'})
         self.assertTrue('diff' in res.body)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
@@ -429,10 +495,11 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning):
     def test_commit_json(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         self.user_bob.config = UserConfig(root_path=svn_path)
-        res = self.testapp.get('/account/Bob/versioning/commit.json', status=200)
+        res = self.testapp.post('/account/Bob/versioning/commit.json',
+                                status=200)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
-        expected = {"status": False, "error_msg": "Bad parameters!"}
+        expected = {"error_msg": "No file selected!"}
         self.assertEqual(json.loads(res.body), expected)
 
     @login_user('Bob')
@@ -452,6 +519,24 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning):
         self.assertTrue('The repository has been updated!' in res.body)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
+
+    @login_user('Bob')
+    def test_update_texts(self):
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        self.user_bob.config.root_path = path
+        res = self.testapp.post('/account/Bob/versioning/update_texts', status=200)
+        self.assertTrue("Missing parameters!" in res.body)
+
+    @login_user('Bob')
+    def test_update_texts_json(self):
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        self.user_bob.config.root_path = path
+        res = self.testapp.post('/account/Bob/versioning/update_texts.json', status=200)
+        self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
+                        res._headerlist)
+        expected = {"error_msg": "Missing parameters!"}
+        self.assertEqual(json.loads(res.body), expected)
+
 
 
 class TestHelper(unittest.TestCase):
@@ -719,6 +804,7 @@ class TestHelper(unittest.TestCase):
         self.assertTrue('New file ' in res[1])
 
     def test_full_diff(self):
+        difflib.HtmlDiff._default_prefix = 0
         o = helper.PysvnVersioning(self.client, self.client_dir)
         self.assertEqual(o.full_diff(), [])
         folder1 = os.path.join(self.client_dir, 'folder1')

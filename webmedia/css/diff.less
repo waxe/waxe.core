@@ -1,3 +1,5 @@
+@import (reference) "../libs/bootstrap-3.0.2/less/bootstrap.less";
+
 .versioning-modified i,
 .versioning-added i {
   color: green;
@@ -19,6 +21,25 @@
   color: black;
   margin-top: 80px;
   font-size: 85%;
+}
+
+
+.label-modified,
+.label-added{
+  .label-success;
+}
+
+.label-deleted,
+.label-missing {
+  .label-warning;
+}
+
+.label-conflicted {
+  .label-danger;
+}
+
+.label-unversioned{
+  .label-info;
 }
 
 

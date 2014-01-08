@@ -294,51 +294,6 @@ class TestEditorView(LoggedBobTestCase):
             self.assertTrue('class="modal' in res['content'])
             self.assertTrue('Commit message' in res['content'])
 
-    def test_update_texts(self):
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
-        self.user_bob.config.root_path = path
-        request = testing.DummyRequest(params={})
-        res = EditorView(request).update_texts()
-        expected = {'status': False, 'error_msg': 'Missing parameters!'}
-        self.assertEqual(res, expected)
-
-        request = testing.DummyRequest(
-            params={
-                'data:0:filecontent': 'content of the file 1',
-                'data:0:filename': 'thefilename1.xml',
-                'data:1:filecontent': 'content of the file 2',
-                'data:1:filename': 'thefilename2.xml',
-            })
-
-        def raise_func(*args, **kw):
-            raise Exception('My error')
-
-        with patch('xmltool.load_string') as m:
-            m.side_effect = raise_func
-            res = EditorView(request).update_texts()
-            expected = {'status': False, 'error_msg': 'thefilename1.xml: My error<br />thefilename2.xml: My error'}
-            self.assertEqual(res,  expected)
-
-        filecontent = open(os.path.join(path, 'file1.xml'), 'r').read()
-        filecontent = filecontent.replace('exercise.dtd',
-                                          os.path.join(path, 'exercise.dtd'))
-        request = testing.DummyRequest(
-            params={'data:0:filecontent': filecontent,
-                    'data:0:filename': 'thefilename.xml'})
-        request.custom_route_path = lambda *args, **kw: '/filepath'
-
-        with patch('xmltool.elements.Element.write', return_value=None):
-            res = EditorView(request).update_texts()
-            expected = {'status': True, 'content': 'Files updated'}
-            self.assertEqual(res,  expected)
-
-            request.params['commit'] = True
-            res = EditorView(request).update_texts()
-            self.assertEqual(len(res), 2)
-            self.assertEqual(res['status'], True)
-            self.assertTrue('class="modal' in res['content'])
-            self.assertTrue('Commit message' in res['content'])
-
     def test_add_element_json(self):
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
         request = testing.DummyRequest(params={})
@@ -364,7 +319,6 @@ class FunctionalTestEditorView(WaxeTestCase):
             '/account/Bob/new.json',
             '/account/Bob/update.json',
             '/account/Bob/update-text.json',
-            '/account/Bob/update-texts.json',
             '/account/Bob/add-element.json',
             '/account/Bob/get-comment-modal.json',
         ]:
@@ -493,16 +447,6 @@ class FunctionalTestEditorView(WaxeTestCase):
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
         self.user_bob.config.root_path = path
         res = self.testapp.post('/account/Bob/update-text.json', status=200)
-        self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
-                        res._headerlist)
-        expected = {"status": False, "error_msg": "Missing parameters!"}
-        self.assertEqual(json.loads(res.body), expected)
-
-    @login_user('Bob')
-    def test_update_texts(self):
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
-        self.user_bob.config.root_path = path
-        res = self.testapp.post('/account/Bob/update-texts.json', status=200)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
         expected = {"status": False, "error_msg": "Missing parameters!"}

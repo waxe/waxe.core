@@ -5,10 +5,13 @@ from . import pysvn_backend
 
 CALLABLE_VIEWS = [
     'short_status',
+    'short_diff',
+    'prepare_commit',
     'status',
     'diff',
     'update',
     'commit',
+    'update_texts',
 ]
 
 

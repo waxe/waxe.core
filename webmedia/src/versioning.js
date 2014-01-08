@@ -5,6 +5,8 @@ var waxe = waxe || {};
 
     ns.versioning = {
         init: function(){
+
+            // Set the versioning status on the files
             var navfile = $('#file-navigation').each(function() {
                 var that = this;
                 var url = $(that).data('versioning-path');
@@ -21,32 +23,11 @@ var waxe = waxe || {};
                 });
             });
 
-            $('a.select-all').click(function(e){
-                e.preventDefault();
-                $(this).parents('form').find('input[type="checkbox"]').attr('checked', true);
-            });
+            // TODO: put this in python
+            $('table.diff td.diff_to').attr('contenteditable', 'true');
 
-            $('a.select-none').click(function(e){
-                e.preventDefault();
-                $(this).parents('form').find('input[type="checkbox"]').removeAttr('checked');
-            });
-
-            if ($('table.diff').next('input.diff-submit').length) {
-                $('table.diff td.diff_to').attr('contenteditable', 'true');
-            }
-
-            $('form.diff').submit(function(e){
-                var params = $(this).serialize();
-                if (params === ''){
-                    // No file selected
-                    e.preventDefault();
-                }
-            });
-
-            $('form.multiple-diff-submit').submit(function(e){
-                $(document).message('info', 'Loading...', {'autohide': false});
-                e.preventDefault();
-                var url = $(this).data('action');
+            // Reconstruct the file before submitting the diff updated
+            $('form.editable-diff').submit(function() {
                 $('table.diff').each(function(){
                     $(this).prev('textarea').val('');
                     var html = '';
@@ -58,78 +39,6 @@ var waxe = waxe || {};
                     });
                     $(this).prev('textarea').val(html);
                 });
-                var params = $(this).serialize();
-                params = params + '&commit=true';
-                $.ajax({
-                     type: 'POST',
-                     url: url,
-                     data: params,
-                     dataType: 'json',
-                     success: function(data, textStatus, jqXHR){
-                        if (data.status){
-                            $(document).message('success', 'Saved');
-                            var modal = $(data.content);
-                            modal.find('.submit').click(function(){
-                                var url = $(this).data('href');
-                                var msg = modal.find('textarea').val();
-                                if (msg !== ''){
-                                    params = params + '&msg=' + msg;
-                                    waxe.versioning.commit(url, params);
-                                    modal.modal('hide');
-                                }
-                            });
-                            modal.modal('show');
-                        }
-                        else{
-                            $(document).message('error', data.error_msg);
-                        }
-                    },
-                    error: function(jqXHR, textStatus, errorThrown){
-                        var msg = jqXHR.status + ' ' + jqXHR.statusText + ': ' + url;
-                        $(document).message('error', msg);
-                    }
-                });
-            });
-
-            $('form.multiple-diff').submit(function(e){
-                $(document).message('info', 'Loading...', {'autohide': false});
-                e.preventDefault();
-                var url = $(this).data('action');
-                var params = $(this).serialize();
-                $.ajax({
-                     type: 'POST',
-                     url: url,
-                     data: params,
-                     dataType: 'json',
-                     success: function(data, textStatus, jqXHR){
-                        waxe.dom.update(data);
-                    },
-                    error: function(jqXHR, textStatus, errorThrown){
-                        var msg = jqXHR.status + ' ' + jqXHR.statusText + ': ' + url;
-                        $(document).message('error', msg);
-                    }
-                });
-            });
-        },
-        commit: function(url, params){
-            $(document).message('info', 'Commit in progress...', {'autohide': false});
-            $.ajax({
-                 type: 'POST',
-                 url: url,
-                 data: params,
-                 dataType: 'json',
-                 success: function(data, textStatus, jqXHR){
-                    if (data.status){
-                        $(document).message('success', 'Commit done');
-                    }
-                    else{
-                        $(document).message('error', data.error_msg);
-                    }
-                },
-                error: function(jqXHR, textStatus, errorThrown){
-                    var msg = jqXHR.status + ' ' + jqXHR.statusText + ': ' + url;
-                    $(document).message('error', msg);
-                }
             });
         }
     };

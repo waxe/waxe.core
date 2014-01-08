@@ -1,8 +1,7 @@
 import os.path
 import logging
 import pysvn
-import locale
-from subprocess import Popen, PIPE
+import xmltool
 from pyramid.renderers import render
 from waxe import browser
 from waxe import diff
@@ -90,6 +89,8 @@ class PysvnView(BaseUserView):
 
     def short_status(self):
         """Status of the given path without any depth.
+
+        This function should only be called in json
         """
         relpath = self.request.GET.get('path', '')
         vobj = self.get_versioning_obj()
@@ -107,182 +108,151 @@ class PysvnView(BaseUserView):
 
         conflicteds = []
         conflicteds_abspath = []
+        uncommitables = []
         tmps = []
         for so in lis:
             if so.status == helper.STATUS_CONFLICTED:
                 conflicteds += [so]
                 conflicteds_abspath += [so.abspath]
-            else:
+            elif self.can_commit(so.abspath):
                 tmps += [so]
+            else:
+                uncommitables += [so]
 
         others = [so for so in tmps
                   if not helper.is_conflicted(so, conflicteds_abspath)]
 
+        uncommitables = [so for so in uncommitables
+                         if not helper.is_conflicted(so, conflicteds_abspath)]
+
         content = render('blocks/versioning_status.mak', {
             'conflicteds': conflicteds,
+            'uncommitables': uncommitables,
             'others': others
         }, self.request)
         return self._response({
             'content': content,
         })
 
-    def _svn_diff(self, filename, client, index=0, editable=False):
-        root_path = self.root_path
-        absfilename = browser.absolute_path(filename, root_path)
-        info = client.info(root_path)
-        old_rev = pysvn.Revision(pysvn.opt_revision_kind.number,
-                                 info.revision.number)
-
-        new_content = open(absfilename, 'r').read()
-        try:
-            status = client.status(absfilename)
-            assert len(status) == 1
-            status = status[0].text_status
-        except pysvn.ClientError, e:
-            if str(e).endswith('is not a working copy'):
-                # The file is not versionned
-                status = pysvn.wc_status_kind.unversioned
-            else:
-                raise pysvn.ClientError(e)
-        if status != pysvn.wc_status_kind.unversioned:
-            old_content = client.cat(absfilename, old_rev)
-        else:
-            old_content = ''
-
-        d = diff.HtmlDiff()
-        link = self.request.custom_route_path('edit', _query=[('filename', filename)])
-        json_link = self.request.custom_route_path('edit_json', _query=[('filename', filename)])
-        html = '<h3><a data-href="%s" href="%s">%s</a></h3>' % (json_link, link, filename)
-        if editable:
-            html += '<input type="text" name="data:%i:filename" value="%s" />' % (
-                index,
-                filename
-            )
-            # The content of this textarea will we filled in javascript
-            html += '<textarea name="data:%i:filecontent"></textarea>' % index
-        html += d.make_table(
-            old_content.decode('utf-8').splitlines(),
-            new_content.decode('utf-8').splitlines())
-        return html
+    def short_diff(self):
+        relpath = self.request.GET.get('path', '')
+        vobj = self.get_versioning_obj()
+        res = vobj.diff(relpath)
+        res = res.replace("&", "&amp;").replace(">", "&gt;").replace("<", "&lt;")
+        return self._response({'content': '<pre>%s</pre>' % res})
 
     def diff(self):
-        filenames = self.request.GET.getall('filenames') or ''
+        filenames = self.request.POST.getall('filenames') or ''
         if not filenames:
             return self._response({
                 'error_msg': 'You should provide at least one filename.',
             })
 
-        client = self.get_svn_client()
-        html = ''
+        vobj = self.get_versioning_obj()
+        lis = []
         can_commit = True
-        root_path = self.root_path
-
-        for index, filename in enumerate(filenames):
-            absfilename = browser.absolute_path(filename, root_path)
-            if not self.can_commit(absfilename):
+        for filename in filenames:
+            lis += vobj.full_diff(filename)
+            absfilename = browser.absolute_path(filename, self.root_path)
+            if can_commit and not self.can_commit(absfilename):
                 can_commit = False
-            html += self._svn_diff(filename, client, index=index,
-                                   editable=can_commit)
 
-        if can_commit:
-            html = (
-                '<form data-action="%s" '
-                'class="multiple-diff-submit">'
-                '%s'
-                '<input data-filename="%s" type="submit" '
-                'class="diff-submit" value="Save and commit" />'
-                '</form') % (
-                    self.request.custom_route_path('update_texts_json'),
-                    ''.join(html),
-                    filename)
-        return self._response({'content': html})
+        content = render('blocks/versioning_diff.mak', {
+            'files': lis,
+            'can_commit': can_commit,
+        }, self.request)
+        return self._response({'content': content})
 
     def update(self):
-        root_path = self.root_path
         relpath = self.request.GET.get('path', '')
-        abspath = browser.absolute_path(relpath, root_path)
-        client = self.get_svn_client()
+        vobj = self.get_versioning_obj()
         try:
-            revisions = client.update(abspath, depth=pysvn.depth.unknown)
+            vobj.update(relpath)
         except pysvn.ClientError, e:
             return self._response({
-                'error_msg': str(e).replace(root_path + '/', ''),
+                'error_msg': str(e).replace(self.root_path + '/', ''),
             })
-
         return self._response({
             'content': 'The repository has been updated!',
         })
 
+    def prepare_commit(self, files=None):
+        relpath = self.request.GET.get('path', '')
+        vobj = self.get_versioning_obj()
+        if not files:
+            files = [f.relpath for f in vobj.get_commitable_files(relpath)]
+        if not files:
+            return self._response({
+                'info_msg': 'No file to commit in %s' % relpath,
+            })
+        modal = render('blocks/prepare_commit_modal.mak', {
+            'files': files,
+        }, self.request)
+        return self._response({
+            'modal': modal,
+        })
+
     def commit(self):
         msg = self.request.POST.get('msg')
-        params = unflatten_params(self.request.POST)
-
-        if 'data' not in params or not params['data'] or not msg:
-            return self._response({'status': False,
-                                   'error_msg': 'Bad parameters!'})
-
-        filenames = []
-        for dic in params['data']:
-            filenames += [dic['filename']]
-
-        root_path = self.root_path
+        filenames = self.request.POST.getall('path')
+        if not filenames:
+            return self._response({'error_msg': 'No file selected!'})
+        if not msg:
+            return self._response({'error_msg': 'No commit message!'})
 
         error_msg = []
-        ok_filenames = []
-
         for filename in filenames:
-
-            ok_filename = None
-            absfilename = browser.absolute_path(filename, root_path)
+            absfilename = browser.absolute_path(filename, self.root_path)
             if not self.can_commit(absfilename):
-                error_msg += ['Can\'t commit: %s' % filename]
-                continue
-
-            client = self.get_svn_client()
-            try:
-                status = client.status(absfilename)
-                assert len(status) == 1, status
-                status = status[0].text_status
-            except pysvn.ClientError, e:
-                if str(e).endswith('is not a working copy'):
-                    # The file is not versionned
-                    status = pysvn.wc_status_kind.unversioned
-                    # .. warning:: Because of svn restriction we can't commit a
-                    # file when the folder is not versioned. we only support
-                    # one level.
-                    # ..todo:: we need to support multi level!
-                    path = os.path.dirname(absfilename)
-                    client.add(path,
-                               depth=pysvn.depth.empty)
-                    ok_filename = path
-                else:
-                    raise pysvn.ClientError(e)
-            if status == pysvn.wc_status_kind.conflicted:
-                error_msg += ['Can\'t commit conflicted file: %s' % filename]
-                continue
-
-            if status == pysvn.wc_status_kind.unversioned:
-                try:
-                    client.add(absfilename)
-                except Exception, e:
-                    log.exception(e)
-                    error_msg += ['Can\'t add %s' % filename]
-                    continue
-            if ok_filename:
-                # We add the folder containing the file to commit
-                ok_filenames += [ok_filename]
-            else:
-                ok_filenames += [absfilename]
-
-        if ok_filenames:
-            try:
-                client.checkin(ok_filenames, msg)
-            except Exception, e:
-                log.exception(e)
-                error_msg += ['Can\'t commit %s' % filename]
+                error_msg += [
+                    'You don\'t have the permission to commit: %s' % filename]
 
         if error_msg:
-            return self._response({'status': False, 'error_msg': '<br />'.join(error_msg)})
-        # TODO: return the content of the status.
-        # We should make a redirect!
-        return self._response({'status': True, 'content': 'Commit done'})
+            return self._response({
+                'error_msg': '<br />'.join(error_msg)
+            })
+
+        vobj = self.get_versioning_obj()
+        try:
+            vobj.commit(filenames, msg)
+        except Exception, e:
+            log.exception(e)
+            error_msg += []
+            return self._response({
+                'error_msg': 'Error during the commit %s' % str(e)
+            })
+
+        return self.status()
+
+    def update_texts(self):
+        params = unflatten_params(self.request.POST)
+        if 'data' not in params or not params['data']:
+            return self._response({'error_msg': 'Missing parameters!'})
+
+        root_path = self.root_path
+        status = True
+        error_msgs = []
+        files = []
+        for dic in params['data']:
+            filecontent = dic['filecontent']
+            filename = dic['filename']
+            absfilename = browser.absolute_path(filename, root_path)
+            try:
+                obj = xmltool.load_string(filecontent)
+                obj.write(absfilename)
+                files += [filename]
+            except Exception, e:
+                status = False
+                error_msgs += ['%s: %s' % (filename, str(e))]
+
+        if not status:
+            return self._response({
+                'error_msg': '<br />'.join(error_msgs)
+            })
+
+        if self.request.POST.get('commit'):
+            return self.prepare_commit(files)
+
+        return self._response({
+            'content': 'Files updated'
+        })
