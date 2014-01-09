@@ -12,6 +12,8 @@ CALLABLE_VIEWS = [
     'update',
     'commit',
     'update_texts',
+    'edit_conflict',
+    'update_conflict',
 ]
 
 

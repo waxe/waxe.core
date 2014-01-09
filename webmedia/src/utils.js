@@ -2,6 +2,7 @@
     "use strict";
 
     $(document).ready(function(){
+        $('textarea.autosize').autosize();
         $(document).on('click', '.select-all', function(e){
             e.preventDefault();
             $(this).parents('form').find('input[type="checkbox"]').prop('checked', true);

@@ -30,6 +30,34 @@ from waxe.views.versioning.pysvn_backend import PysvnView
 from waxe.views.versioning import helper
 
 
+class CreateRepo(unittest.TestCase):
+
+    def setUp(self):
+        super(CreateRepo, self).setUp()
+        directory = os.path.dirname(__file__)
+        self.repo = os.path.join(directory, 'svn_waxe_repo')
+        p = Popen('svnadmin create %s' % self.repo,
+                  shell=True,
+                  stderr=PIPE,
+                  close_fds=True)
+        error = p.stderr.read()
+        if error:
+            print >> sys.stderr,  error
+
+        self.client_dir = 'svn_waxe_client'
+        self.client = pysvn.Client()
+        self.client.checkout('file://%s' % self.repo, self.client_dir)
+
+    def tearDown(self):
+        if os.path.isdir(self.repo):
+            shutil.rmtree(self.repo)
+        if os.path.isdir(self.client_dir):
+            shutil.rmtree(self.client_dir)
+        if os.path.isdir('svn_waxe_client1'):
+            shutil.rmtree('svn_waxe_client1')
+        super(CreateRepo, self).tearDown()
+
+
 class FakeSvnStatus(object):
 
     def __init__(self, path, status):
@@ -404,6 +432,118 @@ class TestPysvnView(BaseTestCase):
             self.assertTrue('commit message' in res['modal'])
 
 
+class TestPysvnViewFakeRepo(BaseTestCase, CreateRepo):
+
+    def setUp(self):
+        super(TestPysvnViewFakeRepo, self).setUp()
+        self.config.registry.settings.update({
+            'authentication.cookie.secret': 'scrt',
+            'authentication.cookie.callback': ('waxe.security.'
+                                               'get_user_permissions')
+        })
+        self.config.include('pyramid_auth')
+
+    @login_user('Bob')
+    def test_edit_conflict(self):
+        class C(object): pass
+        self.user_bob.config.root_path = self.client_dir
+        file1 = os.path.join(self.client_dir, 'file1.xml')
+        open(file1, 'w').write('Hello')
+        request = testing.DummyRequest()
+        request.context = security.RootFactory(request)
+        request.matched_route = C()
+        request.matched_route.name = 'route'
+        expected = {
+            'editor_login': 'Bob',
+            'error_msg': 'A filename should be provided',
+            'versioning': False,
+        }
+        res = PysvnView(request).edit_conflict()
+        self.assertEqual(res, expected)
+
+        request = testing.DummyRequest(params={'path': 'file1.xml'})
+        request.matched_route = C()
+        request.matched_route.name = 'route'
+        request.custom_route_path = lambda *args, **kw: '/%s/filepath' % args[0]
+        res = PysvnView(request).edit_conflict()
+        expected = '<form data-action="/versioning_dispatcher_json/filepath'
+        self.assertTrue(expected in res['content'])
+        expected = '<textarea class="form-control autosize" name="filecontent">'
+        self.assertTrue(expected in res['content'])
+        expected = ('<input type="hidden" id="_xml_filename" '
+                    'name="filename" value="file1.xml" />')
+        self.assertTrue(expected in res['content'])
+
+    @login_user('Bob')
+    def test_update_conflict(self):
+        class C(object): pass
+        self.user_bob.config.root_path = self.client_dir
+        file1 = os.path.join(self.client_dir, 'file1.xml')
+        open(file1, 'w').write('Hello')
+        self.client.add(file1)
+        self.client.checkin([file1], 'Initial commit')
+        # Create a conflict
+        self.client.checkout('file://%s' % self.repo, 'svn_waxe_client1')
+        open(os.path.join('svn_waxe_client1', 'file1.xml'), 'w').write('Hello Bob')
+        self.client.checkin([os.path.join('svn_waxe_client1', 'file1.xml')],
+                            'create conflict')
+        open(file1, 'w').write('Hello Fred')
+        self.client.update(self.client_dir)
+        o = helper.PysvnVersioning(self.client, self.client_dir)
+        s = o.empty_status(file1)
+        self.assertEqual(s.status, helper.STATUS_CONFLICTED)
+
+        request = testing.DummyRequest(params={})
+        request.context = security.RootFactory(request)
+        request.matched_route = C()
+        request.matched_route.name = 'route'
+        res = PysvnView(request).update_conflict()
+        expected = {
+            'error_msg': 'Missing parameters!',
+            'editor_login': 'Bob',
+            'versioning': False,
+        }
+        self.assertEqual(res, expected)
+
+        request = testing.DummyRequest(
+            params={'filecontent': 'content of the file',
+                    'filename': 'file1.xml'})
+        request.context = security.RootFactory(request)
+        request.custom_route_path = lambda *args, **kw: '/filepath'
+        request.matched_route = C()
+        request.matched_route.name = 'route'
+
+        def raise_func(*args, **kw):
+            raise Exception('My error')
+
+        with patch('xmltool.load_string') as m:
+            m.side_effect = raise_func
+            res = PysvnView(request).update_conflict()
+            expected = {
+                'error_msg': 'The conflict is not resolved: My error',
+                'editor_login': 'Bob',
+                'versioning': False,
+            }
+            self.assertEqual(res,  expected)
+
+        filecontent = open(file1, 'r').read()
+        request = testing.DummyRequest(
+            params={'filecontent': filecontent,
+                    'filename': 'file1.xml'})
+        request.context = security.RootFactory(request)
+        request.custom_route_path = lambda *args, **kw: '/filepath'
+        request.matched_route = C()
+        request.matched_route.name = 'route'
+
+        m = MagicMock()
+        with patch('xmltool.load_string', return_value=m):
+            res = PysvnView(request).update_conflict()
+            s = o.empty_status(file1)
+            self.assertEqual(s.status, helper.STATUS_MODIFED)
+            expected = 'List of commitable files'
+            self.assertTrue(expected in res['content'])
+
+
 class FunctionalTestViewsNoVersioning(WaxeTestCase):
 
     def test_404(self):
@@ -548,32 +688,43 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning):
         expected = {"error_msg": "Missing parameters!"}
         self.assertEqual(json.loads(res.body), expected)
 
+    @login_user('Bob')
+    def test_edit_conflict(self):
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        self.user_bob.config.root_path = path
+        res = self.testapp.post('/account/Bob/versioning/edit_conflict',
+                                status=200)
+        self.assertTrue("A filename should be provided" in res.body)
+
+    @login_user('Bob')
+    def test_edit_conflict_json(self):
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        self.user_bob.config.root_path = path
+        res = self.testapp.post('/account/Bob/versioning/edit_conflict.json',
+                                status=200)
+        expected = {"error_msg": "A filename should be provided"}
+        self.assertEqual(json.loads(res.body), expected)
+
+    @login_user('Bob')
+    def test_update_conflict(self):
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        self.user_bob.config.root_path = path
+        res = self.testapp.post('/account/Bob/versioning/update_conflict',
+                                status=200)
+        self.assertTrue("Missing parameters!" in res.body)
+
+    @login_user('Bob')
+    def test_update_conflict_json(self):
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        self.user_bob.config.root_path = path
+        res = self.testapp.post('/account/Bob/versioning/update_conflict.json',
+                                status=200)
+        expected = {"error_msg": "Missing parameters!"}
+        self.assertEqual(json.loads(res.body), expected)
 
 
-class TestHelper(unittest.TestCase):
 
-    def setUp(self):
-        directory = os.path.dirname(__file__)
-        self.repo = os.path.join(directory, 'svn_waxe_repo')
-        p = Popen('svnadmin create %s' % self.repo,
-                  shell=True,
-                  stderr=PIPE,
-                  close_fds=True)
-        error = p.stderr.read()
-        if error:
-            print >> sys.stderr,  error
-
-        self.client_dir = 'svn_waxe_client'
-        self.client = pysvn.Client()
-        self.client.checkout('file://%s' % self.repo, self.client_dir)
-
-    def tearDown(self):
-        if os.path.isdir(self.repo):
-            shutil.rmtree(self.repo)
-        if os.path.isdir(self.client_dir):
-            shutil.rmtree(self.client_dir)
-        if os.path.isdir('svn_waxe_client1'):
-            shutil.rmtree('svn_waxe_client1')
+class TestHelper(CreateRepo):
 
     def test_empty_status(self):
         o = helper.PysvnVersioning(self.client, self.client_dir)
@@ -1044,6 +1195,27 @@ class TestHelper(unittest.TestCase):
             self.assertEqual(so.status, helper.STATUS_NORMAL)
         res = o.empty_status(file4)
         self.assertEqual(res.status, helper.STATUS_UNVERSIONED)
+
+    def test_resolve(self):
+        o = helper.PysvnVersioning(self.client, self.client_dir)
+        self.assertEqual(o.get_commitable_files(), [])
+        file1 = os.path.join(self.client_dir, 'file1.xml')
+        open(file1, 'w').write('Hello')
+        self.client.add(file1)
+        self.client.checkin([file1], 'Initial commit')
+        # Create a conflict
+        self.client.checkout('file://%s' % self.repo, 'svn_waxe_client1')
+        open(os.path.join('svn_waxe_client1', 'file1.xml'), 'w').write('Hello Bob')
+        self.client.checkin([os.path.join('svn_waxe_client1', 'file1.xml')],
+                            'create conflict')
+        open(file1, 'w').write('Hello Fred')
+        self.client.update(self.client_dir)
+        s = o.empty_status(file1)
+        self.assertEqual(s.status, helper.STATUS_CONFLICTED)
+
+        o.resolve('file1.xml')
+        s = o.empty_status(file1)
+        self.assertEqual(s.status, helper.STATUS_MODIFED)
 
 
 class TestHelperNoRepo(unittest.TestCase):

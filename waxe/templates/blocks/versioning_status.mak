@@ -6,7 +6,7 @@
       % for conflicted in conflicteds:
         <li>
         <span class="label label-${conflicted.status}">${conflicted.status}</span>
-        <a href="${request.custom_route_path('edit', _query=[('path', conflicted.relpath)])}" data-href="${request.custom_route_path('edit_json', _query=[('path', conflicted.relpath)])}">${conflicted.relpath}</a>
+        <a href="${request.custom_route_path('versioning_dispatcher', method='edit_conflict', _query=[('path', conflicted.relpath)])}" data-href="${request.custom_route_path('versioning_dispatcher_json', method='edit_conflict', _query=[('path', conflicted.relpath)])}">${conflicted.relpath}</a>
         </li>
         % endfor
       </ul>

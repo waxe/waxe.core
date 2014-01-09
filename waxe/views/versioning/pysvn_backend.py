@@ -260,3 +260,63 @@ class PysvnView(BaseUserView):
         return self._response({
             'content': 'Files updated'
         })
+
+    def edit_conflict(self):
+        """
+        Basically it's the same function as editor.edit_text
+        """
+        filename = self.request.GET.get('path')
+        if not filename:
+            return self._response({
+                'error_msg': 'A filename should be provided',
+            })
+        root_path = self.root_path
+        absfilename = browser.absolute_path(filename, root_path)
+        try:
+            content = open(absfilename, 'r').read()
+        except Exception, e:
+            log.exception(e)
+            return self._response({
+                'error_msg': str(e)
+            })
+
+        html = '<form data-action="%s" action="%s" method="POST">' % (
+            self.request.custom_route_path('versioning_dispatcher_json',
+                                           method='update_conflict'),
+            self.request.custom_route_path('versioning_dispatcher',
+                                           method='update_conflict'),
+        )
+        html += '<input type="hidden" id="_xml_filename" name="filename" value="%s" />' % filename
+        html += '<textarea class="form-control" name="filecontent">%s</textarea>' % content
+        html += '<input type="submit" value="Save and resolve conflict" />'
+        html += '</form>'
+
+        dic = {
+            'content': html,
+        }
+        return self._response(dic)
+
+    def update_conflict(self):
+        filecontent = self.request.POST.get('filecontent')
+        filename = self.request.POST.get('filename') or ''
+        if not filecontent or not filename:
+            return self._response({'error_msg': 'Missing parameters!'})
+
+        absfilename = browser.absolute_path(filename, self.root_path)
+        try:
+            obj = xmltool.load_string(filecontent)
+            obj.write(absfilename)
+        except Exception, e:
+            return self._response({
+                'error_msg': 'The conflict is not resolved: %s' % str(e)})
+
+        vobj = self.get_versioning_obj()
+        try:
+            vobj.resolve(filename)
+        except Exception, e:
+            log.exception(e)
+            return self._response({
+                'error_msg': ('Error during the conflict\'s resolution '
+                              '%s' % str(e))
+            })
+        return self.status()

@@ -298,3 +298,11 @@ class PysvnVersioning(object):
             if rpath not in abspaths:
                 abspaths += [rpath]
         self.client.checkin(abspaths, msg)
+
+    def resolve(self, path):
+        """Resolve the conflict on the given path (filename)
+        """
+        abspath = browser.absolute_path(path, self.root_path)
+        # NOTE: we don't check abspath is conflicted since self.client.resolved
+        # don't raise exception
+        self.client.resolved(abspath)
