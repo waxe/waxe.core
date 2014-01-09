@@ -56,7 +56,8 @@
           </li>
           % endfor
         </ul>
-        <input type="submit" value="Generate diff" name="diff" />
+        <input type="submit" value="Generate diff" name="submit" />
+        <input type="submit" value="Commit" name="submit" />
       </form>
     </div>
   </div>

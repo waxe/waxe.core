@@ -132,6 +132,8 @@ class TestPysvnView(BaseTestCase):
         self.assertTrue('file1.xml' in res['content'])
         self.assertTrue('file3.xml' in res['content'])
         self.assertTrue('file4.xml' in res['content'])
+        self.assertTrue('value="Generate diff"' in res['content'])
+        self.assertTrue('value="Commit"' in res['content'])
 
     @login_user('Bob')
     def test_diff(self):
@@ -190,6 +192,15 @@ class TestPysvnView(BaseTestCase):
         self.assertEqual(res['content'].count('diff_from'), 2)
         self.assertTrue('submit' in res['content'])
         self.assertTrue('name="commit" ' not in res['content'])
+
+        # We should call prepare_commit
+        request.POST = MultiDict([('filenames', 'file1.xml'),
+                                 ('filenames', 'file3.xml'),
+                                 ('submit', 'Commit')])
+        res = self.ClassView(request).diff()
+        self.assertEqual(len(res), 3)
+        self.assertEqual(res.keys(), ['editor_login', 'versioning', 'modal'])
+        self.assertTrue('Choose the files you want to commit' in res['modal'])
 
     @login_user('Bob')
     def test_commit(self):

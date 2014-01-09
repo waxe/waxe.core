@@ -148,6 +148,10 @@ class PysvnView(BaseUserView):
                 'error_msg': 'You should provide at least one filename.',
             })
 
+        if self.request.POST.get('submit') == 'Commit':
+            # We have clicked on the commit button
+            return self.prepare_commit(filenames)
+
         vobj = self.get_versioning_obj()
         lis = []
         can_commit = True
