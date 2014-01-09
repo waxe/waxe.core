@@ -77,12 +77,23 @@ var waxe = waxe || {};
 
     $(document).ready(function(){
         waxe.dom.addPushStateOnLinks($('.content,.breadcrumb,.navbar .dropdown-versioning'));
+
+        $(document).on('click', 'form[data-action]', function(e){
+            $(this).data('clicked', $(e.target));
+        });
         $(document).on('submit', 'form[data-action]', function(e){
             e.preventDefault();
             var $form = $(this);
             var modal = $form.parents('.modal');
+
+            // Since jQuery doesn't include the submit button in the form, we
+            // include it manually
+            var btn = $form.data('clicked');
+            var params = $form.serialize() +
+                         '&' + encodeURI(btn.attr('name')) +
+                         '=' + encodeURI(btn.attr('value'));
             waxe.dom.submit($form.data('action'),
-                            $form.serialize(),
+                            params,
                             $form.data('msg'),
                             modal);
         });
