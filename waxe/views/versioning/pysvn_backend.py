@@ -105,7 +105,7 @@ class PysvnView(BaseUserView):
             dic[o.relpath] = o.status
         return dic
 
-    def status(self, info_msg=None):
+    def status(self, info_msg=None, error_msg=None):
         """Full status of the repo. We want to get all files
         """
         relpath = self.request.GET.get('path', '')
@@ -141,6 +141,8 @@ class PysvnView(BaseUserView):
         }
         if info_msg:
             dic['info_msg'] = info_msg
+        if error_msg:
+            dic['error_msg'] = error_msg
         return self._response(dic)
 
     def short_diff(self):
@@ -179,6 +181,12 @@ class PysvnView(BaseUserView):
     def update(self):
         relpath = self.request.GET.get('path', '')
         vobj = self.get_versioning_obj()
+
+        if vobj.has_conflict():
+            return self.status(
+                error_msg=('You can\'t update the repository, '
+                           'you have to fix the conflicts first'))
+
         try:
             vobj.update(relpath)
         except pysvn.ClientError, e:

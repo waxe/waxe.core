@@ -376,19 +376,6 @@ class TestPysvnView(BaseTestCase):
                 res = view.can_commit('/home/test/folder1.xml')
                 self.assertEqual(res, True)
 
-    @login_user('Fred')
-    def test_update(self):
-        svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
-        self.user_fred.config.root_path = svn_path
-        self.user_fred.roles = [self.role_contributor]
-        request = self.DummyRequest()
-        res = self.ClassView(request).update()
-        self.assertEqual(len(res), 5)
-        self.assertEqual(res.keys(), ['content', 'breadcrumb', 'info_msg',
-                                      'versioning', 'editor_login'])
-        self.assertEqual(res['info_msg'], 'The repository has been updated!')
-        self.assertTrue('List of updated files:' in res['content'])
-
     @login_user('Bob')
     def test_update_texts(self):
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
@@ -577,6 +564,47 @@ class TestPysvnViewFakeRepo(BaseTestCase, CreateRepo):
             self.assertEqual(s.status, helper.STATUS_MODIFED)
             expected = 'List of commitable files'
             self.assertTrue(expected in res['content'])
+
+    @login_user('Fred')
+    def test_update(self):
+        self.user_bob.config.root_path = self.client_dir
+        file1 = os.path.join(self.client_dir, 'file1.xml')
+        open(file1, 'w').write('Hello')
+        self.client.add(file1)
+        self.client.checkin([file1], 'Initial commit')
+        open(file1, 'w').write('Hello Fred')
+
+        self.user_fred.config.root_path = self.client_dir
+        self.user_fred.roles = [self.role_contributor]
+        request = testing.DummyRequest()
+        request.context = security.RootFactory(request)
+        request.route_path = lambda *args, **kw: '/%s' % args[0]
+        request.matched_route = EmptyClass()
+        request.matched_route.name = 'route'
+
+        res = PysvnView(request).update()
+        self.assertEqual(len(res), 5)
+        self.assertEqual(res.keys(), ['content', 'breadcrumb', 'info_msg',
+                                      'versioning', 'editor_login'])
+        self.assertEqual(res['info_msg'], 'The repository has been updated!')
+        self.assertTrue('List of updated files:' in res['content'])
+
+        # Create a conflict
+        self.client.checkout('file://%s' % self.repo, 'svn_waxe_client1')
+        open(os.path.join('svn_waxe_client1', 'file1.xml'), 'w').write('Hello Bob')
+        self.client.checkin([os.path.join('svn_waxe_client1', 'file1.xml')],
+                            'create conflict')
+        self.client.update(self.client_dir)
+
+        res = PysvnView(request).update()
+        self.assertEqual(len(res), 5)
+        self.assertEqual(res.keys(), ['content', 'breadcrumb', 'error_msg',
+                                      'versioning', 'editor_login'])
+        expected_error_msg = ('You can\'t update the repository, '
+                              'you have to fix the conflicts first')
+        self.assertEqual(res['error_msg'], expected_error_msg)
+        expected_content = 'List of conflicted files that should be resolved:'
+        self.assertTrue(expected_content in res['content'])
 
 
 class FunctionalTestViewsNoVersioning(WaxeTestCase):
@@ -1266,6 +1294,24 @@ class TestHelper(CreateRepo):
         o.resolve('file1.xml')
         s = o.empty_status(file1)
         self.assertEqual(s.status, helper.STATUS_MODIFED)
+
+    def test_has_conflict(self):
+        o = helper.PysvnVersioning(self.client, self.client_dir)
+        self.assertEqual(o.get_commitable_files(), [])
+        file1 = os.path.join(self.client_dir, 'file1.xml')
+        open(file1, 'w').write('Hello')
+        self.client.add(file1)
+        self.client.checkin([file1], 'Initial commit')
+        self.assertEqual(o.has_conflict(), False)
+
+        # Create a conflict
+        self.client.checkout('file://%s' % self.repo, 'svn_waxe_client1')
+        open(os.path.join('svn_waxe_client1', 'file1.xml'), 'w').write('Hello Bob')
+        self.client.checkin([os.path.join('svn_waxe_client1', 'file1.xml')],
+                            'create conflict')
+        open(file1, 'w').write('Hello Fred')
+        self.client.update(self.client_dir)
+        self.assertEqual(o.has_conflict(), True)
 
 
 class TestHelperNoRepo(unittest.TestCase):

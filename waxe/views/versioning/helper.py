@@ -306,3 +306,10 @@ class PysvnVersioning(object):
         # NOTE: we don't check abspath is conflicted since self.client.resolved
         # don't raise exception
         self.client.resolved(abspath)
+
+    def has_conflict(self, path=None):
+        lis = self.full_status(path)
+        for so in lis:
+            if so.status == STATUS_CONFLICTED:
+                return True
+        return False
