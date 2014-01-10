@@ -16,6 +16,10 @@
 <p><strong>Legend of the different colors:</strong></p>
 <br />
 <ul class="list-unstyled">
+  <li>
+	<i class="glyphicon glyphicon-file"></i>
+	This file/folder is normal, no modification has been done.
+  </li>
   <li class="versioning-modified">
 	<i class="glyphicon glyphicon-file"></i>
 	This file/folder is modified.
