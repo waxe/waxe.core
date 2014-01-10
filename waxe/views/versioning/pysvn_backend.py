@@ -27,6 +27,12 @@ def svn_ssl_server_trust_prompt(trust_dict):
 
 class PysvnView(BaseUserView):
 
+    def _response(self, dic):
+        relpath = self.request.GET.get('path', '')
+        if 'breadcrumb' not in dic:
+            dic['breadcrumb'] = self._get_breadcrumb(relpath, force_link=True)
+        return super(PysvnView, self)._response(dic)
+
     def can_commit(self, path):
         if not os.path.exists(path):
             raise Exception('Invalid path %s' % path)
@@ -287,7 +293,7 @@ class PysvnView(BaseUserView):
                                            method='update_conflict'),
         )
         html += '<input type="hidden" id="_xml_filename" name="filename" value="%s" />' % filename
-        html += '<textarea class="form-control" name="filecontent">%s</textarea>' % content
+        html += '<textarea class="form-control autosize" name="filecontent">%s</textarea>' % content
         html += '<input type="submit" value="Save and resolve conflict" />'
         html += '</form>'
 

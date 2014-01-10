@@ -155,8 +155,9 @@ class TestPysvnView(BaseTestCase):
         self.user_bob.config.root_path = svn_path
         request = self.DummyRequest()
         res = self.ClassView(request).status()
-        self.assertEqual(len(res), 3)
-        self.assertEqual(res.keys(), ['content', 'editor_login', 'versioning'])
+        self.assertEqual(len(res), 4)
+        self.assertEqual(res.keys(), ['content', 'breadcrumb',
+                                     'versioning', 'editor_login'])
         self.assertTrue('file1.xml' in res['content'])
         self.assertTrue('file3.xml' in res['content'])
         self.assertTrue('file4.xml' in res['content'])
@@ -174,6 +175,8 @@ class TestPysvnView(BaseTestCase):
             'error_msg': 'You should provide at least one filename.',
             'editor_login': 'Bob',
             'versioning': False,
+            'breadcrumb': ('<li><a data-href="/explore_json" '
+                           'href="/explore">root</a> </li>')
         }
         self.assertEqual(res, expected)
 
@@ -181,8 +184,9 @@ class TestPysvnView(BaseTestCase):
                                     params={'filenames': 'file1.xml'})
         request.POST = MultiDict({'filenames': 'file1.xml'})
         res = self.ClassView(request).diff()
-        self.assertEqual(len(res), 3)
-        self.assertEqual(res.keys(), ['content', 'editor_login', 'versioning'])
+        self.assertEqual(len(res), 4)
+        self.assertEqual(res.keys(), ['content', 'breadcrumb',
+                                      'versioning', 'editor_login'])
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 1)
         self.assertTrue('submit' in res['content'])
@@ -192,8 +196,9 @@ class TestPysvnView(BaseTestCase):
                                     params={'filenames': 'file3.xml'})
         request.POST = MultiDict({'filenames': 'file3.xml'})
         res = self.ClassView(request).diff()
-        self.assertEqual(len(res), 3)
-        self.assertEqual(res.keys(), ['content', 'editor_login', 'versioning'])
+        self.assertEqual(len(res), 4)
+        self.assertEqual(res.keys(), ['content', 'breadcrumb',
+                                      'versioning', 'editor_login'])
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 1)
         self.assertTrue('submit' in res['content'])
@@ -204,8 +209,9 @@ class TestPysvnView(BaseTestCase):
         request.POST = MultiDict({'filenames': 'file3.xml'})
         self.user_bob.roles = [self.role_contributor]
         res = self.ClassView(request).diff()
-        self.assertEqual(len(res), 3)
-        self.assertEqual(res.keys(), ['content', 'editor_login', 'versioning'])
+        self.assertEqual(len(res), 4)
+        self.assertEqual(res.keys(), ['content', 'breadcrumb',
+                                      'versioning', 'editor_login'])
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 1)
         self.assertTrue('submit' in res['content'])
@@ -214,8 +220,9 @@ class TestPysvnView(BaseTestCase):
         request.POST = MultiDict([('filenames', 'file1.xml'),
                                  ('filenames', 'file3.xml')])
         res = self.ClassView(request).diff()
-        self.assertEqual(len(res), 3)
-        self.assertEqual(res.keys(), ['content', 'editor_login', 'versioning'])
+        self.assertEqual(len(res), 4)
+        self.assertEqual(res.keys(), ['content', 'breadcrumb',
+                                      'versioning', 'editor_login'])
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 2)
         self.assertTrue('submit' in res['content'])
@@ -226,8 +233,9 @@ class TestPysvnView(BaseTestCase):
                                  ('filenames', 'file3.xml'),
                                  ('submit', 'Commit')])
         res = self.ClassView(request).diff()
-        self.assertEqual(len(res), 3)
-        self.assertEqual(res.keys(), ['editor_login', 'versioning', 'modal'])
+        self.assertEqual(len(res), 4)
+        self.assertEqual(res.keys(), ['breadcrumb', 'versioning',
+                                      'modal', 'editor_login'])
         self.assertTrue('Choose the files you want to commit' in res['modal'])
 
     @login_user('Bob')
@@ -243,6 +251,8 @@ class TestPysvnView(BaseTestCase):
                     'error_msg': "No file selected!",
                     'editor_login': 'Bob',
                     'versioning': False,
+                    'breadcrumb': ('<li><a data-href="/explore_json" '
+                                   'href="/explore">root</a> </li>')
                 }
                 self.assertEqual(res, expected)
 
@@ -253,6 +263,8 @@ class TestPysvnView(BaseTestCase):
                     'error_msg': "No commit message!",
                     'editor_login': 'Bob',
                     'versioning': False,
+                    'breadcrumb': ('<li><a data-href="/explore_json" '
+                                   'href="/explore">root</a> </li>')
                 }
                 self.assertEqual(res, expected)
                 request.POST = MultiDict(path='test.xml',
@@ -268,6 +280,8 @@ class TestPysvnView(BaseTestCase):
                         'error_msg': 'Error during the commit Error',
                         'editor_login': 'Bob',
                         'versioning': False,
+                        'breadcrumb': ('<li><a data-href="/explore_json" '
+                                       'href="/explore">root</a> </li>')
                     }
                     self.assertEqual(res, expected)
 
@@ -278,6 +292,8 @@ class TestPysvnView(BaseTestCase):
                                       'to commit: test.xml'),
                         'editor_login': 'Bob',
                         'versioning': False,
+                        'breadcrumb': ('<li><a data-href="/explore_json" '
+                                       'href="/explore">root</a> </li>')
                     }
                     self.assertEqual(res, expected)
 
@@ -368,7 +384,10 @@ class TestPysvnView(BaseTestCase):
         res = self.ClassView(request).update()
         expected = {'content': 'The repository has been updated!',
                     'editor_login': 'Fred',
-                    'versioning': False}
+                    'versioning': False,
+                    'breadcrumb': ('<li><a data-href="/explore_json" '
+                                   'href="/explore">root</a> </li>')
+                   }
         self.assertEqual(res, expected)
 
     @login_user('Bob')
@@ -381,6 +400,8 @@ class TestPysvnView(BaseTestCase):
             'error_msg': 'Missing parameters!',
             'editor_login': 'Bob',
             'versioning': False,
+            'breadcrumb': ('<li><a data-href="/explore_json" '
+                           'href="/explore">root</a> </li>')
         }
         self.assertEqual(res, expected)
 
@@ -403,6 +424,8 @@ class TestPysvnView(BaseTestCase):
                               'thefilename2.xml: My error'),
                 'editor_login': 'Bob',
                 'versioning': False,
+                'breadcrumb': ('<li><a data-href="/explore_json" '
+                               'href="/explore">root</a> </li>')
             }
             self.assertEqual(res,  expected)
 
@@ -420,12 +443,15 @@ class TestPysvnView(BaseTestCase):
                 'content': 'Files updated',
                 'editor_login': 'Bob',
                 'versioning': False,
+                'breadcrumb': ('<li><a data-href="/filepath" '
+                               'href="/filepath">root</a> </li>')
             }
             self.assertEqual(res,  expected)
 
             request.params['commit'] = True
             res = self.ClassView(request).update_texts()
-            self.assertEqual(len(res), 3)
+            self.assertEqual(len(res), 4)
+            self.assertTrue('breadcrumb' in res)
             self.assertEqual(res['versioning'], False)
             self.assertEqual(res['editor_login'], 'Bob')
             self.assertTrue('class="modal' in res['modal'])
@@ -453,10 +479,13 @@ class TestPysvnViewFakeRepo(BaseTestCase, CreateRepo):
         request.context = security.RootFactory(request)
         request.matched_route = C()
         request.matched_route.name = 'route'
+        request.route_path = lambda *args, **kw: '/%s' % args[0]
         expected = {
             'editor_login': 'Bob',
             'error_msg': 'A filename should be provided',
             'versioning': False,
+            'breadcrumb': ('<li><a data-href="/explore_json" '
+                           'href="/explore">root</a> </li>')
         }
         res = PysvnView(request).edit_conflict()
         self.assertEqual(res, expected)
@@ -497,11 +526,14 @@ class TestPysvnViewFakeRepo(BaseTestCase, CreateRepo):
         request.context = security.RootFactory(request)
         request.matched_route = C()
         request.matched_route.name = 'route'
+        request.route_path = lambda *args, **kw: '/%s' % args[0]
         res = PysvnView(request).update_conflict()
         expected = {
             'error_msg': 'Missing parameters!',
             'editor_login': 'Bob',
             'versioning': False,
+            'breadcrumb': ('<li><a data-href="/explore_json" '
+                           'href="/explore">root</a> </li>')
         }
         self.assertEqual(res, expected)
 
@@ -512,6 +544,7 @@ class TestPysvnViewFakeRepo(BaseTestCase, CreateRepo):
         request.custom_route_path = lambda *args, **kw: '/filepath'
         request.matched_route = C()
         request.matched_route.name = 'route'
+        request.route_path = lambda *args, **kw: '/%s' % args[0]
 
         def raise_func(*args, **kw):
             raise Exception('My error')
@@ -523,6 +556,8 @@ class TestPysvnViewFakeRepo(BaseTestCase, CreateRepo):
                 'error_msg': 'The conflict is not resolved: My error',
                 'editor_login': 'Bob',
                 'versioning': False,
+                'breadcrumb': ('<li><a data-href="/filepath" '
+                               'href="/filepath">root</a> </li>')
             }
             self.assertEqual(res,  expected)
 
@@ -534,6 +569,7 @@ class TestPysvnViewFakeRepo(BaseTestCase, CreateRepo):
         request.custom_route_path = lambda *args, **kw: '/filepath'
         request.matched_route = C()
         request.matched_route.name = 'route'
+        request.route_path = lambda *args, **kw: '/%s' % args[0]
 
         m = MagicMock()
         with patch('xmltool.load_string', return_value=m):
@@ -650,7 +686,11 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning):
                                 status=200)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
-        expected = {"error_msg": "No file selected!"}
+        expected = {
+            "error_msg": "No file selected!",
+            'breadcrumb': ('<li><a data-href="/account/Bob/explore.json?path=" '
+                           'href="/account/Bob/explore?path=">root</a> </li>')
+        }
         self.assertEqual(json.loads(res.body), expected)
 
     @login_user('Bob')
@@ -685,7 +725,11 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning):
         res = self.testapp.post('/account/Bob/versioning/update_texts.json', status=200)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
-        expected = {"error_msg": "Missing parameters!"}
+        expected = {
+            "error_msg": "Missing parameters!",
+            'breadcrumb': ('<li><a data-href="/account/Bob/explore.json?path=" '
+                           'href="/account/Bob/explore?path=">root</a> </li>')
+        }
         self.assertEqual(json.loads(res.body), expected)
 
     @login_user('Bob')
@@ -702,7 +746,11 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning):
         self.user_bob.config.root_path = path
         res = self.testapp.post('/account/Bob/versioning/edit_conflict.json',
                                 status=200)
-        expected = {"error_msg": "A filename should be provided"}
+        expected = {
+            "error_msg": "A filename should be provided",
+            'breadcrumb': ('<li><a data-href="/account/Bob/explore.json?path=" '
+                           'href="/account/Bob/explore?path=">root</a> </li>')
+        }
         self.assertEqual(json.loads(res.body), expected)
 
     @login_user('Bob')
@@ -719,9 +767,12 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning):
         self.user_bob.config.root_path = path
         res = self.testapp.post('/account/Bob/versioning/update_conflict.json',
                                 status=200)
-        expected = {"error_msg": "Missing parameters!"}
+        expected = {
+            "error_msg": "Missing parameters!",
+            'breadcrumb': ('<li><a data-href="/account/Bob/explore.json?path=" '
+                           'href="/account/Bob/explore?path=">root</a> </li>')
+        }
         self.assertEqual(json.loads(res.body), expected)
-
 
 
 class TestHelper(CreateRepo):
