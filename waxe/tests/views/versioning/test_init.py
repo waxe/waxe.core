@@ -380,15 +380,14 @@ class TestPysvnView(BaseTestCase):
     def test_update(self):
         svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
         self.user_fred.config.root_path = svn_path
+        self.user_fred.roles = [self.role_contributor]
         request = self.DummyRequest()
         res = self.ClassView(request).update()
-        expected = {'content': 'The repository has been updated!',
-                    'editor_login': 'Fred',
-                    'versioning': False,
-                    'breadcrumb': ('<li><a data-href="/explore_json" '
-                                   'href="/explore">root</a> </li>')
-                   }
-        self.assertEqual(res, expected)
+        self.assertEqual(len(res), 5)
+        self.assertEqual(res.keys(), ['content', 'breadcrumb', 'info_msg',
+                                      'versioning', 'editor_login'])
+        self.assertEqual(res['info_msg'], 'The repository has been updated!')
+        self.assertTrue('List of updated files:' in res['content'])
 
     @login_user('Bob')
     def test_update_texts(self):

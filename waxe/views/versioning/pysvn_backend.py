@@ -105,7 +105,7 @@ class PysvnView(BaseUserView):
             dic[o.relpath] = o.status
         return dic
 
-    def status(self):
+    def status(self, info_msg=None):
         """Full status of the repo. We want to get all files
         """
         relpath = self.request.GET.get('path', '')
@@ -136,9 +136,12 @@ class PysvnView(BaseUserView):
             'uncommitables': uncommitables,
             'others': others
         }, self.request)
-        return self._response({
+        dic = {
             'content': content,
-        })
+        }
+        if info_msg:
+            dic['info_msg'] = info_msg
+        return self._response(dic)
 
     def short_diff(self):
         relpath = self.request.GET.get('path', '')
@@ -182,9 +185,7 @@ class PysvnView(BaseUserView):
             return self._response({
                 'error_msg': str(e).replace(self.root_path + '/', ''),
             })
-        return self._response({
-            'content': 'The repository has been updated!',
-        })
+        return self.status(info_msg='The repository has been updated!')
 
     def prepare_commit(self, files=None):
         relpath = self.request.GET.get('path', '')

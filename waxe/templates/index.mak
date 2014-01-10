@@ -14,6 +14,12 @@
 	</div>
 	% endif
 
+	% if info_msg:
+	<div class="alert alert-info">
+	  ${info_msg|n}
+	</div>
+	% endif
+
     % if content:
 	    ${content|n}
 	  % endif
