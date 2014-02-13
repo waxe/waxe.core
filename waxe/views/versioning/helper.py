@@ -13,15 +13,37 @@ STATUS_MODIFED = 'modified'
 STATUS_CONFLICTED = 'conflicted'
 STATUS_UNVERSIONED = 'unversioned'
 STATUS_MISSING = 'missing'
+STATUS_OTHER = 'other'
 
 PYSVN_STATUS_MAPPING = {
-    pysvn.wc_status_kind.normal: STATUS_NORMAL,
-    pysvn.wc_status_kind.added: STATUS_ADDED,
-    pysvn.wc_status_kind.deleted: STATUS_DELETED,
-    pysvn.wc_status_kind.modified: STATUS_MODIFED,
-    pysvn.wc_status_kind.conflicted: STATUS_CONFLICTED,
+    # does not exist
+    pysvn.wc_status_kind.none: STATUS_OTHER,
+    # is not a versioned thing in this wc
     pysvn.wc_status_kind.unversioned: STATUS_UNVERSIONED,
+    # exists, but uninteresting.
+    pysvn.wc_status_kind.normal: STATUS_NORMAL,
+    # is scheduled for addition
+    pysvn.wc_status_kind.added: STATUS_ADDED,
+    # under v.c., but is missing
     pysvn.wc_status_kind.missing: STATUS_MISSING,
+    # scheduled for deletion
+    pysvn.wc_status_kind.deleted: STATUS_DELETED,
+    # was deleted and then re-added
+    pysvn.wc_status_kind.replaced: STATUS_OTHER,
+    # text or props have been modified
+    pysvn.wc_status_kind.modified: STATUS_MODIFED,
+    # local mods received repos mods
+    pysvn.wc_status_kind.merged: STATUS_OTHER,
+    # local mods received conflicting repos mods
+    pysvn.wc_status_kind.conflicted: STATUS_CONFLICTED,
+    # a resource marked as ignored
+    pysvn.wc_status_kind.ignored: STATUS_OTHER,
+    # an unversioned resource is in the way of the versioned resource
+    pysvn.wc_status_kind.obstructed: STATUS_OTHER,
+    # an unversioned path populated by an svn:external property
+    pysvn.wc_status_kind.external: STATUS_OTHER,
+    # a directory doesn't contain a complete entries list
+    pysvn.wc_status_kind.incomplete: STATUS_OTHER,
 }
 
 

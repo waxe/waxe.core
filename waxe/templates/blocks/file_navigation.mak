@@ -32,6 +32,10 @@
 	<i class="glyphicon glyphicon-file"></i>
 	This file/folder is new.
   </li>
+  <li class="versioning-other">
+	<i class="glyphicon glyphicon-file"></i>
+	This status should not come to you. If it's the case please make an update of the repository. If the problem persists contact your administrator.
+  </li>
 </ul>
 </div>
 % endif
