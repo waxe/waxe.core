@@ -28,6 +28,7 @@ requires = [
     'xmltool',
     'py-bcrypt',
     'pyramid_sqladmin',
+    'pyramid_logging',
 ]
 
 setup(name='waxe',

@@ -1,17 +1,16 @@
 import os.path
-import logging
+import pyramid_logging
 import pysvn
 import xmltool
 from pyramid.renderers import render
 from waxe import browser
-from waxe import diff
 from waxe import models
 from waxe.utils import unflatten_params
 from ..base import BaseUserView
 from . import helper
 
 
-log = logging.getLogger(__name__)
+log = pyramid_logging.getLogger(__name__)
 
 # Use to defined the color we will display the status
 labels_mapping = {
@@ -235,7 +234,7 @@ class PysvnView(BaseUserView):
         try:
             vobj.commit(filenames, msg)
         except Exception, e:
-            log.exception(e)
+            log.exception(e, request=self.request)
             error_msg += []
             return self._response({
                 'error_msg': 'Error during the commit %s' % str(e)
@@ -290,7 +289,7 @@ class PysvnView(BaseUserView):
         try:
             content = open(absfilename, 'r').read()
         except Exception, e:
-            log.exception(e)
+            log.exception(e, request=self.request)
             return self._response({
                 'error_msg': str(e)
             })
@@ -329,7 +328,7 @@ class PysvnView(BaseUserView):
         try:
             vobj.resolve(filename)
         except Exception, e:
-            log.exception(e)
+            log.exception(e, request=self.request)
             return self._response({
                 'error_msg': ('Error during the conflict\'s resolution '
                               '%s' % str(e))

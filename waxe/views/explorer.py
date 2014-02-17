@@ -1,13 +1,10 @@
 import os
-import logging
 from subprocess import Popen, PIPE
 from pyramid.view import view_config
 from pyramid.renderers import render
 from pyramid.httpexceptions import HTTPFound
 from base import BaseUserView
 from .. import browser
-
-log = logging.getLogger(__name__)
 
 
 class ExplorerView(BaseUserView):

@@ -1,4 +1,3 @@
-import logging
 import os
 import xmltool
 from xmltool import dtd_parser
@@ -9,10 +8,10 @@ from urllib2 import HTTPError, URLError
 from pyramid.view import view_config
 from pyramid.renderers import render
 from .. import browser
-from ..utils import unflatten_params
 from base import BaseUserView
+import pyramid_logging
 
-log = logging.getLogger(__name__)
+log = pyramid_logging.getLogger(__name__)
 
 
 def _get_tags(dtd_url):
@@ -53,15 +52,15 @@ class EditorView(BaseUserView):
             if not self._is_json():
                 jstree_data = json.dumps(jstree_data)
         except (HTTPError, URLError), e:
-            log.exception(e)
+            log.exception(e, request=self.request)
             return self._response({
                 'error_msg': 'The dtd of %s can\'t be loaded.' % filename
             })
         except etree.XMLSyntaxError, e:
-            log.exception(e)
+            log.exception(e, request=self.request)
             return self.edit_text(e)
         except Exception, e:
-            log.exception(e)
+            log.exception(e, request=self.request)
             return self._response({
                 'error_msg': str(e)
             })
@@ -85,7 +84,7 @@ class EditorView(BaseUserView):
         try:
             content = open(absfilename, 'r').read()
         except Exception, e:
-            log.exception(e)
+            log.exception(e, request=self.request)
             return self._response({
                 'error_msg': str(e)
             })
@@ -124,7 +123,7 @@ class EditorView(BaseUserView):
             try:
                 dic = dtd_parser.parse(dtd_url=dtd_url)
             except (HTTPError, URLError), e:
-                log.exception(e)
+                log.exception(e, request=self.request)
                 return {
                     'error_msg': 'The dtd file %s can\'t be loaded.' % dtd_url
                 }
@@ -180,12 +179,12 @@ class EditorView(BaseUserView):
         try:
             xmltool.update(absfilename, self.request.POST)
         except (HTTPError, URLError), e:
-            log.exception(e)
+            log.exception(e, request=self.request)
             return self._response({
                 'error_msg': 'The dtd of %s can\'t be loaded.' % filename
             })
         except Exception, e:
-            log.exception(e)
+            log.exception(e, request=self.request)
             return {'status': False, 'error_msg': str(e)}
 
         return {

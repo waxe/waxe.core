@@ -1,12 +1,9 @@
-import logging
 import urlparse
 from pyramid.view import view_config
 from pyramid.httpexceptions import HTTPBadRequest, HTTPFound
 from pyramid.renderers import render
 from ..models import User
 from base import JSONHTTPBadRequest, BaseView, BaseUserView
-
-log = logging.getLogger(__name__)
 
 
 class IndexView(BaseUserView):
