@@ -149,7 +149,9 @@ class PysvnVersioning(object):
                 assert(len(changes) == 1)
                 status = PYSVN_STATUS_MAPPING[changes[0].text_status]
         except pysvn.ClientError, e:
-            if str(e).endswith('is not a working copy'):
+            if (str(e).endswith('is not a working copy') or
+               str(e).endswith('was not found.')):
+                # 2 conditions since we support old and new svn version
                 status = STATUS_UNVERSIONED
             else:
                 raise
@@ -165,7 +167,8 @@ class PysvnVersioning(object):
             changes = self.client.status(abspath, recurse=False, get_all=True)
             return self._status(abspath, changes)
         except pysvn.ClientError, e:
-            if not str(e).endswith('is not a working copy'):
+            if not (str(e).endswith('is not a working copy') or
+               str(e).endswith('was not found.')):
                 raise
             # The file/folder is not in working copy so we force the status to
             # unversioned
@@ -181,7 +184,8 @@ class PysvnVersioning(object):
             changes = self.client.status(abspath, recurse=True, get_all=False)
             return self._status(abspath, changes, short=False)
         except pysvn.ClientError, e:
-            if not str(e).endswith('is not a working copy'):
+            if not (str(e).endswith('is not a working copy') or
+               str(e).endswith('was not found.')):
                 raise
             # The file/folder is not in working copy so we force the status to
             # unversioned

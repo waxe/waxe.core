@@ -69,7 +69,50 @@ class EmptyClass(object):
     pass
 
 
-class TestPysvnView(BaseTestCase):
+class CreateRepo2(unittest.TestCase):
+
+    def setUp(self):
+        super(CreateRepo2, self).setUp()
+        directory = os.path.dirname(__file__)
+        self.repo = os.path.join(directory, 'svn_waxe_repo')
+        p = Popen('svnadmin create %s' % self.repo,
+                  shell=True,
+                  stderr=PIPE,
+                  close_fds=True)
+        error = p.stderr.read()
+        if error:
+            print >> sys.stderr,  error
+
+        self.client_dir = 'svn_waxe_client'
+        self.client = pysvn.Client()
+        self.client.checkout('file://%s' % self.repo, self.client_dir)
+
+        file1 = os.path.join(self.client_dir, 'file1.xml')
+        file2 = os.path.join(self.client_dir, 'file2.xml')
+        file3 = os.path.join(self.client_dir, 'file3.xml')
+        file4 = os.path.join(self.client_dir, 'file4.xml')
+        folder1 = os.path.join(self.client_dir, 'folder1')
+        os.mkdir(folder1)
+        open(file1, 'w').write('Hello')
+        open(file2, 'w').write('Hello')
+        open(file3, 'w').write('Hello')
+        open(file4, 'w').write('Hello')
+        self.client.add(file1)
+        self.client.add(file2)
+        self.client.add(file4)
+        self.client.add(folder1)
+        self.client.checkin([file1, file2, folder1], 'Initial commit')
+        open(file1, 'w').write('Hello world')
+
+    def tearDown(self):
+        if os.path.isdir(self.repo):
+            shutil.rmtree(self.repo)
+        if os.path.isdir(self.client_dir):
+            shutil.rmtree(self.client_dir)
+        super(CreateRepo2, self).tearDown()
+
+
+class TestPysvnView(BaseTestCase, CreateRepo2):
     ClassView = PysvnView
 
     get_svn_client_str = ('waxe.views.versioning.'
@@ -138,8 +181,7 @@ class TestPysvnView(BaseTestCase):
 
     @login_user('Bob')
     def test_short_status(self):
-        svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
-        self.user_bob.config.root_path = svn_path
+        self.user_bob.config.root_path = self.client_dir
         request = self.DummyRequest()
         res = self.ClassView(request).short_status()
         expected = {
@@ -151,8 +193,7 @@ class TestPysvnView(BaseTestCase):
 
     @login_user('Bob')
     def test_status(self):
-        svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
-        self.user_bob.config.root_path = svn_path
+        self.user_bob.config.root_path = self.client_dir
         request = self.DummyRequest()
         res = self.ClassView(request).status()
         self.assertEqual(len(res), 4)
@@ -166,8 +207,7 @@ class TestPysvnView(BaseTestCase):
 
     @login_user('Bob')
     def test_diff(self):
-        svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
-        self.user_bob.config.root_path = svn_path
+        self.user_bob.config.root_path = self.client_dir
         request = self.DummyRequest()
         request.POST = MultiDict()
         res = self.ClassView(request).diff()
@@ -180,7 +220,7 @@ class TestPysvnView(BaseTestCase):
         }
         self.assertEqual(res, expected)
 
-        request = self.DummyRequest(root_path=svn_path,
+        request = self.DummyRequest(root_path=self.client_dir,
                                     params={'filenames': 'file1.xml'})
         request.POST = MultiDict({'filenames': 'file1.xml'})
         res = self.ClassView(request).diff()
@@ -192,7 +232,7 @@ class TestPysvnView(BaseTestCase):
         self.assertTrue('submit' in res['content'])
         self.assertTrue('name="commit" ' in res['content'])
 
-        request = self.DummyRequest(root_path=svn_path,
+        request = self.DummyRequest(root_path=self.client_dir,
                                     params={'filenames': 'file3.xml'})
         request.POST = MultiDict({'filenames': 'file3.xml'})
         res = self.ClassView(request).diff()
@@ -204,7 +244,7 @@ class TestPysvnView(BaseTestCase):
         self.assertTrue('submit' in res['content'])
         self.assertTrue('name="commit" ' in res['content'])
 
-        request = self.DummyRequest(root_path=svn_path,
+        request = self.DummyRequest(root_path=self.client_dir,
                                     params={'filenames': 'file3.xml'})
         request.POST = MultiDict({'filenames': 'file3.xml'})
         self.user_bob.roles = [self.role_contributor]
@@ -242,9 +282,8 @@ class TestPysvnView(BaseTestCase):
     def test_commit(self):
         with patch('os.path.exists', return_value=True):
             with patch('os.path.isfile', return_value=True):
-                svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
-                self.user_bob.config.root_path = svn_path
-                request = self.DummyRequest(root_path=svn_path)
+                self.user_bob.config.root_path = self.client_dir
+                request = self.DummyRequest(root_path=self.client_dir)
                 request.POST = MultiDict()
                 res = self.ClassView(request).commit()
                 expected = {
@@ -256,7 +295,7 @@ class TestPysvnView(BaseTestCase):
                 }
                 self.assertEqual(res, expected)
 
-                request = self.DummyRequest(root_path=svn_path)
+                request = self.DummyRequest(root_path=self.client_dir)
                 request.POST = MultiDict(path='test.xml')
                 res = self.ClassView(request).commit()
                 expected = {
@@ -623,7 +662,7 @@ class FunctionalTestViewsNoVersioning(WaxeTestCase):
             self.testapp.get(url, status=404)
 
 
-class FunctionalPysvnTestViews(WaxeTestCaseVersioning):
+class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
     ClassView = PysvnView
 
     def test_forbidden(self):
@@ -646,8 +685,7 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning):
 
     @login_user('Bob')
     def test_short_status(self):
-        svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
-        self.user_bob.config = UserConfig(root_path=svn_path)
+        self.user_bob.config = UserConfig(root_path=self.client_dir)
         res = self.testapp.get('/account/Bob/versioning/short_status.json',
                                status=200)
         expected = {
@@ -659,16 +697,14 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning):
 
     @login_user('Bob')
     def test_status(self):
-        svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
-        self.user_bob.config = UserConfig(root_path=svn_path)
+        self.user_bob.config = UserConfig(root_path=self.client_dir)
         res = self.testapp.get('/account/Bob/versioning/status', status=200)
         self.assertTrue(res.body)
         self.assertTrue('file1.xml' in res.body)
 
     @login_user('Bob')
     def test_status_json(self):
-        svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
-        self.user_bob.config = UserConfig(root_path=svn_path)
+        self.user_bob.config = UserConfig(root_path=self.client_dir)
         res = self.testapp.get('/account/Bob/versioning/status.json', status=200)
         self.assertTrue(res.body)
         self.assertTrue('file1.xml' in res.body)
@@ -677,8 +713,7 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning):
 
     @login_user('Bob')
     def test_diff(self):
-        svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
-        self.user_bob.config = UserConfig(root_path=svn_path)
+        self.user_bob.config = UserConfig(root_path=self.client_dir)
         res = self.testapp.get('/account/Bob/versioning/diff', status=200)
         self.assertTrue('You should provide at least one filename' in res.body)
 
@@ -691,8 +726,7 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning):
 
     @login_user('Bob')
     def test_diff_json(self):
-        svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
-        self.user_bob.config = UserConfig(root_path=svn_path)
+        self.user_bob.config = UserConfig(root_path=self.client_dir)
         res = self.testapp.get('/account/Bob/versioning/diff.json', status=200)
         self.assertTrue('You should provide at least one filename' in res.body)
 
@@ -707,8 +741,7 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning):
 
     @login_user('Bob')
     def test_commit_json(self):
-        svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
-        self.user_bob.config = UserConfig(root_path=svn_path)
+        self.user_bob.config = UserConfig(root_path=self.client_dir)
         res = self.testapp.post('/account/Bob/versioning/commit.json',
                                 status=200)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
@@ -722,16 +755,14 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning):
 
     @login_user('Bob')
     def test_update(self):
-        svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
-        self.user_bob.config = UserConfig(root_path=svn_path,
+        self.user_bob.config = UserConfig(root_path=self.client_dir,
                                           versioning_password='secret_bob')
         res = self.testapp.get('/account/Bob/versioning/update', status=200)
         self.assertTrue('The repository has been updated!' in res.body)
 
     @login_user('Bob')
     def test_update_json(self):
-        svn_path = os.path.join(os.getcwd(), 'waxe/tests/svn_client')
-        self.user_bob.config = UserConfig(root_path=svn_path,
+        self.user_bob.config = UserConfig(root_path=self.client_dir,
                                           versioning_password='secret_bob')
         res = self.testapp.get('/account/Bob/versioning/update.json', status=200)
         self.assertTrue('The repository has been updated!' in res.body)
