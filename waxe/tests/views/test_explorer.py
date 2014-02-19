@@ -196,14 +196,11 @@ class TestExplorerView(LoggedBobTestCase):
             self.assertEqual(res, expected)
 
             res = ExplorerView(request).create_folder()
-            expected = {
-                u'status': False,
-                u'error_msg': (
-                    "mkdir: cannot create directory "
-                    "\xe2\x80\x98%s\xe2\x80\x99"
-                    ": File exists\n") % (os.path.join(path, 'new_folder'))
-            }
-            self.assertEqual(res, expected)
+            self.assertEqual(len(res), 2)
+            self.assertEqual(res['status'], False)
+            self.assertTrue('mkdir: cannot create directory' in
+                            res['error_msg'])
+            self.assertTrue('File exists' in res['error_msg'])
         finally:
             os.rmdir(os.path.join(path, 'new_folder'))
 
@@ -340,6 +337,11 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
                     u"mkdir: cannot create directory \u2018%s\u2019"
                     u": File exists\n") % (os.path.join(path, 'new_folder'))
             }
-            self.assertEqual(json.loads(res.body), expected)
+            dic = json.loads(res.body)
+            self.assertEqual(len(dic), 2)
+            self.assertEqual(dic['status'], False)
+            self.assertTrue('mkdir: cannot create directory' in
+                            dic['error_msg'])
+            self.assertTrue('File exists' in dic['error_msg'])
         finally:
             os.rmdir(os.path.join(path, 'new_folder'))

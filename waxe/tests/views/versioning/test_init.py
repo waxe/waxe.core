@@ -361,19 +361,21 @@ class TestPysvnView(BaseTestCase, CreateRepo2):
         with patch('pyramid.authentication.'
                    'AuthTktAuthenticationPolicy.unauthenticated_userid',
                    return_value=user.login):
-            with patch('os.path.exists', return_value=True), patch('os.path.isfile', return_value=True):
-                view = self.ClassView(request)
-                res = view.can_commit('/home/test/myfile.xml')
-                self.assertEqual(res, True)
+            with patch('os.path.exists', return_value=True):
+                with patch('os.path.isfile', return_value=True):
+                    view = self.ClassView(request)
+                    res = view.can_commit('/home/test/myfile.xml')
+                    self.assertEqual(res, True)
 
         user.roles = [self.role_editor]
         with patch('pyramid.authentication.'
                    'AuthTktAuthenticationPolicy.unauthenticated_userid',
                    return_value=user.login):
-            with patch('os.path.exists', return_value=True), patch('os.path.isfile', return_value=True):
-                view = self.ClassView(request)
-                res = view.can_commit('/home/test/myfile.xml')
-                self.assertEqual(res, True)
+            with patch('os.path.exists', return_value=True):
+                with patch('os.path.isfile', return_value=True):
+                    view = self.ClassView(request)
+                    res = view.can_commit('/home/test/myfile.xml')
+                    self.assertEqual(res, True)
 
         user.roles = []
         with patch('pyramid.authentication.'
@@ -387,33 +389,34 @@ class TestPysvnView(BaseTestCase, CreateRepo2):
                 self.assertEqual(str(e),
                                  'Invalid path /home/test/folder1/myfile.xml')
 
-            with patch('os.path.exists', return_value=True), patch('os.path.isfile', return_value=True):
-                try:
+            with patch('os.path.exists', return_value=True):
+                with patch('os.path.isfile', return_value=True):
+                    try:
+                        res = view.can_commit('/home/test/folder1/myfile.xml')
+                        assert(False)
+                    except AssertionError, e:
+                        self.assertEqual(str(e), 'You are not a contributor')
+
+                    # By default a contributor can't commit
+                    user.roles = [self.role_contributor]
                     res = view.can_commit('/home/test/folder1/myfile.xml')
-                    assert(False)
-                except AssertionError, e:
-                    self.assertEqual(str(e), 'You are not a contributor')
+                    self.assertEqual(res, False)
 
-                # By default a contributor can't commit
-                user.roles = [self.role_contributor]
-                res = view.can_commit('/home/test/folder1/myfile.xml')
-                self.assertEqual(res, False)
+                    user.versioning_paths += [VersioningPath(
+                        status=VERSIONING_PATH_STATUS_ALLOWED,
+                        path='/home/test/')]
+                    res = view.can_commit('/home/test/folder1/myfile.xml')
+                    self.assertEqual(res, True)
 
-                user.versioning_paths += [VersioningPath(
-                    status=VERSIONING_PATH_STATUS_ALLOWED,
-                    path='/home/test/')]
-                res = view.can_commit('/home/test/folder1/myfile.xml')
-                self.assertEqual(res, True)
-
-                user.versioning_paths += [VersioningPath(
-                    status=VERSIONING_PATH_STATUS_FORBIDDEN,
-                    path='/home/test/folder1')]
-                res = view.can_commit('/home/test/folder1/myfile.xml')
-                self.assertEqual(res, False)
-                res = view.can_commit('/home/test/myfile.xml')
-                self.assertEqual(res, True)
-                res = view.can_commit('/home/test/folder1.xml')
-                self.assertEqual(res, True)
+                    user.versioning_paths += [VersioningPath(
+                        status=VERSIONING_PATH_STATUS_FORBIDDEN,
+                        path='/home/test/folder1')]
+                    res = view.can_commit('/home/test/folder1/myfile.xml')
+                    self.assertEqual(res, False)
+                    res = view.can_commit('/home/test/myfile.xml')
+                    self.assertEqual(res, True)
+                    res = view.can_commit('/home/test/folder1.xml')
+                    self.assertEqual(res, True)
 
     @login_user('Bob')
     def test_update_texts(self):
