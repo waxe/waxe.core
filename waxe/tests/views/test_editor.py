@@ -54,6 +54,7 @@ class TestEditorView(LoggedBobTestCase):
                 '<form method="POST" id="xmltool-form" '
                 'data-comment-href="/filepath" data-add-href="/filepath" '
                 'data-href="/filepath">' in res['content'])
+            self.assertTrue('readonly="readonly"' not in res['content'])
             self.assertTrue(isinstance(res['jstree_data'], dict))
 
             request.matched_route.name = 'route'
@@ -117,6 +118,20 @@ class TestEditorView(LoggedBobTestCase):
                 'data-href="/update_text_json/filepath" method="POST">')
             self.assertTrue(expected in res['content'])
             self.assertEqual(res['error_msg'], 'Invalid XML')
+
+    def test_edit_iframe(self):
+        class C(object): pass
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        self.user_bob.config.root_path = path
+        request = testing.DummyRequest(
+            params={'path': 'file1.xml', 'iframe': 1})
+        request.matched_route = C()
+        request.matched_route.name = 'route'
+        request.static_url = lambda *args, **kw: 'URL'
+        with patch('xmltool.generate_form', return_value='My form content'):
+            res = EditorView(request).edit()
+            self.assertTrue('<form id="xmltool-form">' in res.body)
+            self.assertTrue('readonly="readonly"' in res.body)
 
     def test_edit_text(self):
         class C(object): pass

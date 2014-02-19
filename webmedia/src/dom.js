@@ -19,6 +19,8 @@ var waxe = waxe || {};
         },
         update: function(data, msg){
             msg = typeof msg === 'undefined'? 'Loaded!': msg;
+
+            $('body').data('layout').hide('south');
             $(document).scrollTop(0);
 
             if ('content' in data){

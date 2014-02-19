@@ -1,4 +1,4 @@
-<%inherit file="base.mak" />
+<%inherit file="base-navigation.mak" />
 
 <ul class="breadcrumb navbar-fixed-top" style="top: 55px; z-index: 999; background-color: transparent; margin-bottom: 0px; padding-top: 4px; padding-bottom: 2px;">
 % if breadcrumb:
@@ -30,6 +30,9 @@
   <div id="tree-container">
     <div id="tree">Tree</div>
   </div>
+</div>
+
+<div class="ui-layout-south">
 </div>
 
 % if jstree_data:

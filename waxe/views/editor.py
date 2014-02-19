@@ -1,12 +1,12 @@
 import os
 import xmltool
-from xmltool import dtd_parser
+from xmltool import dtd_parser, render as xt_render
 from lxml import etree
 import json
 
 from urllib2 import HTTPError, URLError
 from pyramid.view import view_config
-from pyramid.renderers import render
+from pyramid.renderers import render, Response
 from .. import browser
 from base import BaseUserView
 import pyramid_logging
@@ -37,17 +37,22 @@ class EditorView(BaseUserView):
             })
         root_path = self.root_path
         absfilename = browser.absolute_path(filename, root_path)
+        iframe = 'iframe' in self.request.GET
         try:
             obj = xmltool.load(absfilename)
-            html = xmltool.generate_form_from_obj(
-                obj,
-                form_filename=filename,
-                form_attrs={
-                    'data-add-href': self.request.custom_route_path('add_element_json'),
-                    'data-comment-href': self.request.custom_route_path('get_comment_modal_json'),
-                    'data-href': self.request.custom_route_path('update_json'),
-                }
-            )
+            if iframe:
+                obj.root.html_render = xt_render.ReadonlyRender()
+                html = obj.to_html()
+            else:
+                html = xmltool.generate_form_from_obj(
+                    obj,
+                    form_filename=filename,
+                    form_attrs={
+                        'data-add-href': self.request.custom_route_path('add_element_json'),
+                        'data-comment-href': self.request.custom_route_path('get_comment_modal_json'),
+                        'data-href': self.request.custom_route_path('update_json'),
+                    }
+                )
             jstree_data = obj.to_jstree_dict([])
             if not self._is_json():
                 jstree_data = json.dumps(jstree_data)
@@ -64,6 +69,16 @@ class EditorView(BaseUserView):
             return self._response({
                 'error_msg': str(e)
             })
+
+        if 'iframe' in self.request.GET:
+            return Response(
+                render('iframe.mak',
+                       {
+                           'content': html,
+                           'jstree_data': jstree_data,
+                       },
+                       self.request))
+
         breadcrumb = self._get_breadcrumb(filename)
         return self._response({
             'content': html,

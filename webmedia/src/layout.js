@@ -20,13 +20,18 @@ var waxe = waxe || {};
                         var tree = $('#tree');
                         tree.height(tree.parent().parent().height());
                     }
+                },
+                south: {
+                    initHidden: true
                 }
             });
         }
     };
 
     $(document).ready(function(){
-        waxe.layout.init();
+        if ($('.ui-layout-center').length) {
+            waxe.layout.init();
+        }
     });
 
 })(jQuery, waxe);
