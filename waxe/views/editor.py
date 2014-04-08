@@ -1,4 +1,5 @@
 import os
+import tempfile
 import xmltool
 from xmltool import dtd_parser, render as xt_render
 from lxml import etree
@@ -51,6 +52,8 @@ class EditorView(BaseUserView):
                         'data-add-href': self.request.custom_route_path('add_element_json'),
                         'data-comment-href': self.request.custom_route_path('get_comment_modal_json'),
                         'data-href': self.request.custom_route_path('update_json'),
+                        'data-copy-href': self.request.custom_route_path('copy_json'),
+                        'data-paste-href': self.request.custom_route_path('paste_json'),
                     }
                 )
             jstree_data = obj.to_jstree_dict([])
@@ -155,6 +158,8 @@ class EditorView(BaseUserView):
                     'data-add-href': self.request.custom_route_path('add_element_json'),
                     'data-comment-href': self.request.custom_route_path('get_comment_modal_json'),
                     'data-href': self.request.custom_route_path('update_json'),
+                    'data-copy-href': self.request.custom_route_path('copy_json'),
+                    'data-paste-href': self.request.custom_route_path('paste_json'),
                 }
             )
             jstree_data = obj.to_jstree_dict([])
@@ -240,6 +245,49 @@ class EditorView(BaseUserView):
         dic['status'] = True
         return dic
 
+    @view_config(route_name='copy_json', renderer='json', permission='edit')
+    def copy_json(self):
+        if 'elt_id' not in self.request.POST:
+            return self._response({'error_msg': 'Bad parameter'})
+        data = xmltool.utils.unflatten_params(self.request.POST)
+        # Write the content to paste in a temporary file
+        filename = tempfile.mktemp()
+        open(filename, 'w').write(json.dumps(data))
+        self.request.session['clipboard'] = {
+            'filename': filename,
+            'elt_id': self.request.POST['elt_id'],
+        }
+        return self._response({'info_msg': 'Copied'})
+
+    @view_config(route_name='paste_json', renderer='json', permission='edit')
+    def paste_json(self):
+        # TODO: Perhaps we should validate it's the same dtd
+        elt_id = self.request.POST.pop('elt_id', None)
+        dtd_url = self.request.POST.pop('dtd_url', None)
+        data = xmltool.utils.unflatten_params(self.request.POST)
+
+        if not elt_id or not dtd_url:
+            return self._response({'error_msg': 'Bad parameter'})
+
+        clipboard = self.request.session.get('clipboard')
+        if not clipboard:
+            return self._response({
+                'error_msg': 'Empty clipboard'
+            })
+        filename = clipboard['filename']
+        source_id = clipboard['elt_id']
+        clipboard_data = json.loads(open(filename, 'r').read())
+
+        obj = xmltool.elements.add_new_element_from_id(elt_id, source_id, data,
+                                                       clipboard_data, dtd_url)
+        if not obj:
+            return self._response({
+                'error_msg': 'The element can\'t be pasted here'
+            })
+
+        dic = xmltool.elements.get_display_data_from_obj(obj)
+        return self._response(dic)
+
     @view_config(route_name='get_comment_modal_json', renderer='json',
                  permission='edit')
     def get_comment_modal_json(self):
@@ -260,4 +308,6 @@ def includeme(config):
     config.add_route('update_text_json', '/update-text.json')
     config.add_route('add_element_json', '/add-element.json')
     config.add_route('get_comment_modal_json', '/get-comment-modal.json')
+    config.add_route('copy_json', '/copy.json')
+    config.add_route('paste_json', '/paste.json')
     config.scan(__name__)

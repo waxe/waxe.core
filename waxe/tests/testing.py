@@ -48,6 +48,8 @@ def local_login_user(login):
         return wrapper
     return deco
 
+path = os.path.join(os.getcwd(), 'waxe/tests/files')
+dtd_url = os.path.join(path, 'exercise.dtd')
 
 SETTINGS = {
     'sqlalchemy.url': 'sqlite://',
@@ -57,7 +59,7 @@ SETTINGS = {
     'pyramid.includes': ['pyramid_auth', 'pyramid_sqladmin', 'pyramid_mako'],
     'authentication.cookie.validate_function': 'waxe.security.validate_password',
     'authentication.cookie.callback': 'waxe.security.get_user_permissions',
-    'dtd_urls': 'http://xmltool.lereskp.fr/static/exercise.dtd'
+    'dtd_urls': dtd_url,
 }
 
 SECRET_ADMIN = bcrypt.hashpw('secret_admin', bcrypt.gensalt())

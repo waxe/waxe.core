@@ -1,4 +1,5 @@
 import os
+import tempfile
 import json
 from pyramid import testing
 from mock import patch
@@ -15,7 +16,8 @@ from waxe.views.editor import (
 class TestEditorView(LoggedBobTestCase):
 
     def test__get_tags(self):
-        dtd_url = 'http://xmltool.lereskp.fr/static/exercise.dtd'
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        dtd_url = os.path.join(path, 'exercise.dtd')
         res = _get_tags(dtd_url)
         expected = ['Exercise', 'comments', 'mqm', 'qcm', 'test']
         self.assertEqual(res, expected)
@@ -51,8 +53,12 @@ class TestEditorView(LoggedBobTestCase):
             self.assertEqual(keys, ['breadcrumb', 'content', 'jstree_data'])
             self.assertEqual(res['breadcrumb'],  expected_breadcrumb)
             self.assertTrue(
-                '<form method="POST" id="xmltool-form" '
-                'data-comment-href="/filepath" data-add-href="/filepath" '
+                '<form method="POST" '
+                'data-paste-href="/filepath" '
+                'data-add-href="/filepath" '
+                'data-comment-href="/filepath" '
+                'data-copy-href="/filepath" '
+                'id="xmltool-form" '
                 'data-href="/filepath">' in res['content'])
             self.assertTrue('readonly="readonly"' not in res['content'])
             self.assertTrue(isinstance(res['jstree_data'], dict))
@@ -66,8 +72,12 @@ class TestEditorView(LoggedBobTestCase):
                                     'versioning'])
             self.assertEqual(res['breadcrumb'],  expected_breadcrumb)
             self.assertTrue(
-                '<form method="POST" id="xmltool-form" '
-                'data-comment-href="/filepath" data-add-href="/filepath" '
+                '<form method="POST" '
+                'data-paste-href="/filepath" '
+                'data-add-href="/filepath" '
+                'data-comment-href="/filepath" '
+                'data-copy-href="/filepath" '
+                'id="xmltool-form" '
                 'data-href="/filepath">' in res['content'])
             self.assertTrue(isinstance(res['jstree_data'], str))
 
@@ -167,7 +177,8 @@ class TestEditorView(LoggedBobTestCase):
         res = EditorView(request).get_tags()
         self.assertEqual(res, {})
 
-        dtd_url = 'http://xmltool.lereskp.fr/static/exercise.dtd'
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        dtd_url = os.path.join(path, 'exercise.dtd')
         request = testing.DummyRequest(params={'dtd_url': dtd_url})
         res = EditorView(request).get_tags()
         expected = {'tags': ['Exercise', 'comments', 'mqm', 'qcm', 'test']}
@@ -175,7 +186,8 @@ class TestEditorView(LoggedBobTestCase):
 
     def test_new(self):
         class C(object): pass
-        dtd_url = 'http://xmltool.lereskp.fr/static/exercise.dtd'
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        dtd_url = os.path.join(path, 'exercise.dtd')
         request = testing.DummyRequest()
         request.custom_route_path = lambda *args, **kw: '/filepath'
         request.matched_route = C()
@@ -197,8 +209,12 @@ class TestEditorView(LoggedBobTestCase):
         res = EditorView(request).new()
         self.assertEqual(len(res), 3)
         self.assertTrue(
-            '<form method="POST" id="xmltool-form" '
-            'data-comment-href="/filepath" data-add-href="/filepath" '
+            '<form method="POST" '
+            'data-paste-href="/filepath" '
+            'data-add-href="/filepath" '
+            'data-comment-href="/filepath" '
+            'data-copy-href="/filepath" '
+            'id="xmltool-form" '
             'data-href="/filepath">' in res['content'])
         self.assertTrue('<a data-href="/filepath" href="/filepath">root</a>'
                         in res['breadcrumb'])
@@ -208,8 +224,12 @@ class TestEditorView(LoggedBobTestCase):
         res = EditorView(request).new()
         self.assertEqual(len(res), 3)
         self.assertTrue(
-            '<form method="POST" id="xmltool-form" '
-            'data-comment-href="/filepath" data-add-href="/filepath" '
+            '<form method="POST" '
+            'data-paste-href="/filepath" '
+            'data-add-href="/filepath" '
+            'data-comment-href="/filepath" '
+            'data-copy-href="/filepath" '
+            'id="xmltool-form" '
             'data-href="/filepath">' in res['content'])
         self.assertTrue('<a data-href="/filepath" href="/filepath">root</a>'
                         in res['breadcrumb'])
@@ -323,6 +343,81 @@ class TestEditorView(LoggedBobTestCase):
         self.assertTrue(res)
         self.assertTrue(isinstance(res, dict))
 
+    def test_copy_json(self):
+        class C(object): pass
+        request = testing.DummyRequest(params={})
+        request.matched_route = C()
+        request.matched_route.name = 'route_json'
+        expected = {'error_msg': 'Bad parameter'}
+        res = EditorView(request).copy_json()
+        self.assertEqual(res, expected)
+
+        request = testing.DummyRequest(params={'elt_id': 'my:element'})
+        request.matched_route = C()
+        request.matched_route.name = 'route_json'
+        res = EditorView(request).copy_json()
+        expected = {'info_msg': 'Copied'}
+        self.assertEqual(res, expected)
+        self.assertEqual(len(request.session), 1)
+        clipboard = request.session['clipboard']
+        self.assertEqual(clipboard['elt_id'], 'my:element')
+        self.assertTrue(clipboard['filename'])
+
+    def test_paste_json(self):
+        class C(object): pass
+        request = testing.DummyRequest(params={})
+        request.matched_route = C()
+        request.matched_route.name = 'route_json'
+        expected = {'error_msg': 'Bad parameter'}
+        res = EditorView(request).paste_json()
+        self.assertEqual(res, expected)
+
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        dtd_url = os.path.join(path, 'exercise.dtd')
+        request = testing.DummyRequest(params={'dtd_url': dtd_url,
+                                               'elt_id': 'Exercise'})
+        request.matched_route = C()
+        request.matched_route.name = 'route_json'
+
+        res = EditorView(request).paste_json()
+        expected = {'error_msg': 'Empty clipboard'}
+        self.assertEqual(res, expected)
+
+        request = testing.DummyRequest(params={'dtd_url': dtd_url,
+                                               'elt_id': 'Exercise'})
+        request.matched_route = C()
+        request.matched_route.name = 'route_json'
+        data = {
+            'Exercise': {
+                'number': {'_value': 'Hello world'}
+            }
+        }
+        filename = tempfile.mktemp()
+        open(filename, 'w').write(json.dumps(data))
+        request.session['clipboard'] = {
+            'filename': filename,
+            'elt_id': 'Exercise:number'
+        }
+        res = EditorView(request).paste_json()
+        self.assertEqual(len(res), 5)
+        self.assertEqual(res['elt_id'], 'Exercise:number')
+
+        request = testing.DummyRequest(params={'dtd_url': dtd_url,
+                                               'elt_id': 'Exercise'})
+        request.matched_route = C()
+        request.matched_route.name = 'route_json'
+        data = {
+            'Exercise': {}
+        }
+        open(filename, 'w').write(json.dumps(data))
+        request.session['clipboard'] = {
+            'filename': filename,
+            'elt_id': 'Exercise'
+        }
+        res = EditorView(request).paste_json()
+        expected = {'error_msg': 'The element can\'t be pasted here'}
+        self.assertEqual(res, expected)
+
 
 class FunctionalTestEditorView(WaxeTestCase):
 
@@ -336,6 +431,8 @@ class FunctionalTestEditorView(WaxeTestCase):
             '/account/Bob/update-text.json',
             '/account/Bob/add-element.json',
             '/account/Bob/get-comment-modal.json',
+            '/account/Bob/copy.json',
+            '/account/Bob/paste.json',
         ]:
             res = self.testapp.get(url, status=302)
             self.assertTrue('http://localhost/login?next=' in res.location)
@@ -359,11 +456,15 @@ class FunctionalTestEditorView(WaxeTestCase):
                                params={'path': 'file1.xml'})
         dic = json.loads(res.body)
         self.assertEqual(len(dic), 3)
-        self.assertTrue(
-            '<form method="POST" id="xmltool-form" '
-            'data-comment-href="/account/Bob/get-comment-modal.json" '
+        expected = (
+            '<form method="POST" '
+            'data-paste-href="/account/Bob/paste.json" '
             'data-add-href="/account/Bob/add-element.json" '
-            'data-href="/account/Bob/update.json">' in dic['content'])
+            'data-comment-href="/account/Bob/get-comment-modal.json" '
+            'data-copy-href="/account/Bob/copy.json" '
+            'id="xmltool-form" '
+            'data-href="/account/Bob/update.json">')
+        self.assertTrue(expected in dic['content'])
         self.assertTrue(isinstance(dic['jstree_data'], dict))
 
     @login_user('Bob')
@@ -393,8 +494,8 @@ class FunctionalTestEditorView(WaxeTestCase):
 
     @login_user('Bob')
     def test_get_tags(self):
-        dtd_url = 'http://xmltool.lereskp.fr/static/exercise.dtd'
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        dtd_url = os.path.join(path, 'exercise.dtd')
         self.user_bob.config.root_path = path
         res = self.testapp.get('/account/Bob/get-tags.json', status=200)
         self.assertEqual(json.loads(res.body), {})
@@ -417,7 +518,7 @@ class FunctionalTestEditorView(WaxeTestCase):
         self.assertTrue(
             '<h4 class="modal-title">New file</h4>' in dic['content'])
 
-        dtd_url = 'http://xmltool.lereskp.fr/static/exercise.dtd'
+        dtd_url = os.path.join(path, 'exercise.dtd')
         dtd_tag = 'Exercise'
         res = self.testapp.get('/account/Bob/new.json',
                                status=200,
@@ -425,11 +526,15 @@ class FunctionalTestEditorView(WaxeTestCase):
                                        'dtd_tag': dtd_tag})
         dic = json.loads(res.body)
         self.assertEqual(len(dic), 3)
-        self.assertTrue(
-            '<form method="POST" id="xmltool-form" '
-            'data-comment-href="/account/Bob/get-comment-modal.json" '
+        expected = (
+            '<form method="POST" '
+            'data-paste-href="/account/Bob/paste.json" '
             'data-add-href="/account/Bob/add-element.json" '
-            'data-href="/account/Bob/update.json">' in dic['content'])
+            'data-comment-href="/account/Bob/get-comment-modal.json" '
+            'data-copy-href="/account/Bob/copy.json" '
+            'id="xmltool-form" '
+            'data-href="/account/Bob/update.json">')
+        self.assertTrue(expected in dic['content'])
         self.assertTrue(dic['breadcrumb'])
         self.assertTrue('data-href="/account/Bob/explore.json?path="' in dic['breadcrumb'])
         self.assertTrue(isinstance(dic['jstree_data'], dict))
