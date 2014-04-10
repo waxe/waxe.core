@@ -278,8 +278,11 @@ class EditorView(BaseUserView):
         source_id = clipboard['elt_id']
         clipboard_data = json.loads(open(filename, 'r').read())
 
-        obj = xmltool.elements.add_new_element_from_id(elt_id, source_id, data,
-                                                       clipboard_data, dtd_url)
+        obj = xmltool.elements.add_new_element_from_id(
+            elt_id, source_id, data,
+            clipboard_data, dtd_url,
+            # Don't keep the attributes nor the comments
+            skip_extra=True)
         if not obj:
             return self._response({
                 'error_msg': 'The element can\'t be pasted here'
