@@ -28,6 +28,46 @@ def _get_tags(dtd_url):
 
 class EditorView(BaseUserView):
 
+    def _get_nav_editor(self, filename, xml):
+        """Navs to display XML or Source when we edit a file
+        """
+        source_link_attrs = ''
+        xml_link_attrs = ''
+        source_li_attrs = ''
+        xml_li_attrs = ''
+        if xml:
+            source_link_attrs = ' href="%s" data-href="%s"' % (
+                self.request.custom_route_path('edit_text',
+                                               _query=[('path', filename)]),
+                self.request.custom_route_path('edit_text_json',
+                                               _query=[('path', filename)]),
+            )
+            xml_li_attrs = ' class="active"'
+        else:
+            xml_link_attrs = ' href="%s" data-href="%s"' % (
+                self.request.custom_route_path('edit',
+                                               _query=[('path', filename)]),
+                self.request.custom_route_path('edit_json',
+                                               _query=[('path', filename)]),
+            )
+            source_li_attrs = ' class="active"'
+
+        return (
+            '<ul class="nav nav-tabs">'
+            '<li%s>'
+            '<a%s>XML</a>'
+            '</li>'
+            '<li%s>'
+            '<a%s>Source</a>'
+            '</li>'
+            '</ul>'
+        ) % (
+            xml_li_attrs,
+            xml_link_attrs,
+            source_li_attrs,
+            source_link_attrs
+        )
+
     @view_config(route_name='edit', renderer='index.mak', permission='edit')
     @view_config(route_name='edit_json', renderer='json', permission='edit')
     def edit(self):
@@ -83,8 +123,9 @@ class EditorView(BaseUserView):
                        self.request))
 
         breadcrumb = self._get_breadcrumb(filename)
+        nav = self._get_nav_editor(filename, xml=True)
         return self._response({
-            'content': html,
+            'content': nav + html,
             'breadcrumb': breadcrumb,
             'jstree_data': jstree_data,
         })
@@ -115,8 +156,9 @@ class EditorView(BaseUserView):
         html += '</form>'
 
         breadcrumb = self._get_breadcrumb(filename)
+        nav = self._get_nav_editor(filename, xml=False)
         dic = {
-            'content': html,
+            'content': nav + html,
             'breadcrumb': breadcrumb,
         }
         if exception:

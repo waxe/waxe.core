@@ -22,6 +22,31 @@ class TestEditorView(LoggedBobTestCase):
         expected = ['Exercise', 'comments', 'mqm', 'qcm', 'test']
         self.assertEqual(res, expected)
 
+    def test__get_nav_editor(self):
+        class C(object): pass
+        request = testing.DummyRequest()
+        request.custom_route_path = lambda *args, **kw: '/%s/filepath' % args[0]
+        res = EditorView(request)._get_nav_editor('file1.xml', xml=True)
+        expected = (
+            '<ul class="nav nav-tabs">'
+            '<li class="active"><a>XML</a></li>'
+            '<li><a href="/edit_text/filepath" '
+            'data-href="/edit_text_json/filepath">Source</a></li>'
+            '</ul>'
+        )
+        self.assertEqual(res, expected)
+
+        res = EditorView(request)._get_nav_editor('file1.xml', xml=False)
+        expected = (
+            '<ul class="nav nav-tabs">'
+            '<li>'
+            '<a href="/edit/filepath" data-href="/edit_json/filepath">XML</a>'
+            '</li>'
+            '<li class="active"><a>Source</a></li>'
+            '</ul>'
+        )
+        self.assertEqual(res, expected)
+
     def test_edit(self):
         class C(object): pass
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
@@ -79,6 +104,8 @@ class TestEditorView(LoggedBobTestCase):
                 'data-copy-href="/filepath" '
                 'id="xmltool-form" '
                 'data-href="/filepath">' in res['content'])
+            self.assertTrue(
+                'class="nav nav-tabs"' in res['content'])
             self.assertTrue(isinstance(res['jstree_data'], str))
 
         def raise_func(*args, **kw):
@@ -171,6 +198,8 @@ class TestEditorView(LoggedBobTestCase):
         expected = ('<input type="hidden" id="_xml_filename" '
                     'name="filename" value="file1.xml" />')
         self.assertTrue(expected in res['content'])
+        self.assertTrue(
+            'class="nav nav-tabs"' in res['content'])
 
     def test_get_tags(self):
         request = testing.DummyRequest()
