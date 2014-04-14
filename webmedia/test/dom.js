@@ -52,7 +52,7 @@ var waxe = waxe || {};
         }
     });
 
-    test("addPushStateOnLinks", function(){
+    test("a[data-href]", function(){
         var old_waxe_dom_load = waxe.dom.load;
 
         var hist_cnt = window.history.length;
@@ -63,7 +63,6 @@ var waxe = waxe || {};
         var a = $('<a data-href="/plop">plop</a>');
         $('#qunit-fixture').append(a);
         equal(window.history.length, hist_cnt, 'initial history');
-        waxe.dom.addPushStateOnLinks($('#qunit-fixture'));
         a.trigger('click');
         equal(window.history.length, hist_cnt + 1, 'history is updated');
         equal(cnt, 1, 'page loaded');
@@ -71,11 +70,6 @@ var waxe = waxe || {};
     });
 
     test("update", function() {
-        var old_waxe_dom_addPushStateOnLinks = waxe.dom.addPushStateOnLinks;
-        var cnt = 0;
-        waxe.dom.addPushStateOnLinks = function(){
-            cnt += 1;
-        };
         equal(layout.$elt.is(':visible'), true, 'layout displayed by default');
         var data = {};
         waxe.dom.update(data);
@@ -95,7 +89,6 @@ var waxe = waxe || {};
         equal(message_error_nb_called,  0);
         equal(message_success_nb_called,  0);
         equal(message_info_nb_called, 1);
-        equal(cnt, 2);
 
         data = {
             content: 'My new content',
@@ -108,7 +101,6 @@ var waxe = waxe || {};
         equal(message_error_nb_called,  0);
         equal(message_success_nb_called,  0);
         equal(message_info_nb_called, 2);
-        equal(cnt, 3);
 
         data = {
             breadcrumb: 'My breadcrumb'
@@ -121,7 +113,6 @@ var waxe = waxe || {};
         equal(message_error_nb_called,  0);
         equal(message_success_nb_called,  0);
         equal(message_info_nb_called, 2);
-        equal(cnt, 4);
 
         data = {};
         waxe.dom.update(data);
@@ -132,7 +123,6 @@ var waxe = waxe || {};
         equal(message_error_nb_called,  0);
         equal(message_success_nb_called,  0);
         equal(message_info_nb_called, 2);
-        equal(cnt, 4);
 
         data = {
             error_msg: 'My error'
@@ -146,7 +136,6 @@ var waxe = waxe || {};
         equal(message_error_nb_called,  1);
         equal(message_success_nb_called,  0);
         equal(message_info_nb_called, 2);
-        equal(cnt, 4);
 
         var modal_nb_called = 0;
         var old_modal = $.fn.modal;
@@ -165,7 +154,6 @@ var waxe = waxe || {};
         equal(message_error_nb_called,  1);
         equal(message_success_nb_called,  0);
         equal(message_info_nb_called, 3);
-        equal(cnt, 4);
         equal(modal_nb_called, 1);
 
         data = {
@@ -180,10 +168,8 @@ var waxe = waxe || {};
         equal(message_error_nb_called,  1);
         equal(message_success_nb_called,  0);
         equal(message_info_nb_called, 4);
-        equal(cnt, 4);
         equal(modal_nb_called, 1);
 
-        waxe.dom.addPushStateOnLinks = old_waxe_dom_addPushStateOnLinks;
         $.fn.modal = old_modal;
     });
 

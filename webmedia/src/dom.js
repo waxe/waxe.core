@@ -4,6 +4,9 @@ var waxe = waxe || {};
     "use strict";
 
     var onclick = function(e){
+        if (e.isDefaultPrevented()) {
+            return false;
+        }
         e.preventDefault();
         window.history.pushState(
             {'json_url': $(this).data('href')},
@@ -12,11 +15,9 @@ var waxe = waxe || {};
             );
         waxe.dom.load($(this).data('href'));
     };
+    $(document).on('click', 'a[data-href]', onclick);
 
     ns.dom = {
-        addPushStateOnLinks: function(container){
-            container.find('a[data-href]').click(onclick);
-        },
         update: function(data, msg){
             msg = typeof msg === 'undefined'? 'Loaded!': msg;
 
@@ -26,7 +27,6 @@ var waxe = waxe || {};
             if ('content' in data){
                 var $content = $('.content');
                 $content.html(data.content);
-                waxe.dom.addPushStateOnLinks($content);
                 waxe.form.load(data.jstree_data);
                 waxe.versioning.init();
                 $(document).message('info', msg);
@@ -41,7 +41,6 @@ var waxe = waxe || {};
             var $breadcrumb = $('.breadcrumb');
             if ('breadcrumb' in data){
                 $breadcrumb.html(data.breadcrumb);
-                waxe.dom.addPushStateOnLinks($breadcrumb);
             }
             else{
                 $breadcrumb.html('');
@@ -92,7 +91,6 @@ var waxe = waxe || {};
 
     $(document).ready(function(){
         waxe.dom.loadCodemirror();
-        waxe.dom.addPushStateOnLinks($('.content,.breadcrumb,.navbar .dropdown-versioning'));
 
         $(document).on('click', 'form[data-action]', function(e){
             $(this).data('clicked', $(e.target));
