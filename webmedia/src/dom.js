@@ -113,6 +113,14 @@ var waxe = waxe || {};
                             $form.data('msg'),
                             modal);
         });
+
+        $(document).on('mouseenter', 'textarea.form-control', function(){
+            // TODO: try to find a way to load all the textarea in background
+            // or load according to the scroll
+            $(this).autosize();
+        }).on('focus', 'textarea.form-control', function(){
+            $(this).autosize();
+        });
     });
 
 })(jQuery, waxe);
