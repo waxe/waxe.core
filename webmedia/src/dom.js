@@ -7,6 +7,12 @@ var waxe = waxe || {};
         if (e.isDefaultPrevented()) {
             return false;
         }
+        if (waxe.form.status === waxe.form.STATUS_UPDATED) {
+            var res = confirm('The file has been updated, continue without saving?');
+            if (! res) {
+                return false;
+            }
+        }
         e.preventDefault();
         window.history.pushState(
             {'json_url': $(this).data('href')},
