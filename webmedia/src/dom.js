@@ -58,6 +58,8 @@ var waxe = waxe || {};
                 $(document).message('info', data.info_msg);
             }
 
+            waxe.dom.loadCodemirror();
+
         },
         load: function(url){
             $(document).message('info', 'Loading...', {'autohide': false});
@@ -74,10 +76,22 @@ var waxe = waxe || {};
                     modal.modal('hide');
                 }
             });
-        }
+        },
+        loadCodemirror: function() {
+            var c = $('.codemirror');
+            if (c.length)
+            {
+                c = c[0];
+                var editor = CodeMirror.fromTextArea(c, {
+                        mode: {name: "xml", alignCDATA: true},
+                        lineNumbers: true
+                      });
+            }
+        },
      };
 
     $(document).ready(function(){
+        waxe.dom.loadCodemirror();
         waxe.dom.addPushStateOnLinks($('.content,.breadcrumb,.navbar .dropdown-versioning'));
 
         $(document).on('click', 'form[data-action]', function(e){

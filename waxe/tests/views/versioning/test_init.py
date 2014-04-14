@@ -525,7 +525,7 @@ class TestPysvnViewFakeRepo(BaseTestCase, CreateRepo):
         res = PysvnView(request).edit_conflict()
         expected = '<form data-action="/versioning_dispatcher_json/filepath'
         self.assertTrue(expected in res['content'])
-        expected = '<textarea class="form-control autosize" name="filecontent">'
+        expected = '<textarea class="codemirror" name="filecontent">'
         self.assertTrue(expected in res['content'])
         expected = ('<input type="hidden" id="_xml_filename" '
                     'name="filename" value="file1.xml" />')

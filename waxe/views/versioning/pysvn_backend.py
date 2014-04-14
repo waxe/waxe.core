@@ -301,7 +301,7 @@ class PysvnView(BaseUserView):
                                            method='update_conflict'),
         )
         html += '<input type="hidden" id="_xml_filename" name="filename" value="%s" />' % filename
-        html += '<textarea class="form-control autosize" name="filecontent">%s</textarea>' % content
+        html += '<textarea class="codemirror" name="filecontent">%s</textarea>' % content
         html += '<input type="submit" value="Save and resolve conflict" />'
         html += '</form>'
 

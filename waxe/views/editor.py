@@ -111,7 +111,7 @@ class EditorView(BaseUserView):
             self.request.custom_route_path('update_text_json'),
         )
         html += '<input type="hidden" id="_xml_filename" name="filename" value="%s" />' % filename
-        html += '<textarea class="form-control" name="filecontent">%s</textarea>' % content
+        html += '<textarea class="codemirror" name="filecontent">%s</textarea>' % content
         html += '</form>'
 
         breadcrumb = self._get_breadcrumb(filename)

@@ -166,7 +166,7 @@ class TestEditorView(LoggedBobTestCase):
         expected = ('<form id="xmltool-form" '
                     'data-href="/update_text_json/filepath" method="POST">')
         self.assertTrue(expected in res['content'])
-        expected = '<textarea class="form-control" name="filecontent">'
+        expected = '<textarea class="codemirror" name="filecontent">'
         self.assertTrue(expected in res['content'])
         expected = ('<input type="hidden" id="_xml_filename" '
                     'name="filename" value="file1.xml" />')
@@ -486,7 +486,7 @@ class FunctionalTestEditorView(WaxeTestCase):
         expected = ('<form id="xmltool-form" '
                     'data-href="/account/Bob/update-text.json" method="POST">')
         self.assertTrue(expected in dic['content'])
-        expected = '<textarea class="form-control" name="filecontent">'
+        expected = '<textarea class="codemirror" name="filecontent">'
         self.assertTrue(expected in dic['content'])
         expected = ('<input type="hidden" id="_xml_filename" '
                     'name="filename" value="file1.xml" />')
