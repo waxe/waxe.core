@@ -64,6 +64,42 @@ def is_conflicted(so, lis):
     return False
 
 
+def svn_ssl_server_trust_prompt(trust_dict):
+    return True, trust_dict['failures'], False
+
+
+def get_svn_login(request, current_user):
+    auth = False
+    if 'versioning.auth.active' in request.registry.settings:
+        auth = True
+
+    editor_login = current_user.login
+    if not auth:
+        # No auth, no need to find a password
+        return False, str(editor_login), None, False
+
+    pwd = request.registry.settings.get('versioning.auth.pwd')
+    if not pwd:
+        pwd = current_user.config.versioning_password
+
+    if not pwd:
+        # TODO: a good idea should be to ask the password to the user
+        raise Exception('No versioning password set for %s' % editor_login)
+
+    return auth, str(editor_login), pwd, False
+
+
+def get_svn_client(request, user):
+    client = pysvn.Client()
+    # Set the username in case there is no authentication
+    client.set_default_username(str(user.login))
+    client.callback_get_login = lambda *args, **kw: get_svn_login(request,
+                                                                  user)
+    if request.registry.settings.get('versioning.auth.https'):
+        client.callback_ssl_server_trust_prompt = svn_ssl_server_trust_prompt
+    return client
+
+
 class StatusObject(object):
 
     def __init__(self, abspath, relpath, status):
@@ -83,8 +119,8 @@ class StatusObject(object):
 
 class PysvnVersioning(object):
 
-    def __init__(self, client, root_path):
-        self.client = client
+    def __init__(self, request, user, root_path):
+        self.client = get_svn_client(request, user)
         self.root_path = root_path
 
     def _status(self, abspath, changes, short=True):

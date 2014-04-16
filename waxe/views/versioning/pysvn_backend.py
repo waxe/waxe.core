@@ -20,10 +20,6 @@ labels_mapping = {
 }
 
 
-def svn_ssl_server_trust_prompt(trust_dict):
-    return True, trust_dict['failures'], False
-
-
 class PysvnView(BaseUserView):
 
     def _response(self, dic):
@@ -59,38 +55,8 @@ class PysvnView(BaseUserView):
                 return False
         return False
 
-    def get_svn_login(self):
-        auth = False
-        if 'versioning.auth.active' in self.request.registry.settings:
-            auth = True
-
-        editor_login = self.current_user.login
-        if not auth:
-            # No auth, no need to find a password
-            return False, str(editor_login), None, False
-
-        pwd = self.request.registry.settings.get('versioning.auth.pwd')
-        if not pwd:
-            pwd = self.current_user.config.versioning_password
-
-        if not pwd:
-            # TODO: a good idea should be to ask the password to the user
-            raise Exception('No versioning password set for %s' % editor_login)
-
-        return auth, str(editor_login), pwd, False
-
-    def get_svn_client(self):
-        client = pysvn.Client()
-        # Set the username in case there is no authentication
-        client.set_default_username(str(self.current_user.login))
-        client.callback_get_login = lambda *args, **kw: self.get_svn_login()
-        if self.request.registry.settings.get('versioning.auth.https'):
-            client.callback_ssl_server_trust_prompt = svn_ssl_server_trust_prompt
-        return client
-
     def get_versioning_obj(self):
-        client = self.get_svn_client()
-        return helper.PysvnVersioning(client, self.root_path)
+        return helper.PysvnVersioning(self.request, self.current_user, self.root_path)
 
     def short_status(self):
         """Status of the given path without any depth.
