@@ -1,9 +1,8 @@
 import os
 from pyramid.httpexceptions import HTTPBadRequest
-from pyramid.exceptions import NotFound
 from pyramid.security import has_permission
-import sqlalchemy.orm.exc as sqla_exc
 from .. import security, models
+from waxe.views.versioning import helper
 
 
 class JSONHTTPBadRequest(HTTPBadRequest):
@@ -198,3 +197,9 @@ class BaseUserView(NavigationView):
             if self._is_json():
                 raise JSONHTTPBadRequest('root path not defined')
             raise HTTPBadRequest('root path not defined')
+
+    def get_versioning_obj(self):
+        """Get the versioning object. For now only svn is supported.
+        """
+        return helper.PysvnVersioning(self.request, self.current_user, self.root_path)
+

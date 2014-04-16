@@ -55,9 +55,6 @@ class PysvnView(BaseUserView):
                 return False
         return False
 
-    def get_versioning_obj(self):
-        return helper.PysvnVersioning(self.request, self.current_user, self.root_path)
-
     def short_status(self):
         """Status of the given path without any depth.
 
