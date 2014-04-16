@@ -14,6 +14,10 @@ import pyramid_logging
 
 log = pyramid_logging.getLogger(__name__)
 
+NAV_EDIT = 'edit'
+NAV_EDIT_TEXT = 'edit_text'
+NAV_DIFF = 'diff'
+
 
 def _get_tags(dtd_url):
     dic = xmltool.dtd_parser.parse(dtd_url=dtd_url)
@@ -28,45 +32,31 @@ def _get_tags(dtd_url):
 
 class EditorView(BaseUserView):
 
-    def _get_nav_editor(self, filename, xml):
+    def _get_nav_editor(self, filename, kind):
         """Navs to display XML or Source when we edit a file
         """
-        source_link_attrs = ''
-        xml_link_attrs = ''
-        source_li_attrs = ''
-        xml_li_attrs = ''
-        if xml:
-            source_link_attrs = ' href="%s" data-href="%s"' % (
-                self.request.custom_route_path('edit_text',
-                                               _query=[('path', filename)]),
-                self.request.custom_route_path('edit_text_json',
-                                               _query=[('path', filename)]),
-            )
-            xml_li_attrs = ' class="active"'
-        else:
-            xml_link_attrs = ' href="%s" data-href="%s"' % (
-                self.request.custom_route_path('edit',
-                                               _query=[('path', filename)]),
-                self.request.custom_route_path('edit_json',
-                                               _query=[('path', filename)]),
-            )
-            source_li_attrs = ' class="active"'
+        html = []
+        lis = [
+            ('XML', 'edit', NAV_EDIT),
+            ('Source', 'edit_text', NAV_EDIT_TEXT),
+        ]
+        if self.has_versioning():
+            lis += [('Diff', 'diff', NAV_DIFF)]
 
-        return (
-            '<ul class="nav nav-tabs">'
-            '<li%s>'
-            '<a%s>XML</a>'
-            '</li>'
-            '<li%s>'
-            '<a%s>Source</a>'
-            '</li>'
-            '</ul>'
-        ) % (
-            xml_li_attrs,
-            xml_link_attrs,
-            source_li_attrs,
-            source_link_attrs
-        )
+        for name, route, k in lis:
+            li_class = ''
+            attrs = ''
+            if kind == k:
+                li_class = ' class="active"'
+            else:
+                attrs = ' href="%s" data-href="%s"' % (
+                    self.request.custom_route_path(route,
+                                                   _query=[('path', filename)]),
+                    self.request.custom_route_path('%s_json' % route,
+                                                   _query=[('path', filename)]),
+                )
+            html += ['<li%s><a%s>%s</a></li>' % (li_class, attrs, name)]
+        return '<ul class="nav nav-tabs">%s</ul>' % ''.join(html)
 
     @view_config(route_name='edit', renderer='index.mak', permission='edit')
     @view_config(route_name='edit_json', renderer='json', permission='edit')
@@ -123,7 +113,7 @@ class EditorView(BaseUserView):
                        self.request))
 
         breadcrumb = self._get_breadcrumb(filename)
-        nav = self._get_nav_editor(filename, xml=True)
+        nav = self._get_nav_editor(filename, kind=NAV_EDIT)
         return self._response({
             'content': nav + html,
             'breadcrumb': breadcrumb,
@@ -156,7 +146,7 @@ class EditorView(BaseUserView):
         html += '</form>'
 
         breadcrumb = self._get_breadcrumb(filename)
-        nav = self._get_nav_editor(filename, xml=False)
+        nav = self._get_nav_editor(filename, kind=NAV_EDIT_TEXT)
         dic = {
             'content': nav + html,
             'breadcrumb': breadcrumb,
@@ -341,6 +331,37 @@ class EditorView(BaseUserView):
                          {'comment': comment}, self.request)
         return {'content': content}
 
+    @view_config(route_name='diff', renderer='index.mak', permission='edit')
+    @view_config(route_name='diff_json', renderer='json', permission='edit')
+    def diff(self):
+        filename = self.request.GET.get('path', '')
+        if not filename:
+            return {'error_msg': 'No filename given'}
+
+        absfilename = browser.absolute_path(filename, self.root_path)
+        if not os.path.isfile(absfilename):
+            return self._response({
+                'error_msg': 'File %s doesn\'t exist' % filename
+            })
+
+        vobj = self.get_versioning_obj()
+        lis = vobj.diff(filename)
+        content = ''
+        for l in lis:
+            l = l.replace("&", "&amp;").replace(">", "&gt;").replace("<", "&lt;")
+            content += '<pre>%s</pre>' % l
+
+        if not content:
+            content = '<br />The file is not modified!'
+
+        nav = self._get_nav_editor(filename, kind=NAV_DIFF)
+        breadcrumb = self._get_breadcrumb(filename)
+
+        return self._response({
+            'breadcrumb': breadcrumb,
+            'content': nav + content,
+        })
+
 
 def includeme(config):
     config.add_route('edit', '/edit')
@@ -355,4 +376,6 @@ def includeme(config):
     config.add_route('get_comment_modal_json', '/get-comment-modal.json')
     config.add_route('copy_json', '/copy.json')
     config.add_route('paste_json', '/paste.json')
+    config.add_route('diff', '/diff')
+    config.add_route('diff_json', '/diff.json')
     config.scan(__name__)

@@ -9,7 +9,10 @@ from ..testing import WaxeTestCase, login_user, LoggedBobTestCase
 
 from waxe.views.editor import (
     EditorView,
-    _get_tags
+    _get_tags,
+    NAV_EDIT,
+    NAV_EDIT_TEXT,
+    NAV_DIFF,
 )
 
 
@@ -26,7 +29,8 @@ class TestEditorView(LoggedBobTestCase):
         class C(object): pass
         request = testing.DummyRequest()
         request.custom_route_path = lambda *args, **kw: '/%s/filepath' % args[0]
-        res = EditorView(request)._get_nav_editor('file1.xml', xml=True)
+
+        res = EditorView(request)._get_nav_editor('file1.xml', kind=NAV_EDIT)
         expected = (
             '<ul class="nav nav-tabs">'
             '<li class="active"><a>XML</a></li>'
@@ -36,13 +40,31 @@ class TestEditorView(LoggedBobTestCase):
         )
         self.assertEqual(res, expected)
 
-        res = EditorView(request)._get_nav_editor('file1.xml', xml=False)
+        request.registry.settings['versioning'] = 'true'
+        self.user_bob.config.use_versioning = True
+        res = EditorView(request)._get_nav_editor('file1.xml', kind=NAV_EDIT)
+        expected = (
+            '<ul class="nav nav-tabs">'
+            '<li class="active"><a>XML</a></li>'
+            '<li><a href="/edit_text/filepath" '
+            'data-href="/edit_text_json/filepath">Source</a></li>'
+            '<li><a href="/diff/filepath" '
+            'data-href="/diff_json/filepath">Diff</a></li>'
+            '</ul>'
+        )
+        self.assertEqual(res, expected)
+
+        res = EditorView(request)._get_nav_editor('file1.xml',
+                                                  kind=NAV_EDIT_TEXT)
         expected = (
             '<ul class="nav nav-tabs">'
             '<li>'
             '<a href="/edit/filepath" data-href="/edit_json/filepath">XML</a>'
             '</li>'
             '<li class="active"><a>Source</a></li>'
+            '<li>'
+            '<a href="/diff/filepath" data-href="/diff_json/filepath">'
+            'Diff</a></li>'
             '</ul>'
         )
         self.assertEqual(res, expected)
@@ -446,6 +468,40 @@ class TestEditorView(LoggedBobTestCase):
         res = EditorView(request).paste_json()
         expected = {'error_msg': 'The element can\'t be pasted here'}
         self.assertEqual(res, expected)
+
+    def test_diff(self):
+        class C(object): pass
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        self.user_bob.config.root_path = path
+        request = testing.DummyRequest(params={})
+        request.matched_route = C()
+        request.matched_route.name = 'route_json'
+        expected = {'error_msg': 'No filename given'}
+        res = EditorView(request).diff()
+        self.assertEqual(res, expected)
+
+        request = testing.DummyRequest(params={'path': 'unexisting.xml'})
+        request.matched_route = C()
+        request.matched_route.name = 'route_json'
+        expected = {'error_msg': 'File unexisting.xml doesn\'t exist'}
+        res = EditorView(request).diff()
+        self.assertEqual(res, expected)
+
+        request = testing.DummyRequest(params={'path': 'file1.xml'})
+        request.matched_route = C()
+        request.matched_route.name = 'route_json'
+        request.custom_route_path = lambda *args, **kw: '/%s/filepath' % args[0]
+        res = EditorView(request).diff()
+        self.assertEqual(res.keys(), ['content', 'breadcrumb'])
+        self.assertTrue('class="nav nav-tabs"' in res['content'])
+        self.assertTrue('<pre>New file file1.xml' in res['content'])
+
+        with patch('waxe.views.versioning.helper.PysvnVersioning.diff',
+                   return_value=[]):
+            res = EditorView(request).diff()
+            self.assertEqual(res.keys(), ['content', 'breadcrumb'])
+            self.assertTrue('class="nav nav-tabs"' in res['content'])
+            self.assertTrue('The file is not modified!' in res['content'])
 
 
 class FunctionalTestEditorView(WaxeTestCase):
