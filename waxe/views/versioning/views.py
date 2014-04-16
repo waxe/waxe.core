@@ -3,6 +3,7 @@ import pyramid_logging
 import pysvn
 import xmltool
 from pyramid.renderers import render
+from pyramid.view import view_config
 from waxe import browser
 from waxe import models
 from waxe.utils import unflatten_params
@@ -55,6 +56,8 @@ class VersioningView(BaseUserView):
                 return False
         return False
 
+    @view_config(route_name='versioning_short_status_json', renderer='json',
+                 permission='edit')
     def short_status(self):
         """Status of the given path without any depth.
 
@@ -67,6 +70,10 @@ class VersioningView(BaseUserView):
             dic[o.relpath] = o.status
         return dic
 
+    @view_config(route_name='versioning_status', renderer='index.mak',
+                 permission='edit')
+    @view_config(route_name='versioning_status_json', renderer='json',
+                 permission='edit')
     def status(self, info_msg=None, error_msg=None):
         """Full status of the repo. We want to get all files
         """
@@ -107,6 +114,10 @@ class VersioningView(BaseUserView):
             dic['error_msg'] = error_msg
         return self._response(dic)
 
+    @view_config(route_name='versioning_short_diff', renderer='index.mak',
+                 permission='edit')
+    @view_config(route_name='versioning_short_diff_json', renderer='json',
+                 permission='edit')
     def short_diff(self):
         relpath = self.request.GET.get('path', '')
         vobj = self.get_versioning_obj()
@@ -117,6 +128,10 @@ class VersioningView(BaseUserView):
             content += '<pre>%s</pre>' % l
         return self._response({'content': content})
 
+    @view_config(route_name='versioning_diff', renderer='index.mak',
+                 permission='edit')
+    @view_config(route_name='versioning_diff_json', renderer='json',
+                 permission='edit')
     def diff(self):
         filenames = self.request.POST.getall('filenames') or ''
         if not filenames:
@@ -143,6 +158,10 @@ class VersioningView(BaseUserView):
         }, self.request)
         return self._response({'content': content})
 
+    @view_config(route_name='versioning_update', renderer='index.mak',
+                 permission='edit')
+    @view_config(route_name='versioning_update_json', renderer='json',
+                 permission='edit')
     def update(self):
         relpath = self.request.GET.get('path', '')
         vobj = self.get_versioning_obj()
@@ -176,6 +195,10 @@ class VersioningView(BaseUserView):
             'modal': modal,
         })
 
+    @view_config(route_name='versioning_commit', renderer='index.mak',
+                 permission='edit')
+    @view_config(route_name='versioning_commit_json', renderer='json',
+                 permission='edit')
     def commit(self):
         msg = self.request.POST.get('msg')
         filenames = self.request.POST.getall('path')
@@ -208,6 +231,10 @@ class VersioningView(BaseUserView):
 
         return self.status()
 
+    @view_config(route_name='versioning_update_texts', renderer='index.mak',
+                 permission='edit')
+    @view_config(route_name='versioning_update_texts_json', renderer='json',
+                 permission='edit')
     def update_texts(self):
         params = unflatten_params(self.request.POST)
         if 'data' not in params or not params['data']:
@@ -241,6 +268,10 @@ class VersioningView(BaseUserView):
             'content': 'Files updated'
         })
 
+    @view_config(route_name='versioning_edit_conflict', renderer='index.mak',
+                 permission='edit')
+    @view_config(route_name='versioning_edit_conflict_json', renderer='json',
+                 permission='edit')
     def edit_conflict(self):
         """
         Basically it's the same function as editor.edit_text
@@ -261,10 +292,8 @@ class VersioningView(BaseUserView):
             })
 
         html = '<form data-action="%s" action="%s" method="POST">' % (
-            self.request.custom_route_path('versioning_dispatcher_json',
-                                           method='update_conflict'),
-            self.request.custom_route_path('versioning_dispatcher',
-                                           method='update_conflict'),
+            self.request.custom_route_path('versioning_update_conflict_json'),
+            self.request.custom_route_path('versioning_update_conflict'),
         )
         html += '<input type="hidden" id="_xml_filename" name="filename" value="%s" />' % filename
         html += '<textarea class="codemirror" name="filecontent">%s</textarea>' % content
@@ -276,6 +305,10 @@ class VersioningView(BaseUserView):
         }
         return self._response(dic)
 
+    @view_config(route_name='versioning_update_conflict', renderer='index.mak',
+                 permission='edit')
+    @view_config(route_name='versioning_update_conflict_json', renderer='json',
+                 permission='edit')
     def update_conflict(self):
         filecontent = self.request.POST.get('filecontent')
         filename = self.request.POST.get('filename') or ''
@@ -300,3 +333,24 @@ class VersioningView(BaseUserView):
                               '%s' % str(e))
             })
         return self.status()
+
+
+def includeme(config):
+    config.add_route('versioning_short_status_json', '/short-status.json')
+    config.add_route('versioning_status', '/status')
+    config.add_route('versioning_status_json', '/status.json')
+    config.add_route('versioning_short_diff', '/short-diff')
+    config.add_route('versioning_short_diff_json', '/short-diff.json')
+    config.add_route('versioning_diff', '/diff')
+    config.add_route('versioning_diff_json', '/diff.json')
+    config.add_route('versioning_update', '/update')
+    config.add_route('versioning_update_json', '/update.json')
+    config.add_route('versioning_commit', '/commit')
+    config.add_route('versioning_commit_json', '/commit.json')
+    config.add_route('versioning_update_texts', '/update-texts')
+    config.add_route('versioning_update_texts_json', '/update-texts.json')
+    config.add_route('versioning_edit_conflict', '/edit-conflict')
+    config.add_route('versioning_edit_conflict_json', 'edit-conflict.json')
+    config.add_route('versioning_update_conflict', '/update-conflict')
+    config.add_route('versioning_update_conflict_json', 'update-conflict.json')
+    config.scan(__name__)

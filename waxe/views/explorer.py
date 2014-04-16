@@ -74,8 +74,7 @@ class ExplorerView(BaseUserView):
         versioning_status_url = None
         if self.has_versioning():
             versioning_status_url = self.request.custom_route_path(
-                'versioning_dispatcher_json',
-                method='short_status',
+                'versioning_short_status_json',
                 _query=[('path', data['path'])])
         return render('blocks/file_navigation.mak',
                       {'data': data,

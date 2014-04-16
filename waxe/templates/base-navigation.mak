@@ -22,10 +22,10 @@
             </a>
             <ul class="dropdown-menu dropdown-versioning">
                 <li>
-                  <a href="${request.custom_route_path('versioning_dispatcher', method='status')}" data-href="${request.custom_route_path('versioning_dispatcher_json', method='status')}">Status</a>
+                  <a href="${request.custom_route_path('versioning_status')}" data-href="${request.custom_route_path('versioning_status_json')}">Status</a>
                 </i>
                 <li>
-                  <a href="${request.custom_route_path('versioning_dispatcher', method='update')}" data-href="${request.custom_route_path('versioning_dispatcher_json', method='update')}">Update</a>
+                  <a href="${request.custom_route_path('versioning_update')}" data-href="${request.custom_route_path('versioning_update_json')}">Update</a>
                 </li>
             </ul>
             </li>

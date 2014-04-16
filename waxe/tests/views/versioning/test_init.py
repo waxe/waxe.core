@@ -576,7 +576,7 @@ class TestVersioningViewFakeRepo(BaseTestCase, CreateRepo):
         request.matched_route.name = 'route'
         request.custom_route_path = lambda *args, **kw: '/%s/filepath' % args[0]
         res = VersioningView(request).edit_conflict()
-        expected = '<form data-action="/versioning_dispatcher_json/filepath'
+        expected = '<form data-action="/versioning_update_conflict_json/filepath'
         self.assertTrue(expected in res['content'])
         expected = '<textarea class="codemirror" name="filecontent">'
         self.assertTrue(expected in res['content'])
@@ -713,7 +713,7 @@ class FunctionalTestViewsNoVersioning(WaxeTestCase):
             '/account/Bob/versioning/update',
             '/account/Bob/versioning/update.json',
             '/account/Bob/versioning/commit.json',
-            '/account/Bob/versioning/update_texts.json',
+            '/account/Bob/versioning/update-texts.json',
         ]:
             self.testapp.get(url, status=404)
 
@@ -730,7 +730,7 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
             '/account/Bob/versioning/update',
             '/account/Bob/versioning/update.json',
             '/account/Bob/versioning/commit.json',
-            '/account/Bob/versioning/update_texts.json',
+            '/account/Bob/versioning/update-texts.json',
         ]:
             res = self.testapp.get(url, status=302)
             self.assertTrue('http://localhost/login?next=' in res.location)
@@ -742,7 +742,7 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
     @login_user('Bob')
     def test_short_status(self):
         self.user_bob.config = UserConfig(root_path=self.client_dir)
-        res = self.testapp.get('/account/Bob/versioning/short_status.json',
+        res = self.testapp.get('/account/Bob/versioning/short-status.json',
                                status=200)
         expected = {
             'file3.xml': helper.STATUS_UNVERSIONED,
@@ -829,14 +829,14 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
     def test_update_texts(self):
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
         self.user_bob.config.root_path = path
-        res = self.testapp.post('/account/Bob/versioning/update_texts', status=200)
+        res = self.testapp.post('/account/Bob/versioning/update-texts', status=200)
         self.assertTrue("Missing parameters!" in res.body)
 
     @login_user('Bob')
     def test_update_texts_json(self):
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
         self.user_bob.config.root_path = path
-        res = self.testapp.post('/account/Bob/versioning/update_texts.json', status=200)
+        res = self.testapp.post('/account/Bob/versioning/update-texts.json', status=200)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
         expected = {
@@ -850,7 +850,7 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
     def test_edit_conflict(self):
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
         self.user_bob.config.root_path = path
-        res = self.testapp.post('/account/Bob/versioning/edit_conflict',
+        res = self.testapp.post('/account/Bob/versioning/edit-conflict',
                                 status=200)
         self.assertTrue("A filename should be provided" in res.body)
 
@@ -858,7 +858,7 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
     def test_edit_conflict_json(self):
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
         self.user_bob.config.root_path = path
-        res = self.testapp.post('/account/Bob/versioning/edit_conflict.json',
+        res = self.testapp.post('/account/Bob/versioning/edit-conflict.json',
                                 status=200)
         expected = {
             "error_msg": "A filename should be provided",
@@ -871,7 +871,7 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
     def test_update_conflict(self):
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
         self.user_bob.config.root_path = path
-        res = self.testapp.post('/account/Bob/versioning/update_conflict',
+        res = self.testapp.post('/account/Bob/versioning/update-conflict',
                                 status=200)
         self.assertTrue("Missing parameters!" in res.body)
 
@@ -879,7 +879,7 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
     def test_update_conflict_json(self):
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
         self.user_bob.config.root_path = path
-        res = self.testapp.post('/account/Bob/versioning/update_conflict.json',
+        res = self.testapp.post('/account/Bob/versioning/update-conflict.json',
                                 status=200)
         expected = {
             "error_msg": "Missing parameters!",

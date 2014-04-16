@@ -1,4 +1,4 @@
-<form data-action="${request.custom_route_path('versioning_dispatcher_json', method='update_texts')}" action="${request.custom_route_path('versioning_dispatcher', method='update_texts')}" method="POST" class="editable-diff">
+<form data-action="${request.custom_route_path('versioning_update_texts_json')}" action="${request.custom_route_path('versioning_update_texts')}" method="POST" class="editable-diff">
   % for index, (filename, diff) in enumerate(files):
 
     % if can_commit:

@@ -103,7 +103,7 @@ class TestExplorerView(LoggedBobTestCase):
         request.custom_route_path = lambda *args, **kw: '/%s' % args[0]
         o = ExplorerView(request)
         res = o._get_navigation()
-        expected = 'data-versioning-path="/versioning_dispatcher_json"'
+        expected = 'data-versioning-path="/versioning_short_status_json"'
         self.assertFalse(expected in res)
 
         o.has_versioning = lambda *args: True
