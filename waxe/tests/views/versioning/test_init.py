@@ -206,6 +206,55 @@ class TestPysvnView(BaseTestCase, CreateRepo2):
         self.assertTrue('value="Commit"' in res['content'])
 
     @login_user('Bob')
+    def test_short_diff(self):
+        self.user_bob.config.root_path = self.client_dir
+        request = self.DummyRequest()
+        res = self.ClassView(request).short_diff()
+        self.assertEqual(len(res), 4)
+        self.assertEqual(res.keys(), ['content', 'breadcrumb', 'versioning',
+                                      'editor_login'])
+        content = res['content']
+        expected = (
+            '<pre>Index: file1.xml\n'
+            '===================================='
+            '===============================\n'
+            '--- file1.xml\t(revision 1)\n'
+            '+++ file1.xml\t(working copy)\n'
+            '@@ -1 +1 @@\n'
+            '-Hello\n'
+            '\ No newline at end of file\n'
+            '+Hello world\n'
+            '\ No newline at end of file\n'
+            '</pre><pre>New file file3.xml\n'
+            '\n'
+            'Hello</pre><pre>New file file4.xml\n'
+            '\n'
+            'Hello</pre>'
+        )
+        self.assertEqual(content, expected)
+
+        request = self.DummyRequest(params={'path': 'file1.xml'})
+        res = self.ClassView(request).short_diff()
+        self.assertEqual(len(res), 4)
+        self.assertEqual(res.keys(), ['content', 'breadcrumb', 'versioning',
+                                      'editor_login'])
+        content = res['content']
+        expected = (
+            '<pre>Index: file1.xml\n'
+            '===================================='
+            '===============================\n'
+            '--- file1.xml\t(revision 1)\n'
+            '+++ file1.xml\t(working copy)\n'
+            '@@ -1 +1 @@\n'
+            '-Hello\n'
+            '\ No newline at end of file\n'
+            '+Hello world\n'
+            '\ No newline at end of file\n'
+            '</pre>'
+        )
+        self.assertEqual(content, expected)
+
+    @login_user('Bob')
     def test_diff(self):
         self.user_bob.config.root_path = self.client_dir
         request = self.DummyRequest()

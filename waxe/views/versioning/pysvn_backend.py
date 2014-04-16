@@ -147,9 +147,12 @@ class PysvnView(BaseUserView):
     def short_diff(self):
         relpath = self.request.GET.get('path', '')
         vobj = self.get_versioning_obj()
-        res = vobj.diff(relpath)
-        res = res.replace("&", "&amp;").replace(">", "&gt;").replace("<", "&lt;")
-        return self._response({'content': '<pre>%s</pre>' % res})
+        lis = vobj.diff(relpath)
+        content = ''
+        for l in lis:
+            l = l.replace("&", "&amp;").replace(">", "&gt;").replace("<", "&lt;")
+            content += '<pre>%s</pre>' % l
+        return self._response({'content': content})
 
     def diff(self):
         filenames = self.request.POST.getall('filenames') or ''
