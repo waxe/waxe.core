@@ -64,7 +64,6 @@ var waxe = waxe || {};
             }
 
             waxe.dom.loadCodemirror();
-
         },
         load: function(url){
             $(document).message('info', 'Loading...', {'autohide': false});
@@ -91,6 +90,17 @@ var waxe = waxe || {};
                         mode: {name: "xml", alignCDATA: true},
                         lineNumbers: true
                       });
+                // Make sure the textarea content is updated
+                editor.on('blur', function() {
+                    c.value = editor.getValue();
+                });
+                editor.on('focus', function() {
+                    // TODO: find a better logic to know if the text has been
+                    // updated
+                    if(waxe.form.$element) {
+                        waxe.form.$element.trigger('field_change.xmltool');
+                    }
+                });
             }
         },
      };
