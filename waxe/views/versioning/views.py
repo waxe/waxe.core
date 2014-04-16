@@ -20,13 +20,13 @@ labels_mapping = {
 }
 
 
-class PysvnView(BaseUserView):
+class VersioningView(BaseUserView):
 
     def _response(self, dic):
         relpath = self.request.GET.get('path', '')
         if 'breadcrumb' not in dic:
             dic['breadcrumb'] = self._get_breadcrumb(relpath, force_link=True)
-        return super(PysvnView, self)._response(dic)
+        return super(VersioningView, self)._response(dic)
 
     def can_commit(self, path):
         if not os.path.exists(path):

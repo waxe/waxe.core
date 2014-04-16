@@ -26,7 +26,7 @@ from waxe.models import (
     VERSIONING_PATH_STATUS_FORBIDDEN,
 )
 
-from waxe.views.versioning.pysvn_backend import PysvnView
+from waxe.views.versioning.views import VersioningView
 from waxe.views.versioning import helper
 
 
@@ -116,11 +116,11 @@ class CreateRepo2(unittest.TestCase):
         super(CreateRepo2, self).tearDown()
 
 
-class TestPysvnView(BaseTestCase, CreateRepo2):
-    ClassView = PysvnView
+class TestVersioningView(BaseTestCase, CreateRepo2):
+    ClassView = VersioningView
 
     get_svn_client_str = ('waxe.views.versioning.'
-                          'pysvn_backend.PysvnView.get_svn_client')
+                          'views.VersioningView.get_svn_client')
 
     def DummyRequest(self, *args, **kw):
         request = testing.DummyRequest(*args, **kw)
@@ -131,7 +131,7 @@ class TestPysvnView(BaseTestCase, CreateRepo2):
         return request
 
     def setUp(self):
-        super(TestPysvnView, self).setUp()
+        super(TestVersioningView, self).setUp()
         self.config.registry.settings.update({
             'authentication.cookie.secret': 'scrt',
             'authentication.cookie.callback': ('waxe.security.'
@@ -377,7 +377,7 @@ class TestPysvnView(BaseTestCase, CreateRepo2):
                     }
                     self.assertEqual(res, expected)
 
-                with patch('waxe.views.versioning.pysvn_backend.PysvnView.can_commit', return_value=False):
+                with patch('waxe.views.versioning.views.VersioningView.can_commit', return_value=False):
                     res = self.ClassView(request).commit()
                     expected = {
                         'error_msg': ('You don\'t have the permission '
@@ -539,10 +539,10 @@ class TestPysvnView(BaseTestCase, CreateRepo2):
             self.assertTrue('commit message' in res['modal'])
 
 
-class TestPysvnViewFakeRepo(BaseTestCase, CreateRepo):
+class TestVersioningViewFakeRepo(BaseTestCase, CreateRepo):
 
     def setUp(self):
-        super(TestPysvnViewFakeRepo, self).setUp()
+        super(TestVersioningViewFakeRepo, self).setUp()
         self.config.registry.settings.update({
             'authentication.cookie.secret': 'scrt',
             'authentication.cookie.callback': ('waxe.security.'
@@ -568,14 +568,14 @@ class TestPysvnViewFakeRepo(BaseTestCase, CreateRepo):
             'breadcrumb': ('<li><a data-href="/explore_json" '
                            'href="/explore">root</a> </li>')
         }
-        res = PysvnView(request).edit_conflict()
+        res = VersioningView(request).edit_conflict()
         self.assertEqual(res, expected)
 
         request = testing.DummyRequest(params={'path': 'file1.xml'})
         request.matched_route = C()
         request.matched_route.name = 'route'
         request.custom_route_path = lambda *args, **kw: '/%s/filepath' % args[0]
-        res = PysvnView(request).edit_conflict()
+        res = VersioningView(request).edit_conflict()
         expected = '<form data-action="/versioning_dispatcher_json/filepath'
         self.assertTrue(expected in res['content'])
         expected = '<textarea class="codemirror" name="filecontent">'
@@ -608,7 +608,7 @@ class TestPysvnViewFakeRepo(BaseTestCase, CreateRepo):
         request.matched_route = C()
         request.matched_route.name = 'route'
         request.route_path = lambda *args, **kw: '/%s' % args[0]
-        res = PysvnView(request).update_conflict()
+        res = VersioningView(request).update_conflict()
         expected = {
             'error_msg': 'Missing parameters!',
             'editor_login': 'Bob',
@@ -632,7 +632,7 @@ class TestPysvnViewFakeRepo(BaseTestCase, CreateRepo):
 
         with patch('xmltool.load_string') as m:
             m.side_effect = raise_func
-            res = PysvnView(request).update_conflict()
+            res = VersioningView(request).update_conflict()
             expected = {
                 'error_msg': 'The conflict is not resolved: My error',
                 'editor_login': 'Bob',
@@ -654,7 +654,7 @@ class TestPysvnViewFakeRepo(BaseTestCase, CreateRepo):
 
         m = MagicMock()
         with patch('xmltool.load_string', return_value=m):
-            res = PysvnView(request).update_conflict()
+            res = VersioningView(request).update_conflict()
             s = o.empty_status(file1)
             self.assertEqual(s.status, helper.STATUS_MODIFED)
             expected = 'List of commitable files'
@@ -677,7 +677,7 @@ class TestPysvnViewFakeRepo(BaseTestCase, CreateRepo):
         request.matched_route = EmptyClass()
         request.matched_route.name = 'route'
 
-        res = PysvnView(request).update()
+        res = VersioningView(request).update()
         self.assertEqual(len(res), 5)
         self.assertEqual(res.keys(), ['content', 'breadcrumb', 'info_msg',
                                       'versioning', 'editor_login'])
@@ -691,7 +691,7 @@ class TestPysvnViewFakeRepo(BaseTestCase, CreateRepo):
                             'create conflict')
         self.client.update(self.client_dir)
 
-        res = PysvnView(request).update()
+        res = VersioningView(request).update()
         self.assertEqual(len(res), 5)
         self.assertEqual(res.keys(), ['content', 'breadcrumb', 'error_msg',
                                       'versioning', 'editor_login'])
@@ -719,7 +719,7 @@ class FunctionalTestViewsNoVersioning(WaxeTestCase):
 
 
 class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
-    ClassView = PysvnView
+    ClassView = VersioningView
 
     def test_forbidden(self):
         for url in [

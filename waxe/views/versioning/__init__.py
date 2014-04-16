@@ -1,6 +1,6 @@
 from pyramid.view import view_config
 from pyramid.exceptions import NotFound
-from . import pysvn_backend
+from . import views
 
 
 CALLABLE_VIEWS = [
@@ -26,7 +26,7 @@ def versioning_dispatcher(request):
 
     if method not in CALLABLE_VIEWS:
         raise NotFound('Method %s not supported' % method)
-    v = pysvn_backend.PysvnView(request)
+    v = views.VersioningView(request)
     return getattr(v, method)()
 
 
