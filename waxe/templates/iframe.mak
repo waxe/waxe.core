@@ -2,7 +2,7 @@
 <body>
 <div class="ui-layout-center">
   <div class="alert alert-danger">
-    This form is in readonly and don't reload automatically.
+    This form is in readonly and doesn't reload automatically.
     <a onclick="location.reload(); return false;" href="#">Click here to reload it</a>
   </div>
   <form id="xmltool-form">
