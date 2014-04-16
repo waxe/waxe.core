@@ -86,6 +86,10 @@ var waxe = waxe || {};
             if (c.length)
             {
                 c = c[0];
+                if ($(c).css('display') === 'none'){
+                    // codemirror seems to be loaded
+                    return false;
+                }
                 var editor = CodeMirror.fromTextArea(c, {
                         mode: {name: "xml", alignCDATA: true},
                         lineNumbers: true
