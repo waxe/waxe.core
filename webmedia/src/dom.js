@@ -92,8 +92,10 @@ var waxe = waxe || {};
                 }
                 var editor = CodeMirror.fromTextArea(c, {
                         mode: {name: "xml", alignCDATA: true},
-                        lineNumbers: true
+                        lineNumbers: true,
+                        lineWrapping: true,
                       });
+                editor.setSize('auto', 'auto');
                 // Make sure the textarea content is updated
                 editor.on('blur', function() {
                     c.value = editor.getValue();
