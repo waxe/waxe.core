@@ -2,7 +2,6 @@ import os
 from pyramid.httpexceptions import HTTPBadRequest
 from pyramid.security import has_permission
 from .. import security, models
-from waxe.views.versioning import helper
 
 
 class JSONHTTPBadRequest(HTTPBadRequest):
@@ -201,5 +200,8 @@ class BaseUserView(NavigationView):
     def get_versioning_obj(self):
         """Get the versioning object. For now only svn is supported.
         """
-        return helper.PysvnVersioning(self.request, self.current_user, self.root_path)
-
+        if self.has_versioning():
+            from waxe.views.versioning import helper
+            return helper.PysvnVersioning(self.request, self.current_user,
+                                          self.root_path)
+        return None

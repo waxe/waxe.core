@@ -50,9 +50,13 @@ class CreateRepo(unittest.TestCase):
         self.patcher1 = patch('waxe.views.versioning.helper.get_svn_client',
                               return_value=self.client)
         self.patcher1.start()
+        self.patcher_versioning = patch(
+            'waxe.views.base.BaseView.has_versioning', return_value=True)
+        self.patcher_versioning.start()
 
     def tearDown(self):
         self.patcher1.stop()
+        self.patcher_versioning.stop()
         if os.path.isdir(self.repo):
             shutil.rmtree(self.repo)
         if os.path.isdir(self.client_dir):
@@ -107,8 +111,12 @@ class CreateRepo2(unittest.TestCase):
         self.client.add(folder1)
         self.client.checkin([file1, file2, folder1], 'Initial commit')
         open(file1, 'w').write('Hello world')
+        self.patcher_versioning = patch(
+            'waxe.views.base.BaseView.has_versioning', return_value=True)
+        self.patcher_versioning.start()
 
     def tearDown(self):
+        self.patcher_versioning.stop()
         if os.path.isdir(self.repo):
             shutil.rmtree(self.repo)
         if os.path.isdir(self.client_dir):
@@ -267,7 +275,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
         expected = {
             'error_msg': 'You should provide at least one filename.',
             'editor_login': 'Bob',
-            'versioning': False,
+            'versioning': True,
             'breadcrumb': ('<li><a data-href="/explore_json" '
                            'href="/explore">root</a> </li>')
         }
@@ -342,7 +350,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                 expected = {
                     'error_msg': "No file selected!",
                     'editor_login': 'Bob',
-                    'versioning': False,
+                    'versioning': True,
                     'breadcrumb': ('<li><a data-href="/explore_json" '
                                    'href="/explore">root</a> </li>')
                 }
@@ -354,7 +362,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                 expected = {
                     'error_msg': "No commit message!",
                     'editor_login': 'Bob',
-                    'versioning': False,
+                    'versioning': True,
                     'breadcrumb': ('<li><a data-href="/explore_json" '
                                    'href="/explore">root</a> </li>')
                 }
@@ -371,7 +379,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                     expected = {
                         'error_msg': 'Error during the commit Error',
                         'editor_login': 'Bob',
-                        'versioning': False,
+                        'versioning': True,
                         'breadcrumb': ('<li><a data-href="/explore_json" '
                                        'href="/explore">root</a> </li>')
                     }
@@ -383,7 +391,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                         'error_msg': ('You don\'t have the permission '
                                       'to commit: test.xml'),
                         'editor_login': 'Bob',
-                        'versioning': False,
+                        'versioning': True,
                         'breadcrumb': ('<li><a data-href="/explore_json" '
                                        'href="/explore">root</a> </li>')
                     }
@@ -480,7 +488,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
         expected = {
             'error_msg': 'Missing parameters!',
             'editor_login': 'Bob',
-            'versioning': False,
+            'versioning': True,
             'breadcrumb': ('<li><a data-href="/explore_json" '
                            'href="/explore">root</a> </li>')
         }
@@ -504,7 +512,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                 'error_msg': ('thefilename1.xml: My error<br />'
                               'thefilename2.xml: My error'),
                 'editor_login': 'Bob',
-                'versioning': False,
+                'versioning': True,
                 'breadcrumb': ('<li><a data-href="/explore_json" '
                                'href="/explore">root</a> </li>')
             }
@@ -523,7 +531,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
             expected = {
                 'content': 'Files updated',
                 'editor_login': 'Bob',
-                'versioning': False,
+                'versioning': True,
                 'breadcrumb': ('<li><a data-href="/filepath" '
                                'href="/filepath">root</a> </li>')
             }
@@ -533,7 +541,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
             res = self.ClassView(request).update_texts()
             self.assertEqual(len(res), 4)
             self.assertTrue('breadcrumb' in res)
-            self.assertEqual(res['versioning'], False)
+            self.assertEqual(res['versioning'], True)
             self.assertEqual(res['editor_login'], 'Bob')
             self.assertTrue('class="modal' in res['modal'])
             self.assertTrue('commit message' in res['modal'])
@@ -564,7 +572,7 @@ class TestVersioningViewFakeRepo(BaseTestCase, CreateRepo):
         expected = {
             'editor_login': 'Bob',
             'error_msg': 'A filename should be provided',
-            'versioning': False,
+            'versioning': True,
             'breadcrumb': ('<li><a data-href="/explore_json" '
                            'href="/explore">root</a> </li>')
         }
@@ -612,7 +620,7 @@ class TestVersioningViewFakeRepo(BaseTestCase, CreateRepo):
         expected = {
             'error_msg': 'Missing parameters!',
             'editor_login': 'Bob',
-            'versioning': False,
+            'versioning': True,
             'breadcrumb': ('<li><a data-href="/explore_json" '
                            'href="/explore">root</a> </li>')
         }
@@ -636,7 +644,7 @@ class TestVersioningViewFakeRepo(BaseTestCase, CreateRepo):
             expected = {
                 'error_msg': 'The conflict is not resolved: My error',
                 'editor_login': 'Bob',
-                'versioning': False,
+                'versioning': True,
                 'breadcrumb': ('<li><a data-href="/filepath" '
                                'href="/filepath">root</a> </li>')
             }

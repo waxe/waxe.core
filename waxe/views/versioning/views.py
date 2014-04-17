@@ -1,6 +1,5 @@
 import os.path
 import pyramid_logging
-import pysvn
 import xmltool
 from pyramid.renderers import render
 from pyramid.view import view_config
@@ -12,13 +11,6 @@ from . import helper
 
 
 log = pyramid_logging.getLogger(__name__)
-
-# Use to defined the color we will display the status
-labels_mapping = {
-    pysvn.wc_status_kind.unversioned: 'label-default',
-    pysvn.wc_status_kind.modified: 'label-info',
-    pysvn.wc_status_kind.conflicted: 'label-danger',
-}
 
 
 class VersioningView(BaseUserView):
@@ -172,8 +164,9 @@ class VersioningView(BaseUserView):
                            'you have to fix the conflicts first'))
 
         try:
+            # TODO: we should raise custom exception to handle it correctly
             vobj.update(relpath)
-        except pysvn.ClientError, e:
+        except Exception, e:
             return self._response({
                 'error_msg': str(e).replace(self.root_path + '/', ''),
             })

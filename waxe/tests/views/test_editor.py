@@ -491,6 +491,8 @@ class TestEditorView(LoggedBobTestCase):
         request.matched_route = C()
         request.matched_route.name = 'route_json'
         request.custom_route_path = lambda *args, **kw: '/%s/filepath' % args[0]
+        request.registry.settings['versioning'] = 'true'
+        self.user_bob.config.use_versioning = True
         res = EditorView(request).diff()
         self.assertEqual(res.keys(), ['content', 'breadcrumb'])
         self.assertTrue('class="nav nav-tabs"' in res['content'])
