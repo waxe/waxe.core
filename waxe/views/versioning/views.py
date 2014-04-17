@@ -302,6 +302,8 @@ class VersioningView(BaseUserView):
 
         dic = {
             'content': html,
+            # Set the breadcrumb here since we don't want link on the filename
+            'breadcrumb': self._get_breadcrumb(filename),
         }
         return self._response(dic)
 
