@@ -21,6 +21,8 @@ from ..models import (
     ROLE_CONTRIBUTOR,
 )
 
+import taskq.models as taskqm
+
 
 def usage(argv):
     cmd = os.path.basename(argv[0])
@@ -38,6 +40,8 @@ def main(argv=sys.argv):
     engine = engine_from_config(settings, 'sqlalchemy.')
     DBSession.configure(bind=engine)
     Base.metadata.create_all(engine)
+    taskqm.DBSession.configure(bind=engine)
+    taskqm.Base.metadata.create_all(engine)
     with transaction.manager:
         admin_role = Role(name=ROLE_ADMIN)
         pwd = bcrypt.hashpw('admin', bcrypt.gensalt())

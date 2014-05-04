@@ -1,7 +1,8 @@
 import os
 from pyramid.httpexceptions import HTTPBadRequest
 from pyramid.security import has_permission
-from .. import security, models
+from .. import security, models, search, browser
+from taskq.models import Task
 
 
 class JSONHTTPBadRequest(HTTPBadRequest):
@@ -212,3 +213,16 @@ class BaseUserView(NavigationView):
         if 'whoosh.path' not in settings:
             return None
         return self.current_user.get_search_dirname(settings['whoosh.path'])
+
+    def add_indexation_task(self, paths=None):
+        # TODO: Use paths: the only files we want to udpate
+        # It's not done for now since search didn't handle this case.
+        dirname = self.get_search_dirname()
+        if not dirname:
+            return None
+        uc = self.current_user.config
+        if not uc or not uc.root_path:
+            return None
+        paths = browser.get_all_files(uc.root_path, uc.root_path)[1]
+        Task.create(search.do_index, [dirname, paths],
+                    owner=str(self.current_user.iduser))

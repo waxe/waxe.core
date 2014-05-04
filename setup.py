@@ -30,6 +30,7 @@ requires = [
     'pyramid_sqladmin',
     'pyramid_logging',
     'whoosh',
+    'taskq',
 ]
 
 setup(name='waxe',

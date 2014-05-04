@@ -8,6 +8,7 @@ from .models import (
     DBSession,
     Base,
 )
+import taskq.models as taskqm
 from .security import RootFactory
 
 # Add the modules you want to be include in the config
@@ -43,6 +44,8 @@ def main(global_config, **settings):
     engine = engine_from_config(settings, 'sqlalchemy.')
     DBSession.configure(bind=engine)
     Base.metadata.bind = engine
+    taskqm.DBSession.configure(bind=engine)
+    taskqm.Base.metadata.bind = engine
     session_key = settings['session.key']
     session_factory = UnencryptedCookieSessionFactoryConfig(session_key)
     config = Configurator(settings=settings,

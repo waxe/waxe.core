@@ -239,6 +239,7 @@ class EditorView(BaseUserView):
             log.exception(e, request=self.request)
             return {'status': False, 'error_msg': str(e)}
 
+        self.add_indexation_task([absfilename])
         return {
             'status': True,
             'breadcrumb': self._get_breadcrumb(filename)
@@ -263,6 +264,7 @@ class EditorView(BaseUserView):
             content = render('blocks/commit_modal.mak',
                              {}, self.request)
 
+        self.add_indexation_task([absfilename])
         return {'status': True, 'content': content}
 
     @view_config(route_name='add_element_json', renderer='json',

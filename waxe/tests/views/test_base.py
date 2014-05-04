@@ -503,3 +503,18 @@ class TestBaseUserView(BaseTestCase):
         view = BaseUserView(request)
         res = view.get_search_dirname()
         self.assertEqual(res, '/tmp/fake/user-2')
+
+    def test_add_indexation_task(self):
+        request = testing.DummyRequest()
+        request.matched_route = EmptyClass()
+        request.matched_route.name = 'test'
+        self.config.testing_securitypolicy(userid='Bob', permissive=True)
+        view = BaseUserView(request)
+        # No whoosh path
+        res = view.add_indexation_task()
+        self.assertEqual(res, None)
+
+        with patch('taskq.models.Task.create') as m:
+            request.registry.settings['whoosh.path'] = '/tmp/fake'
+            res = view.add_indexation_task()
+            m.assert_called_once()

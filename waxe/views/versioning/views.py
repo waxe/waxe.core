@@ -157,7 +157,6 @@ class VersioningView(BaseUserView):
     def update(self):
         relpath = self.request.GET.get('path', '')
         vobj = self.get_versioning_obj()
-
         if vobj.has_conflict():
             return self.status(
                 error_msg=('You can\'t update the repository, '
@@ -170,6 +169,7 @@ class VersioningView(BaseUserView):
             return self._response({
                 'error_msg': str(e).replace(self.root_path + '/', ''),
             })
+        self.add_indexation_task()
         return self.status(info_msg='The repository has been updated!')
 
     def prepare_commit(self, files=None):
@@ -237,6 +237,7 @@ class VersioningView(BaseUserView):
         status = True
         error_msgs = []
         files = []
+        absfilenames = []
         for dic in params['data']:
             filecontent = dic['filecontent']
             filename = dic['filename']
@@ -245,6 +246,7 @@ class VersioningView(BaseUserView):
                 obj = xmltool.load_string(filecontent)
                 obj.write(absfilename)
                 files += [filename]
+                absfilenames += [absfilename]
             except Exception, e:
                 status = False
                 error_msgs += ['%s: %s' % (filename, str(e))]
@@ -257,6 +259,7 @@ class VersioningView(BaseUserView):
         if self.request.POST.get('commit'):
             return self.prepare_commit(files)
 
+        self.add_indexation_task(absfilenames)
         return self._response({
             'content': 'Files updated'
         })
@@ -327,6 +330,7 @@ class VersioningView(BaseUserView):
                 'error_msg': ('Error during the conflict\'s resolution '
                               '%s' % str(e))
             })
+        self.add_indexation_task([absfilename])
         return self.status()
 
 
