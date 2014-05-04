@@ -149,6 +149,7 @@ class TestExplorerView(LoggedBobTestCase):
             'breadcrumb': '<li class="active">root</li>',
             'editor_login': 'Bob',
             'versioning': False,
+            'search': False,
         }
         self.assertEqual(res, expected)
 
@@ -158,6 +159,7 @@ class TestExplorerView(LoggedBobTestCase):
             'error_msg': "Directory . doesn't exist",
             'editor_login': u'Bob',
             'versioning': False,
+            'search': False,
         }
         self.assertEqual(res, expected)
 
@@ -203,6 +205,42 @@ class TestExplorerView(LoggedBobTestCase):
             self.assertTrue('File exists' in res['error_msg'])
         finally:
             os.rmdir(os.path.join(path, 'new_folder'))
+
+    def test_search(self):
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        self.user_bob.config.root_path = path
+        request = testing.DummyRequest()
+        res = ExplorerView(request).search()
+        expected = {'error_msg': 'Nothing to search'}
+        self.assertEqual(res, expected)
+
+        request = testing.DummyRequest(params={'search': 'new_folder'})
+        res = ExplorerView(request).search()
+        expected = {'error_msg': 'The search is not available'}
+
+        request.registry.settings['whoosh.path'] = '/tmp/fake'
+        request.custom_route_path = lambda *args, **kw: '/filepath'
+        res = ExplorerView(request).search()
+        expected = {'error_msg': 'The search is not available'}
+
+        with patch('os.path.exists', return_value=True):
+            with patch('waxe.search.do_search', return_value=None):
+                res = ExplorerView(request).search()
+                expected = {'content': 'No result!'}
+                self.assertEqual(res, expected)
+
+            return_value = [
+                (os.path.join(path, 'file1.xml'), 'Excerpt of the file1')
+            ]
+            with patch('waxe.search.do_search', return_value=return_value):
+                res = ExplorerView(request).search()
+                expected = {
+                    'content': '\n  <a href="/filepath" '
+                               'data-href="/filepath">'
+                               '<i class="glyphicon glyphicon-file"></i>'
+                               'file1.xml</a>\n  '
+                               '<p>Excerpt of the file1</p>\n\n'}
+                self.assertEqual(res, expected)
 
 
 class TestFunctionalTestExplorerView(WaxeTestCase):
@@ -345,3 +383,9 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
             self.assertTrue('File exists' in dic['error_msg'])
         finally:
             os.rmdir(os.path.join(path, 'new_folder'))
+
+    @login_user('Bob')
+    def test_search_json(self):
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        self.user_bob.config.root_path = path
+        self.testapp.get('/account/Bob/search.json', status=200)

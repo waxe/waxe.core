@@ -5,6 +5,7 @@ from pyramid.renderers import render
 from pyramid.httpexceptions import HTTPFound
 from base import BaseUserView
 from .. import browser
+from .. import search
 
 
 class ExplorerView(BaseUserView):
@@ -140,6 +141,33 @@ class ExplorerView(BaseUserView):
             return {'status': False, 'error_msg': error}
         return {'status': True}
 
+    @view_config(route_name='search', renderer='index.mak', permission='edit')
+    @view_config(route_name='search_json', renderer='json', permission='edit')
+    def search(self):
+        s = self.request.POST.get('search')
+        if not s:
+            return {'error_msg': 'Nothing to search'}
+
+        dirname = self.get_search_dirname()
+        if not dirname or not os.path.exists(dirname):
+            return {'error_msg': 'The search is not available'}
+
+        res = search.do_search(dirname, s)
+        if not res:
+            return {'content': 'No result!'}
+        lis = []
+        for path, excerpt in res:
+            path = browser.relative_path(path, self.root_path)
+            href = self.request.custom_route_path('edit',
+                                                  _query=[('path', path)])
+            data_href = self.request.custom_route_path('edit_json',
+                                                       _query=[('path', path)])
+            lis += [(path, href, data_href, excerpt)]
+        content = render('blocks/search.mak',
+                         {'data': lis},
+                         self.request)
+        return {'content': content}
+
 
 def includeme(config):
     config.add_route('home', '/')
@@ -148,4 +176,6 @@ def includeme(config):
     config.add_route('explore_json', '/explore.json')
     config.add_route('open_json', '/open.json')
     config.add_route('create_folder_json', '/create-folder.json')
+    config.add_route('search', '/search')
+    config.add_route('search_json', '/search.json')
     config.scan(__name__)

@@ -26,6 +26,7 @@ from .validator import BCryptValidator
 DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 Base = extended_declarative_base(DBSession)
 
+
 ROLE_ADMIN = 'admin'
 ROLE_EDITOR = 'editor'
 ROLE_CONTRIBUTOR = 'contributor'
@@ -118,6 +119,10 @@ class User(Base):
     def is_admin(self):
         return self.has_role(ROLE_ADMIN)
 
+    def get_search_dirname(self, whoosh_path):
+        if not self.config or not self.config.root_path:
+            return None
+        return os.path.join(whoosh_path, 'user-%s' % self.iduser)
 
 class UserConfig(Base):
     __tablename__ = 'user_config'

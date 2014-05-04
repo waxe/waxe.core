@@ -208,9 +208,11 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
         self.user_bob.config.root_path = self.client_dir
         request = self.DummyRequest()
         res = self.ClassView(request).status()
-        self.assertEqual(len(res), 4)
-        self.assertEqual(res.keys(), ['content', 'breadcrumb',
-                                     'versioning', 'editor_login'])
+        self.assertEqual(len(res), 5)
+        keys = res.keys()
+        keys.sort()
+        self.assertEqual(keys, ['breadcrumb', 'content', 'editor_login',
+                                'search', 'versioning'])
         self.assertTrue('file1.xml' in res['content'])
         self.assertTrue('file3.xml' in res['content'])
         self.assertTrue('file4.xml' in res['content'])
@@ -222,9 +224,11 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
         self.user_bob.config.root_path = self.client_dir
         request = self.DummyRequest()
         res = self.ClassView(request).short_diff()
-        self.assertEqual(len(res), 4)
-        self.assertEqual(res.keys(), ['content', 'breadcrumb', 'versioning',
-                                      'editor_login'])
+        self.assertEqual(len(res), 5)
+        keys = res.keys()
+        keys.sort()
+        self.assertEqual(keys, ['breadcrumb', 'content', 'editor_login',
+                                'search', 'versioning'])
         content = res['content']
         expected = (
             '<pre>Index: file1.xml\n'
@@ -247,9 +251,11 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
 
         request = self.DummyRequest(params={'path': 'file1.xml'})
         res = self.ClassView(request).short_diff()
-        self.assertEqual(len(res), 4)
-        self.assertEqual(res.keys(), ['content', 'breadcrumb', 'versioning',
-                                      'editor_login'])
+        self.assertEqual(len(res), 5)
+        keys = res.keys()
+        keys.sort()
+        self.assertEqual(keys, ['breadcrumb', 'content', 'editor_login',
+                                'search', 'versioning'])
         content = res['content']
         expected = (
             '<pre>Index: file1.xml\n'
@@ -276,6 +282,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
             'error_msg': 'You should provide at least one filename.',
             'editor_login': 'Bob',
             'versioning': True,
+            'search': False,
             'breadcrumb': ('<li><a data-href="/explore_json" '
                            'href="/explore">root</a> </li>')
         }
@@ -285,9 +292,11 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                                     params={'filenames': 'file1.xml'})
         request.POST = MultiDict({'filenames': 'file1.xml'})
         res = self.ClassView(request).diff()
-        self.assertEqual(len(res), 4)
-        self.assertEqual(res.keys(), ['content', 'breadcrumb',
-                                      'versioning', 'editor_login'])
+        self.assertEqual(len(res), 5)
+        keys = res.keys()
+        keys.sort()
+        self.assertEqual(keys, ['breadcrumb', 'content', 'editor_login',
+                                'search', 'versioning'])
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 1)
         self.assertTrue('submit' in res['content'])
@@ -297,9 +306,11 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                                     params={'filenames': 'file3.xml'})
         request.POST = MultiDict({'filenames': 'file3.xml'})
         res = self.ClassView(request).diff()
-        self.assertEqual(len(res), 4)
-        self.assertEqual(res.keys(), ['content', 'breadcrumb',
-                                      'versioning', 'editor_login'])
+        self.assertEqual(len(res), 5)
+        keys = res.keys()
+        keys.sort()
+        self.assertEqual(keys, ['breadcrumb', 'content', 'editor_login',
+                                'search', 'versioning'])
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 1)
         self.assertTrue('submit' in res['content'])
@@ -310,9 +321,11 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
         request.POST = MultiDict({'filenames': 'file3.xml'})
         self.user_bob.roles = [self.role_contributor]
         res = self.ClassView(request).diff()
-        self.assertEqual(len(res), 4)
-        self.assertEqual(res.keys(), ['content', 'breadcrumb',
-                                      'versioning', 'editor_login'])
+        self.assertEqual(len(res), 5)
+        keys = res.keys()
+        keys.sort()
+        self.assertEqual(keys, ['breadcrumb', 'content', 'editor_login',
+                                'search', 'versioning'])
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 1)
         self.assertTrue('submit' in res['content'])
@@ -321,9 +334,11 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
         request.POST = MultiDict([('filenames', 'file1.xml'),
                                  ('filenames', 'file3.xml')])
         res = self.ClassView(request).diff()
-        self.assertEqual(len(res), 4)
-        self.assertEqual(res.keys(), ['content', 'breadcrumb',
-                                      'versioning', 'editor_login'])
+        self.assertEqual(len(res), 5)
+        keys = res.keys()
+        keys.sort()
+        self.assertEqual(keys, ['breadcrumb', 'content', 'editor_login',
+                                'search', 'versioning'])
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 2)
         self.assertTrue('submit' in res['content'])
@@ -334,9 +349,11 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                                  ('filenames', 'file3.xml'),
                                  ('submit', 'Commit')])
         res = self.ClassView(request).diff()
-        self.assertEqual(len(res), 4)
-        self.assertEqual(res.keys(), ['breadcrumb', 'versioning',
-                                      'modal', 'editor_login'])
+        self.assertEqual(len(res), 5)
+        keys = res.keys()
+        keys.sort()
+        self.assertEqual(keys, ['breadcrumb', 'editor_login', 'modal',
+                                'search', 'versioning'])
         self.assertTrue('Choose the files you want to commit' in res['modal'])
 
     @login_user('Bob')
@@ -351,6 +368,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                     'error_msg': "No file selected!",
                     'editor_login': 'Bob',
                     'versioning': True,
+                    'search': False,
                     'breadcrumb': ('<li><a data-href="/explore_json" '
                                    'href="/explore">root</a> </li>')
                 }
@@ -363,6 +381,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                     'error_msg': "No commit message!",
                     'editor_login': 'Bob',
                     'versioning': True,
+                    'search': False,
                     'breadcrumb': ('<li><a data-href="/explore_json" '
                                    'href="/explore">root</a> </li>')
                 }
@@ -380,6 +399,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                         'error_msg': 'Error during the commit Error',
                         'editor_login': 'Bob',
                         'versioning': True,
+                        'search': False,
                         'breadcrumb': ('<li><a data-href="/explore_json" '
                                        'href="/explore">root</a> </li>')
                     }
@@ -392,6 +412,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                                       'to commit: test.xml'),
                         'editor_login': 'Bob',
                         'versioning': True,
+                        'search': False,
                         'breadcrumb': ('<li><a data-href="/explore_json" '
                                        'href="/explore">root</a> </li>')
                     }
@@ -489,6 +510,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
             'error_msg': 'Missing parameters!',
             'editor_login': 'Bob',
             'versioning': True,
+            'search': False,
             'breadcrumb': ('<li><a data-href="/explore_json" '
                            'href="/explore">root</a> </li>')
         }
@@ -513,6 +535,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                               'thefilename2.xml: My error'),
                 'editor_login': 'Bob',
                 'versioning': True,
+                'search': False,
                 'breadcrumb': ('<li><a data-href="/explore_json" '
                                'href="/explore">root</a> </li>')
             }
@@ -532,6 +555,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                 'content': 'Files updated',
                 'editor_login': 'Bob',
                 'versioning': True,
+                'search': False,
                 'breadcrumb': ('<li><a data-href="/filepath" '
                                'href="/filepath">root</a> </li>')
             }
@@ -539,7 +563,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
 
             request.params['commit'] = True
             res = self.ClassView(request).update_texts()
-            self.assertEqual(len(res), 4)
+            self.assertEqual(len(res), 5)
             self.assertTrue('breadcrumb' in res)
             self.assertEqual(res['versioning'], True)
             self.assertEqual(res['editor_login'], 'Bob')
@@ -573,6 +597,7 @@ class TestVersioningViewFakeRepo(BaseTestCase, CreateRepo):
             'editor_login': 'Bob',
             'error_msg': 'A filename should be provided',
             'versioning': True,
+            'search': False,
             'breadcrumb': ('<li><a data-href="/explore_json" '
                            'href="/explore">root</a> </li>')
         }
@@ -621,6 +646,7 @@ class TestVersioningViewFakeRepo(BaseTestCase, CreateRepo):
             'error_msg': 'Missing parameters!',
             'editor_login': 'Bob',
             'versioning': True,
+            'search': False,
             'breadcrumb': ('<li><a data-href="/explore_json" '
                            'href="/explore">root</a> </li>')
         }
@@ -645,6 +671,7 @@ class TestVersioningViewFakeRepo(BaseTestCase, CreateRepo):
                 'error_msg': 'The conflict is not resolved: My error',
                 'editor_login': 'Bob',
                 'versioning': True,
+                'search': False,
                 'breadcrumb': ('<li><a data-href="/filepath" '
                                'href="/filepath">root</a> </li>')
             }
@@ -686,9 +713,12 @@ class TestVersioningViewFakeRepo(BaseTestCase, CreateRepo):
         request.matched_route.name = 'route'
 
         res = VersioningView(request).update()
-        self.assertEqual(len(res), 5)
-        self.assertEqual(res.keys(), ['content', 'breadcrumb', 'info_msg',
-                                      'versioning', 'editor_login'])
+        self.assertEqual(len(res), 6)
+        keys = res.keys()
+        keys.sort()
+        expected = ['breadcrumb', 'content', 'editor_login', 'info_msg',
+                    'search', 'versioning']
+        self.assertEqual(keys, expected)
         self.assertEqual(res['info_msg'], 'The repository has been updated!')
         self.assertTrue('List of updated files:' in res['content'])
 
@@ -700,9 +730,12 @@ class TestVersioningViewFakeRepo(BaseTestCase, CreateRepo):
         self.client.update(self.client_dir)
 
         res = VersioningView(request).update()
-        self.assertEqual(len(res), 5)
-        self.assertEqual(res.keys(), ['content', 'breadcrumb', 'error_msg',
-                                      'versioning', 'editor_login'])
+        self.assertEqual(len(res), 6)
+        keys = res.keys()
+        keys.sort()
+        expected = ['breadcrumb', 'content', 'editor_login', 'error_msg',
+                    'search', 'versioning']
+        self.assertEqual(keys, expected)
         expected_error_msg = ('You can\'t update the repository, '
                               'you have to fix the conflicts first')
         self.assertEqual(res['error_msg'], expected_error_msg)

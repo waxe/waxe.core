@@ -247,6 +247,7 @@ class TestBaseView(BaseTestCase):
         expected = {
             'editor_login': self.user_fred.login,
             'versioning': False,
+            'search': False,
         }
         self.assertEqual(res, expected)
 
@@ -258,6 +259,7 @@ class TestBaseView(BaseTestCase):
             'editor_login': 'Bob',
             'logins': ['Fred'],
             'versioning': False,
+            'search': False,
         }
         self.assertEqual(res, expected)
 
@@ -267,6 +269,7 @@ class TestBaseView(BaseTestCase):
             'logins': ['Fred'],
             'key': 'value',
             'versioning': False,
+            'search': False,
         }
         self.assertEqual(res, expected)
 
@@ -277,27 +280,40 @@ class TestBaseView(BaseTestCase):
         request.matched_route.name = 'route'
 
         res = BaseView(request)._response({})
-        self.assertEqual(res, {'editor_login': self.user_admin.login,
-                               'versioning': False})
+        self.assertEqual(res, {
+            'editor_login': self.user_admin.login,
+            'versioning': False,
+            'search': False,
+        })
 
         view = BaseView(request)
         view.current_user = self.user_bob
         view.root_path = 'something'
         res = view._response({})
-        self.assertEqual(res, {'editor_login': 'Bob',
-                               'versioning': False})
+        self.assertEqual(res, {
+            'editor_login': 'Bob',
+            'versioning': False,
+            'search': False,
+        })
 
         request.registry.settings['versioning'] = 'true'
         view = BaseView(request)
         view.current_user = self.user_bob
         res = view._response({})
-        self.assertEqual(res, {'editor_login': 'Bob', 'versioning': False})
+        self.assertEqual(res, {
+            'editor_login': 'Bob',
+            'versioning': False,
+            'search': False,
+        })
 
         # The user which we edit support versioning!
         self.user_bob.config.use_versioning = True
         res = view._response({})
-        self.assertEqual(res, {'editor_login': 'Bob',
-                               'versioning': True})
+        self.assertEqual(res, {
+            'editor_login': 'Bob',
+            'versioning': True,
+            'search': False,
+        })
 
         # Will not fail even if the editor is not in the DB
         o = BaseView(request)
@@ -308,6 +324,7 @@ class TestBaseView(BaseTestCase):
         expected = {
             'editor_login': 'John',
             'versioning': False,
+            'search': False,
         }
         self.assertEqual(res, expected)
 
@@ -318,18 +335,27 @@ class TestBaseView(BaseTestCase):
         request.matched_route.name = 'route'
 
         res = BaseView(request)._response({})
-        self.assertEqual(res, {'editor_login': self.user_bob.login,
-                               'versioning': False})
+        self.assertEqual(res, {
+            'editor_login': self.user_bob.login,
+            'versioning': False,
+            'search': False,
+        })
 
         res = BaseView(request)._response({})
-        self.assertEqual(res, {'editor_login': 'Bob',
-                               'versioning': False})
+        self.assertEqual(res, {
+            'editor_login': 'Bob',
+            'versioning': False,
+            'search': False,
+        })
 
         self.user_fred.roles = [self.role_editor, self.role_contributor]
         res = BaseView(request)._response({})
-        self.assertEqual(res, {'editor_login': 'Bob',
-                               'logins': ['Fred'],
-                               'versioning': False})
+        self.assertEqual(res, {
+            'editor_login': 'Bob',
+            'logins': ['Fred'],
+            'versioning': False,
+            'search': False,
+        })
 
     @login_user('LeResKP')
     def test__response_lereskp(self):
@@ -338,7 +364,32 @@ class TestBaseView(BaseTestCase):
         request.matched_route.name = 'route'
 
         res = BaseView(request)._response({})
-        self.assertEqual(res, {'editor_login': 'LeResKP', 'versioning': False})
+        self.assertEqual(res, {
+            'editor_login': 'LeResKP',
+            'versioning': False,
+            'search': False,
+        })
+
+    @login_user('Admin')
+    def test__response_seach(self):
+        request = self.DummyRequest()
+        request.matched_route = EmptyClass()
+        request.matched_route.name = 'route'
+
+        res = BaseView(request)._response({})
+        self.assertEqual(res, {
+            'editor_login': self.user_admin.login,
+            'versioning': False,
+            'search': False,
+        })
+
+        request.registry.settings['whoosh.path'] = '/tmp/fake'
+        res = BaseView(request)._response({})
+        self.assertEqual(res, {
+            'editor_login': self.user_admin.login,
+            'versioning': False,
+            'search': True,
+        })
 
 
 class TestNavigationView(LoggedBobTestCase):
@@ -438,3 +489,17 @@ class TestBaseUserView(BaseTestCase):
         request.matchdict['login'] = 'Fred'
         res = BaseUserView(request)
         self.assertEqual(res.current_user, self.user_fred)
+
+    def test_get_search_dirname(self):
+        request = testing.DummyRequest()
+        request.matched_route = EmptyClass()
+        request.matched_route.name = 'test'
+        self.config.testing_securitypolicy(userid='Bob', permissive=True)
+        view = BaseUserView(request)
+        res = view.get_search_dirname()
+        self.assertEqual(res, None)
+
+        request.registry.settings['whoosh.path'] = '/tmp/fake'
+        view = BaseUserView(request)
+        res = view.get_search_dirname()
+        self.assertEqual(res, '/tmp/fake/user-2')

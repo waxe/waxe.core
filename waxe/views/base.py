@@ -128,6 +128,7 @@ class BaseView(object):
             dic['logins'] = logins
 
         dic['versioning'] = self.has_versioning()
+        dic['search'] = ('whoosh.path' in self.request.registry.settings)
         return dic
 
 
@@ -205,3 +206,9 @@ class BaseUserView(NavigationView):
             return helper.PysvnVersioning(self.request, self.current_user,
                                           self.root_path)
         return None
+
+    def get_search_dirname(self):
+        settings = self.request.registry.settings
+        if 'whoosh.path' not in settings:
+            return None
+        return self.current_user.get_search_dirname(settings['whoosh.path'])

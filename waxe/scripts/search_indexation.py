@@ -44,7 +44,7 @@ def main(argv=sys.argv):
     for uc in UserConfig.query.all():
         if not uc.root_path:
             continue
-        dirname = os.path.join(whoosh_path, 'user-%s' % uc.user.iduser)
+        dirname = uc.user.get_search_dirname(whoosh_path)
         paths = browser.get_all_files(uc.root_path, uc.root_path)[1]
         search.do_index(dirname, paths)
 
