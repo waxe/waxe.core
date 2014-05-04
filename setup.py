@@ -29,6 +29,7 @@ requires = [
     'py-bcrypt',
     'pyramid_sqladmin',
     'pyramid_logging',
+    'whoosh',
 ]
 
 setup(name='waxe',
