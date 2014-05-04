@@ -123,7 +123,7 @@ def do_search(dirname, expr):
 
     qp = QueryParser("content", schema=ix.schema)
     qp.add_plugin(FuzzyTermPlugin())
-    q = qp.parse(u"%s~" % expr)
+    q = qp.parse(u"%(expr)s OR %(expr)s~" % {'expr': expr})
 
     lis = []
     with ix.searcher() as s:
