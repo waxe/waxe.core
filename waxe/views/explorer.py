@@ -146,15 +146,15 @@ class ExplorerView(BaseUserView):
     def search(self):
         s = self.request.POST.get('search')
         if not s:
-            return {'error_msg': 'Nothing to search'}
+            return self._response({'error_msg': 'Nothing to search'})
 
         dirname = self.get_search_dirname()
         if not dirname or not os.path.exists(dirname):
-            return {'error_msg': 'The search is not available'}
+            return self._response({'error_msg': 'The search is not available'})
 
         res = search.do_search(dirname, s)
         if not res:
-            return {'content': 'No result!'}
+            return self._response({'content': 'No result!'})
         lis = []
         for path, excerpt in res:
             path = browser.relative_path(path, self.root_path)
@@ -166,7 +166,7 @@ class ExplorerView(BaseUserView):
         content = render('blocks/search.mak',
                          {'data': lis},
                          self.request)
-        return {'content': content}
+        return self._response({'content': content})
 
 
 def includeme(config):
