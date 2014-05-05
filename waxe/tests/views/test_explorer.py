@@ -207,14 +207,24 @@ class TestExplorerView(LoggedBobTestCase):
             os.rmdir(os.path.join(path, 'new_folder'))
 
     def test_search(self):
+        class C(object): pass
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
         self.user_bob.config.root_path = path
         request = testing.DummyRequest()
+        request.matched_route = C()
+        request.matched_route.name = 'route'
         res = ExplorerView(request).search()
-        expected = {'error_msg': 'Nothing to search'}
+        expected = {
+            'error_msg': 'Nothing to search',
+            'editor_login': 'Bob',
+            'search': False,
+            'versioning': False
+        }
         self.assertEqual(res, expected)
 
         request = testing.DummyRequest(params={'search': 'new_folder'})
+        request.matched_route = C()
+        request.matched_route.name = 'route_json'
         res = ExplorerView(request).search()
         expected = {'error_msg': 'The search is not available'}
 
@@ -224,23 +234,26 @@ class TestExplorerView(LoggedBobTestCase):
         expected = {'error_msg': 'The search is not available'}
 
         with patch('os.path.exists', return_value=True):
-            with patch('waxe.search.do_search', return_value=None):
+            with patch('waxe.search.do_search', return_value=(None, 0)):
                 res = ExplorerView(request).search()
                 expected = {'content': 'No result!'}
                 self.assertEqual(res, expected)
 
-            return_value = [
+            return_value = ([
                 (os.path.join(path, 'file1.xml'), 'Excerpt of the file1')
-            ]
+            ], 1)
             with patch('waxe.search.do_search', return_value=return_value):
                 res = ExplorerView(request).search()
-                expected = {
-                    'content': '\n  <a href="/filepath" '
-                               'data-href="/filepath">'
-                               '<i class="glyphicon glyphicon-file"></i>'
-                               'file1.xml</a>\n  '
-                               '<p>Excerpt of the file1</p>\n\n'}
-                self.assertEqual(res, expected)
+                expected = (
+                    '\n  <a href="/filepath" '
+                    'data-href="/filepath">'
+                    '<i class="glyphicon glyphicon-file"></i>'
+                    'file1.xml</a>\n  '
+                    '<p>Excerpt of the file1</p>\n\n')
+                self.maxDiff = None
+                self.assertEqual(len(res), 1)
+                self.assertTrue(expected in res['content'])
+                self.assertTrue('class="pagination"' in res['content'])
 
 
 class TestFunctionalTestExplorerView(WaxeTestCase):

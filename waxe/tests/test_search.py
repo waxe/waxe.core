@@ -99,32 +99,32 @@ class TestSearch(unittest.TestCase):
         search.do_index(indexpath, paths)
 
         res = search.do_search(indexpath, 'file')
-        expected = [
+        expected = ([
             (os.path.join(filepath, '1.xml'),
              u'<b class="match term0">File</b> 1'),
             (os.path.join(filepath, '2.xml'),
              u'<b class="match term0">File</b> 2')
-        ]
+        ], 1)
         self.assertEqual(res, expected)
 
         res = search.do_search(indexpath, u'Téster')
-        expected = [
+        expected = ([
             (os.path.join(filepath, u'é-iso.xml'),
              u'<b class="match term0">Téster</b> les accents à risque'),
             (os.path.join(filepath, u'é.xml'),
              u'<b class="match term0">Téster</b> les accents à risque'),
-        ]
+        ], 1)
         self.assertEqual(res, expected)
 
         res = search.do_search(indexpath, u'tester')
-        expected = [
+        expected = ([
             (os.path.join(filepath, u'é-iso.xml'),
              u'<b class="match term0">Téster</b> les accents à risque'),
             (os.path.join(filepath, u'é.xml'),
              u'<b class="match term0">Téster</b> les accents à risque'),
-        ]
+        ], 1)
         self.assertEqual(res, expected)
 
         # The XML tags are not indexed
         res = search.do_search(indexpath, 'text')
-        self.assertEqual(res, [])
+        self.assertEqual(res, ([], 0))

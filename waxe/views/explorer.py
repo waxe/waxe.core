@@ -4,8 +4,7 @@ from pyramid.view import view_config
 from pyramid.renderers import render
 from pyramid.httpexceptions import HTTPFound
 from base import BaseUserView
-from .. import browser
-from .. import search
+from .. import browser, search
 
 
 class ExplorerView(BaseUserView):
@@ -144,7 +143,7 @@ class ExplorerView(BaseUserView):
     @view_config(route_name='search', renderer='index.mak', permission='edit')
     @view_config(route_name='search_json', renderer='json', permission='edit')
     def search(self):
-        s = self.request.POST.get('search')
+        s = self.request.params.get('search')
         if not s:
             return self._response({'error_msg': 'Nothing to search'})
 
@@ -152,7 +151,13 @@ class ExplorerView(BaseUserView):
         if not dirname or not os.path.exists(dirname):
             return self._response({'error_msg': 'The search is not available'})
 
-        res = search.do_search(dirname, s)
+        page = self.request.params.get('page') or 1
+        try:
+            page = int(page)
+        except ValueError:
+            page = 1
+
+        res, pages = search.do_search(dirname, s, page)
         if not res:
             return self._response({'content': 'No result!'})
         lis = []
@@ -163,8 +168,22 @@ class ExplorerView(BaseUserView):
             data_href = self.request.custom_route_path('edit_json',
                                                        _query=[('path', path)])
             lis += [(path, href, data_href, excerpt)]
+
+        def search_url(p, json=False):
+            routename = 'search'
+            if json:
+                routename += '_json'
+            return self.request.custom_route_path(routename,
+                                                  _query=[('search', s),
+                                                          ('page', p)])
+
         content = render('blocks/search.mak',
-                         {'data': lis},
+                         {
+                             'data': lis,
+                             'pages': range(1, pages+1),
+                             'curpage': page,
+                             'search_url': search_url,
+                         },
                          self.request)
         return self._response({'content': content})
 
