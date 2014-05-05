@@ -4,7 +4,34 @@ from pyramid.view import view_config
 from pyramid.renderers import render
 from pyramid.httpexceptions import HTTPFound
 from base import BaseUserView
+import webhelpers.paginate as paginate
+from webhelpers.html import HTML
 from .. import browser, search
+
+
+class BootstrapPage(paginate.Page):
+    # TODO: support to have 'class="active"' on current <li>
+
+    def pager(self, *args, **kw):
+        kw['separator'] = '</li><li>'
+        html = super(BootstrapPage, self).pager(*args, **kw)
+        return '<ul class="pagination"><li>%s</li></ul>' % html
+
+    def _pagerlink(self, page, text):
+        """
+        Same function as in webhelpers.paginate.Page: just simplify it and
+        support data-href and assume url_generator is defined
+        """
+        link_params = {}
+        link_params.update(self.kwargs)
+        link_params.update(self.pager_kwargs)
+        link_params[self.page_param] = page
+        # Create the URL to load a certain page
+        link_url = self._url_generator(**link_params)
+        data_link_url = self._url_generator(json=True, **link_params)
+        link_attr = self.link_attr.copy()
+        link_attr['data-href'] = data_link_url
+        return HTML.a(text, href=link_url, **link_attr)
 
 
 class ExplorerView(BaseUserView):
@@ -151,13 +178,13 @@ class ExplorerView(BaseUserView):
         if not dirname or not os.path.exists(dirname):
             return self._response({'error_msg': 'The search is not available'})
 
-        page = self.request.params.get('page') or 1
+        p = self.request.params.get('page') or 1
         try:
-            page = int(page)
+            p = int(p)
         except ValueError:
-            page = 1
+            p = 1
 
-        res, pages = search.do_search(dirname, s, page)
+        res, nb_hits = search.do_search(dirname, s, p)
         if not res:
             return self._response({'content': 'No result!'})
         lis = []
@@ -169,19 +196,20 @@ class ExplorerView(BaseUserView):
                                                        _query=[('path', path)])
             lis += [(path, href, data_href, excerpt)]
 
-        def search_url(p, json=False):
+        def search_url(page, json=False):
             routename = 'search'
             if json:
                 routename += '_json'
             return self.request.custom_route_path(routename,
                                                   _query=[('search', s),
-                                                          ('page', p)])
+                                                          ('page', page)])
 
+        pageobj = BootstrapPage(None, p, item_count=nb_hits, url=search_url,
+                                items_per_page=search.HITS_PER_PAGE)
         content = render('blocks/search.mak',
                          {
                              'data': lis,
-                             'pages': range(1, pages+1),
-                             'curpage': page,
+                             'pageobj': pageobj,
                              'search_url': search_url,
                          },
                          self.request)

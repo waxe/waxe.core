@@ -136,5 +136,4 @@ def do_search(dirname, expr, page=1):
         nb = len(results)
         for hit in results:
             lis += [(hit['path'], hit.highlights("content"))]
-    nb_pages = int(math.ceil(nb / float(HITS_PER_PAGE)))
-    return lis, nb_pages
+    return lis, nb

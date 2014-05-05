@@ -31,6 +31,7 @@ requires = [
     'pyramid_logging',
     'whoosh',
     'taskq',
+    'webhelpers',
 ]
 
 setup(name='waxe',
