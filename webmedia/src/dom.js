@@ -91,7 +91,7 @@ var waxe = waxe || {};
                     return false;
                 }
                 var editor = CodeMirror.fromTextArea(c, {
-                        mode: {name: "xml", alignCDATA: true},
+                        mode: {name: "xml"},
                         lineNumbers: true,
                         lineWrapping: true,
                       });
