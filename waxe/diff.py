@@ -1,4 +1,5 @@
 import difflib
+from . import utils
 
 class HtmlDiff(difflib.HtmlDiff):
 
@@ -17,7 +18,7 @@ class HtmlDiff(difflib.HtmlDiff):
             # handle blank lines where linenum is '>' or ''
             id = ''
         # replace those things that would get confused with HTML symbols
-        text = text.replace("&", "&amp;").replace(">", "&gt;").replace("<", "&lt;")
+        text = utils.escape_entities(text)
 
         # make space non-breakable so they don't get compressed or line wrapped
         # text = text.replace(' ','&nbsp;').rstrip()

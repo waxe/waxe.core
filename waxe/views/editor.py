@@ -8,7 +8,7 @@ import json
 from urllib2 import HTTPError, URLError
 from pyramid.view import view_config
 from pyramid.renderers import render, Response
-from .. import browser
+from .. import browser, utils
 from base import BaseUserView
 import pyramid_logging
 
@@ -132,18 +132,21 @@ class EditorView(BaseUserView):
         absfilename = browser.absolute_path(filename, root_path)
         try:
             content = open(absfilename, 'r').read()
+            content = content.decode('utf-8')
         except Exception, e:
             log.exception(e, request=self.request)
             return self._response({
                 'error_msg': str(e)
             })
 
-        html = '<form id="xmltool-form" data-href="%s" method="POST">' % (
+        content = utils.escape_entities(content)
+
+        html = u'<form id="xmltool-form" data-href="%s" method="POST">' % (
             self.request.custom_route_path('update_text_json'),
         )
-        html += '<input type="hidden" id="_xml_filename" name="filename" value="%s" />' % filename
-        html += '<textarea class="codemirror" name="filecontent">%s</textarea>' % content
-        html += '</form>'
+        html += u'<input type="hidden" id="_xml_filename" name="filename" value="%s" />' % filename
+        html += u'<textarea class="codemirror" name="filecontent">%s</textarea>' % content
+        html += u'</form>'
 
         breadcrumb = self._get_breadcrumb(filename)
         nav = self._get_nav_editor(filename, kind=NAV_EDIT_TEXT)
@@ -350,7 +353,7 @@ class EditorView(BaseUserView):
         lis = vobj.diff(filename)
         content = ''
         for l in lis:
-            l = l.replace("&", "&amp;").replace(">", "&gt;").replace("<", "&lt;")
+            l = utils.escape_entities(l)
             content += '<pre>%s</pre>' % l
 
         if not content:

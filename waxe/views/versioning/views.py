@@ -5,7 +5,7 @@ from pyramid.renderers import render
 from pyramid.view import view_config
 from waxe import browser
 from waxe import models
-from waxe.utils import unflatten_params
+from waxe.utils import escape_entities
 from ..base import BaseUserView
 from . import helper
 
@@ -116,7 +116,7 @@ class VersioningView(BaseUserView):
         lis = vobj.diff(relpath)
         content = ''
         for l in lis:
-            l = l.replace("&", "&amp;").replace(">", "&gt;").replace("<", "&lt;")
+            l = escape_entities(l)
             content += '<pre>%s</pre>' % l
         return self._response({'content': content})
 
@@ -229,7 +229,7 @@ class VersioningView(BaseUserView):
     @view_config(route_name='versioning_update_texts_json', renderer='json',
                  permission='edit')
     def update_texts(self):
-        params = unflatten_params(self.request.POST)
+        params = xmltool.utils.unflatten_params(self.request.POST)
         if 'data' not in params or not params['data']:
             return self._response({'error_msg': 'Missing parameters!'})
 
@@ -281,20 +281,23 @@ class VersioningView(BaseUserView):
         absfilename = browser.absolute_path(filename, root_path)
         try:
             content = open(absfilename, 'r').read()
+            content = content.decode('utf-8')
         except Exception, e:
             log.exception(e, request=self.request)
             return self._response({
                 'error_msg': str(e)
             })
 
-        html = '<form data-action="%s" action="%s" method="POST">' % (
+        content = escape_entities(content)
+
+        html = u'<form data-action="%s" action="%s" method="POST">' % (
             self.request.custom_route_path('versioning_update_conflict_json'),
             self.request.custom_route_path('versioning_update_conflict'),
         )
-        html += '<input type="hidden" id="_xml_filename" name="filename" value="%s" />' % filename
-        html += '<textarea class="codemirror" name="filecontent">%s</textarea>' % content
-        html += '<input type="submit" value="Save and resolve conflict" />'
-        html += '</form>'
+        html += u'<input type="hidden" id="_xml_filename" name="filename" value="%s" />' % filename
+        html += u'<textarea class="codemirror" name="filecontent">%s</textarea>' % content
+        html += u'<input type="submit" value="Save and resolve conflict" />'
+        html += u'</form>'
 
         dic = {
             'content': html,
