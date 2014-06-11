@@ -2,13 +2,8 @@ List of improvements
 --------------------
 
 * plugin system to be able to add some predefined structure. Also support some user input needed to prefill the structure.
-* Copy/cut/paste structure in the same file and between many files
-* commit without making a diff
-* Support svn with pysvn and python-svn because pysvn is slow and not on pypi
-* Be able to resolve the confict by editing in raw text.
 * copy/paste files
 * Be able to have some predefined template to create new file. Just a folder with some existing XML files.
-* When we are in the versioning page (without ajax) the menu is not correct.
 * Search and replace (javascript plugin)
 * Add history buttons
 * when we add a new field if there is one/many required children choice we should ask to the user which choice he wants.
@@ -19,3 +14,5 @@ List of improvements
 * jquery.filebrowser.js: reload the files when we save a new file! (now it's not displayed)
 * write some tests for the js
 * Support subversion without login
+
+* Perhaps we need translogger to make some good log
