@@ -226,3 +226,7 @@ class BaseUserView(NavigationView):
         paths = browser.get_all_files(uc.root_path, uc.root_path)[1]
         Task.create(search.do_index, [dirname, paths],
                     owner=str(self.current_user.iduser))
+
+        # Since we commit the task we need to re-bound the user to the session
+        # to make sure we can reuse self.logged_user
+        models.DBSession.add(self.logged_user)
