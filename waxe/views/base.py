@@ -229,4 +229,7 @@ class BaseUserView(NavigationView):
 
         # Since we commit the task we need to re-bound the user to the session
         # to make sure we can reuse self.logged_user
-        models.DBSession.add(self.logged_user)
+        if self.logged_user:
+            # For example if we use ldap authentication, self.logged_user can
+            # be None if the user is not in the DB.
+            models.DBSession.add(self.logged_user)
