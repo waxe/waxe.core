@@ -245,11 +245,13 @@ class PysvnVersioning(object):
                 continue
             if so.status in [STATUS_UNVERSIONED, STATUS_ADDED]:
                 content = open(so.abspath, 'r').read()
-                diffs += ['New file %s\n\n%s' % (so.relpath, content)]
+                content = content.decode('utf-8')
+                diffs += [u'New file %s\n\n%s' % (so.relpath, content)]
             elif so.status in [STATUS_DELETED, STATUS_MISSING]:
-                diffs += ['Deleted file %s' % so.relpath]
+                diffs += [u'Deleted file %s' % so.relpath]
             else:
                 s = self.client.diff(tmp, so.abspath)
+                s = s.decode('utf-8')
                 s = s.replace(self.root_path + '/', '')
                 diffs += [s]
         return diffs
