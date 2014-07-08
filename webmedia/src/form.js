@@ -47,6 +47,9 @@ var waxe = waxe || {};
         }).submit($.proxy(this.save, this)).on('loadedJstree', function(){
             $('body').data('layout').show('east');
         });
+        this.$element.on('change.contenteditablesync', 'textarea', function() {
+            that.status = that.STATUS_UPDATED;
+        });
         this.$element.on('field_change.xmltool', function(){
             that.status = that.STATUS_UPDATED;
         });

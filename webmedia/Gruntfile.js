@@ -42,6 +42,7 @@ module.exports = function(grunt) {
             'libs/js/jquery.autosize.js',
             'libs/codemirror/codemirror.js',
             'libs/codemirror/xml.js',
+            'bower_components/jquery.contenteditablesync/src/*.js',
             'bower_components/xmltool/webmedia/src/*.js',
             'src/jquery.filebrowser.js',
             'src/*js'
