@@ -42,7 +42,7 @@ module.exports = function(grunt) {
             'libs/js/jquery.autosize.js',
             'libs/codemirror/codemirror.js',
             'libs/codemirror/xml.js',
-            'libs/js/xmltool/*.js',
+            'bower_components/xmltool/webmedia/src/*.js',
             'src/jquery.filebrowser.js',
             'src/*js'
         ],
@@ -87,7 +87,7 @@ module.exports = function(grunt) {
                 paths: ['libs/bootstrap-3.0.2/less/']
             },
             files: {
-                "../waxe/static/css/<%= pkg.name %>.css": ["libs/less/xmltool.less", "css/*.less", "libs/codemirror/codemirror.css"]
+                "../waxe/static/css/<%= pkg.name %>.css": ["bower_components/xmltool/webmedia/css/xmltool.less", "css/*.less", "libs/codemirror/codemirror.css"]
             }
         },
         production: {
@@ -96,7 +96,7 @@ module.exports = function(grunt) {
                 cleancss: true
             },
             files: {
-                "../waxe/static/css/<%= pkg.name %>.min.css": ["libs/less/xmltool.less", "css/*.less", "libs/codemirror/codemirror.css"]
+                "../waxe/static/css/<%= pkg.name %>.min.css": ["bower_components/xmltool/webmedia/css/xmltool.less", "css/*.less", "libs/codemirror/codemirror.css"]
             }
         }
     },
