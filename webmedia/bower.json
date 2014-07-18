@@ -15,6 +15,6 @@
     "tests"
   ],
   "dependencies": {
-    "xmltool": "https://github.com/LeResKP/xmltool.git#0.3.6.1"
+    "xmltool": "/home/lereskp/dev/github/xmltool#develop"
   }
 }
