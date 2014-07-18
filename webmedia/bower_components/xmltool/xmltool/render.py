@@ -61,7 +61,6 @@ class ContenteditableRender(Render):
         div_attrs = [
             ('class', 'contenteditable'),
             ('class', 'form-control'),
-            # ('contenteditable', 'plaintext-only'),
             ('contenteditable', 'true'),
             ('spellcheck', 'false'),
         ]
@@ -73,9 +72,10 @@ class ContenteditableRender(Render):
             u'</textarea>'
             u'<div{divattrs}>{htmlvalue}</div>'
         ).format(
-            attrs=attrs_to_str([('class', 'form-control'), ('class', 'hidden')] + attrs),
+            attrs=attrs_to_str([('class', 'form-control'),
+                                ('class', 'hidden')] + attrs),
             value=value,
-            htmlvalue=value.replace('\\n', '<br />'),
+            htmlvalue=value.replace('\n', '<br />'),
             divattrs=attrs_to_str(div_attrs),
         )
 

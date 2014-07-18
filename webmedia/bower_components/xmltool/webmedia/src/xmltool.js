@@ -268,40 +268,14 @@ if (typeof xmltool === 'undefined') {
                 elt.text('');
             }
             $(this).unbind('keyup.xmltool');
-        }).on('focus', '.contenteditable', function(){
-            $(this).contenteditablesync();
-        }).on('keypress', '.contenteditable', function(e) {
-            // http://jsfiddle.net/FhEf6/3/
-            var sel, node, offset, text, textBefore, textAfter, range;
-
-            // the Selection object
-            sel = window.getSelection();
-
-            // the node that contains the caret
-            node = sel.anchorNode;
-
-            if (e.which === 13 ) {
-               // ENTER was pressed
-                e.preventDefault();
-
-                // the caret position inside the node
-                offset = sel.anchorOffset;
-
-                // insert a '\n' character at that position
-                text = node.textContent;
-                textBefore = text.slice( 0, offset );
-                textAfter = text.slice( offset ) || ' ';
-                node.textContent = textBefore + '\n' + textAfter;
-
-                // position the caret after that new-line character
-                range = document.createRange();
-                range.setStart( node, offset + 1 );
-                range.setEnd( node, offset + 1 );
-
-                // update the selection
-                sel.removeAllRanges();
-                sel.addRange( range );
-            }
+        }).on('mouseenter focus', '.contenteditable', function(){
+            $(this).ckeditor({removePlugins: 'toolbar'});
+            $(this).contenteditablesync({
+                getContent: function($element) {
+                    var s = $element.ckeditorGet().getData();
+                    return xmltool.utils.update_contenteditable_eol(s);
+                }
+            });
         }).on('click', '.btn-delete', function(e){
             e.preventDefault();
             that.removeElement($(this));
