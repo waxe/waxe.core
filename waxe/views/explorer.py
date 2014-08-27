@@ -81,7 +81,7 @@ class ExplorerView(BaseUserView):
                 'data_href': get_data_href(folder, 'path'),
             }
             if not only_json:
-                dic['href'] = get_href(os.path.join(relpath, folder), 'path')
+                dic['href'] = get_href(folder, 'path')
             data['folders'] += [dic]
 
         for filename in filenames:
