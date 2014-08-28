@@ -1,3 +1,4 @@
+import os
 import locale
 
 from pyramid.config import Configurator
@@ -40,6 +41,10 @@ def main(global_config, **settings):
     language_code = language_code or 'en_US'
     encoding = encoding or 'UTF8'
     locale.setlocale(locale.LC_ALL, '%s.%s' % (language_code, encoding))
+
+    cache_timeout = settings.get('xmltool.cache_timeout')
+    if cache_timeout:
+        os.environ['XMLTOOL_CACHE_TIMEOUT'] = cache_timeout
 
     engine = engine_from_config(settings, 'sqlalchemy.')
     DBSession.configure(bind=engine)
