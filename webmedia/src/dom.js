@@ -53,7 +53,7 @@ var waxe = waxe || {};
             }
 
             if(!('jstree_data' in data)){
-                $('body').data('layout').hide('east');
+                $('body').data('layout').hide('west');
             }
 
             if (data.error_msg){

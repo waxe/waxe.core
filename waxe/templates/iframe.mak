@@ -9,7 +9,7 @@
     ${content|n}
   </div>
   </div>
-<div class="ui-layout-east">
+<div class="ui-layout-west">
   <div id="tree-container">
     <div id="tree">Tree</div>
   </div>

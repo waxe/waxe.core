@@ -14,7 +14,7 @@ var waxe = waxe || {};
                     pane_spacing: 0,
                     size: 55
                 },
-                east: {
+                west: {
                     initHidden: true,
                     onresize_end: function(size){
                         var tree = $('#tree');
