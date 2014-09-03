@@ -150,6 +150,8 @@ class TestExplorerView(LoggedBobTestCase):
             'editor_login': 'Bob',
             'versioning': False,
             'search': False,
+            'layout_readonly_position': 'south',
+            'layout_tree_position': 'west',
         }
         self.assertEqual(res, expected)
 
@@ -160,6 +162,8 @@ class TestExplorerView(LoggedBobTestCase):
             'editor_login': u'Bob',
             'versioning': False,
             'search': False,
+            'layout_readonly_position': 'south',
+            'layout_tree_position': 'west',
         }
         self.assertEqual(res, expected)
 
@@ -218,7 +222,9 @@ class TestExplorerView(LoggedBobTestCase):
             'error_msg': 'Nothing to search',
             'editor_login': 'Bob',
             'search': False,
-            'versioning': False
+            'versioning': False,
+            'layout_readonly_position': 'south',
+            'layout_tree_position': 'west',
         }
         self.assertEqual(res, expected)
 

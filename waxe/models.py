@@ -34,6 +34,11 @@ ROLE_CONTRIBUTOR = 'contributor'
 VERSIONING_PATH_STATUS_ALLOWED = 'allowed'
 VERSIONING_PATH_STATUS_FORBIDDEN = 'forbidden'
 
+LAYOUT_DEFAULTS = {
+    'tree_position': 'west',
+    'readonly_position': 'south'
+}
+
 
 user_role = Table(
     'user_role',
@@ -124,6 +129,7 @@ class User(Base):
             return None
         return os.path.join(whoosh_path, 'user-%s' % self.iduser)
 
+
 class UserConfig(Base):
     __tablename__ = 'user_config'
 
@@ -131,7 +137,7 @@ class UserConfig(Base):
                       nullable=False,
                       primary_key=True)
     root_path = Column(String(255),
-                       nullable=False)
+                       nullable=True)
     use_versioning = Column(Boolean, nullable=False, default=False)
 
     versioning_password = Column(
@@ -142,9 +148,20 @@ class UserConfig(Base):
               'view_widget': tws.NoWidget}
     )
 
+    # Should be east or west
+    tree_position = Column(String(255),
+                           nullable=False,
+                           default=LAYOUT_DEFAULTS['tree_position'])
+
+    # Should be north or south
+    readonly_position = Column(String(255),
+                               nullable=False,
+                               default=LAYOUT_DEFAULTS['readonly_position'])
+
     def get_tws_view_html(self):
-        return 'path: %s <br /> Versioning: %s' % (self.root_path,
-                                             self.use_versioning)
+        return 'path: %s <br /> Versioning: %s' % (
+            self.root_path,
+            self.use_versioning)
 
 
 class VersioningPath(Base):

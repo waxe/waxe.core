@@ -81,6 +81,8 @@ class TestEditorView(LoggedBobTestCase):
             'error_msg': 'A filename should be provided',
             'versioning': False,
             'search': False,
+            'layout_readonly_position': 'south',
+            'layout_tree_position': 'west',
         }
         res = EditorView(request).edit()
         self.assertEqual(res, expected)
@@ -117,6 +119,8 @@ class TestEditorView(LoggedBobTestCase):
             keys.sort()
             self.assertEqual(keys, ['breadcrumb', 'content',
                                     'editor_login', 'jstree_data',
+                                    'layout_readonly_position',
+                                    'layout_tree_position',
                                     'search', 'versioning'])
             self.assertEqual(res['breadcrumb'],  expected_breadcrumb)
             self.assertTrue(
@@ -205,6 +209,8 @@ class TestEditorView(LoggedBobTestCase):
             'error_msg': 'A filename should be provided',
             'versioning': False,
             'search': False,
+            'layout_readonly_position': 'south',
+            'layout_tree_position': 'west',
         }
         res = EditorView(request).edit_text()
         self.assertEqual(res, expected)

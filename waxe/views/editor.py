@@ -106,10 +106,10 @@ class EditorView(BaseUserView):
         if 'iframe' in self.request.GET:
             return Response(
                 render('iframe.mak',
-                       {
+                       self._response({
                            'content': html,
                            'jstree_data': jstree_data,
-                       },
+                       }),
                        self.request))
 
         breadcrumb = self._get_breadcrumb(filename)

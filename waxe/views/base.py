@@ -123,6 +123,15 @@ class BaseView(object):
         if self.current_user:
             editor_login = self.current_user.login
         dic['editor_login'] = editor_login
+        # Layout option
+        if self.logged_user and self.logged_user.config:
+            config = self.logged_user.config
+            dic['layout_tree_position'] = config.tree_position
+            dic['layout_readonly_position'] = config.readonly_position
+        else:
+            default = models.LAYOUT_DEFAULTS
+            dic['layout_tree_position'] = default['tree_position']
+            dic['layout_readonly_position'] = default['readonly_position']
 
         logins = [l for l in self.get_editable_logins() if l != editor_login]
         if logins:

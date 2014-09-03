@@ -248,6 +248,8 @@ class TestBaseView(BaseTestCase):
             'editor_login': self.user_fred.login,
             'versioning': False,
             'search': False,
+            'layout_readonly_position': 'south',
+            'layout_tree_position': 'west',
         }
         self.assertEqual(res, expected)
 
@@ -260,6 +262,8 @@ class TestBaseView(BaseTestCase):
             'logins': ['Fred'],
             'versioning': False,
             'search': False,
+            'layout_readonly_position': 'south',
+            'layout_tree_position': 'west',
         }
         self.assertEqual(res, expected)
 
@@ -270,6 +274,8 @@ class TestBaseView(BaseTestCase):
             'key': 'value',
             'versioning': False,
             'search': False,
+            'layout_readonly_position': 'south',
+            'layout_tree_position': 'west',
         }
         self.assertEqual(res, expected)
 
@@ -284,6 +290,8 @@ class TestBaseView(BaseTestCase):
             'editor_login': self.user_admin.login,
             'versioning': False,
             'search': False,
+            'layout_readonly_position': 'south',
+            'layout_tree_position': 'west',
         })
 
         view = BaseView(request)
@@ -294,6 +302,8 @@ class TestBaseView(BaseTestCase):
             'editor_login': 'Bob',
             'versioning': False,
             'search': False,
+            'layout_readonly_position': 'south',
+            'layout_tree_position': 'west',
         })
 
         request.registry.settings['versioning'] = 'true'
@@ -304,6 +314,8 @@ class TestBaseView(BaseTestCase):
             'editor_login': 'Bob',
             'versioning': False,
             'search': False,
+            'layout_readonly_position': 'south',
+            'layout_tree_position': 'west',
         })
 
         # The user which we edit support versioning!
@@ -313,9 +325,27 @@ class TestBaseView(BaseTestCase):
             'editor_login': 'Bob',
             'versioning': True,
             'search': False,
+            'layout_readonly_position': 'south',
+            'layout_tree_position': 'west',
         })
 
+        self.user_admin.config = UserConfig()
+        self.user_admin.config.tree_position = 'tree_position'
+        self.user_admin.config.readonly_position = 'readonly_position'
+        res = view._response({})
+        self.assertEqual(res, {
+            'editor_login': 'Bob',
+            'versioning': True,
+            'search': False,
+            'layout_readonly_position': 'readonly_position',
+            'layout_tree_position': 'tree_position',
+        })
+
+    def test__response_unexisting_user(self):
         # Will not fail even if the editor is not in the DB
+        request = self.DummyRequest()
+        request.matched_route = EmptyClass()
+        request.matched_route.name = 'route'
         o = BaseView(request)
         o.root_path = None
         o.logged_user_login = 'John'
@@ -325,6 +355,8 @@ class TestBaseView(BaseTestCase):
             'editor_login': 'John',
             'versioning': False,
             'search': False,
+            'layout_readonly_position': 'south',
+            'layout_tree_position': 'west',
         }
         self.assertEqual(res, expected)
 
@@ -339,6 +371,8 @@ class TestBaseView(BaseTestCase):
             'editor_login': self.user_bob.login,
             'versioning': False,
             'search': False,
+            'layout_readonly_position': 'south',
+            'layout_tree_position': 'west',
         })
 
         res = BaseView(request)._response({})
@@ -346,6 +380,8 @@ class TestBaseView(BaseTestCase):
             'editor_login': 'Bob',
             'versioning': False,
             'search': False,
+            'layout_readonly_position': 'south',
+            'layout_tree_position': 'west',
         })
 
         self.user_fred.roles = [self.role_editor, self.role_contributor]
@@ -355,6 +391,8 @@ class TestBaseView(BaseTestCase):
             'logins': ['Fred'],
             'versioning': False,
             'search': False,
+            'layout_readonly_position': 'south',
+            'layout_tree_position': 'west',
         })
 
     @login_user('LeResKP')
@@ -368,6 +406,8 @@ class TestBaseView(BaseTestCase):
             'editor_login': 'LeResKP',
             'versioning': False,
             'search': False,
+            'layout_readonly_position': 'south',
+            'layout_tree_position': 'west',
         })
 
     @login_user('Admin')
@@ -381,6 +421,8 @@ class TestBaseView(BaseTestCase):
             'editor_login': self.user_admin.login,
             'versioning': False,
             'search': False,
+            'layout_readonly_position': 'south',
+            'layout_tree_position': 'west',
         })
 
         request.registry.settings['whoosh.path'] = '/tmp/fake'
@@ -389,6 +431,8 @@ class TestBaseView(BaseTestCase):
             'editor_login': self.user_admin.login,
             'versioning': False,
             'search': True,
+            'layout_readonly_position': 'south',
+            'layout_tree_position': 'west',
         })
 
 
