@@ -26,14 +26,13 @@
   </div>
 </div>
 
-<div class="ui-layout-west">
+<div class="ui-layout-${layout_tree_position}">
   <div id="tree-container">
-    <div id="tree">Tree</div>
+    <div id="tree"></div>
   </div>
 </div>
 
-<div class="ui-layout-south">
-</div>
+<div class="ui-layout-${layout_readonly_position}"></div>
 
 % if jstree_data:
   <script>

@@ -1,13 +1,6 @@
 var waxe = waxe || {};
 (function($) {
 
-    var FakeLayout = function(){
-        this.$elt = $('<div/>');
-        this.hide = function(){
-            this.$elt.hide();
-        };
-    };
-
     var versioning_nb_called = 0;
     var FakeVersioning = {
         init: function(){
@@ -32,16 +25,22 @@ var waxe = waxe || {};
 
     var breadcrumb = $('<div class="breadcrumb" />');
     var content = $('<div class="content" />');
-    var layout = new FakeLayout();
     var old_waxe_versioning;
+
+    var layout_html = [
+        '<div class="ui-layout-north"></div>',
+        '<div class="ui-layout-west"></div>',
+        '<div class="ui-layout-center"></div>',
+    ].join("");
     QUnit.module('Test waxe.dom', {
         setup: function(){
             old_waxe_versioning = waxe.versioning;
             waxe.versioning = FakeVersioning;
             $('#qunit-fixture').html(breadcrumb);
             $('#qunit-fixture').append(content);
-            $('#qunit-fixture').append(layout.$elt);
-            $('body').data('layout', layout);
+            // $('#qunit-fixture').append(layout.$elt);
+            // $('body').data('layout', layout);
+            $('body').append(layout_html);
             versioning_nb_called = 0;
             message_error_nb_called = 0;
             message_success_nb_called = 0;
@@ -49,6 +48,14 @@ var waxe = waxe || {};
         },
         teardown: function(){
             waxe.versioning = old_waxe_versioning;
+            try{
+                waxe.layout.obj.destroy();
+            }
+            catch(e){}
+            $(".ui-layout-north").remove();
+            $(".ui-layout-west").remove();
+            $(".ui-layout-center").remove();
+            waxe.layout.obj = null;
         }
     });
 
@@ -70,12 +77,13 @@ var waxe = waxe || {};
     });
 
     test("update", function() {
-        equal(layout.$elt.is(':visible'), true, 'layout displayed by default');
+        waxe.layout.init();
+        equal(waxe.layout.$tree.is(':visible'), false, 'layout displayed by default');
         var data = {};
         waxe.dom.update(data);
         equal(content.html(), '', 'no content');
         equal(breadcrumb.html(), '', 'no breadcrumb');
-        equal(layout.$elt.is(':visible'), false, 'layout is hidden');
+        equal(waxe.layout.$tree.is(':visible'), false, 'layout is hidden');
 
         data = {
             content: 'My content',
@@ -84,7 +92,7 @@ var waxe = waxe || {};
         waxe.dom.update(data);
         equal(content.html(), 'My content', 'content updated');
         equal(breadcrumb.html(), 'My breadcrumb', 'breadcrumb updated');
-        equal(layout.$elt.is(':visible'), false, 'layout is always hidden');
+        equal(waxe.layout.$tree.is(':visible'), false, 'layout is always hidden');
         equal(versioning_nb_called, 1);
         equal(message_error_nb_called,  0);
         equal(message_success_nb_called,  0);
@@ -96,7 +104,7 @@ var waxe = waxe || {};
         waxe.dom.update(data);
         equal(content.html(), 'My new content', 'content updated');
         equal(breadcrumb.html(), '', 'breadcrumb is empty');
-        equal(layout.$elt.is(':visible'), false, 'layout is always hidden');
+        equal(waxe.layout.$tree.is(':visible'), false, 'layout is always hidden');
         equal(versioning_nb_called, 2);
         equal(message_error_nb_called,  0);
         equal(message_success_nb_called,  0);
@@ -108,7 +116,7 @@ var waxe = waxe || {};
         waxe.dom.update(data);
         equal(content.html(), 'My new content', 'content not updated');
         equal(breadcrumb.html(), 'My breadcrumb', 'breadcrumb updated');
-        equal(layout.$elt.is(':visible'), false, 'layout is always hidden');
+        equal(waxe.layout.$tree.is(':visible'), false, 'layout is always hidden');
         equal(versioning_nb_called, 2);
         equal(message_error_nb_called,  0);
         equal(message_success_nb_called,  0);
@@ -118,7 +126,7 @@ var waxe = waxe || {};
         waxe.dom.update(data);
         equal(content.html(), 'My new content', 'content not updated');
         equal(breadcrumb.html(), '', 'breadcrumb updated');
-        equal(layout.$elt.is(':visible'), false, 'layout is always hidden');
+        equal(waxe.layout.$tree.is(':visible'), false, 'layout is always hidden');
         equal(versioning_nb_called, 2);
         equal(message_error_nb_called,  0);
         equal(message_success_nb_called,  0);
@@ -131,7 +139,7 @@ var waxe = waxe || {};
         waxe.dom.update(data);
         equal(content.html(), 'My new content', 'content not updated');
         equal(breadcrumb.html(), '', 'breadcrumb updated');
-        equal(layout.$elt.is(':visible'), false, 'layout is always hidden');
+        equal(waxe.layout.$tree.is(':visible'), false, 'layout is always hidden');
         equal(versioning_nb_called, 2);
         equal(message_error_nb_called,  1);
         equal(message_success_nb_called,  0);
@@ -149,7 +157,7 @@ var waxe = waxe || {};
         waxe.dom.update(data);
         equal(content.html(), 'My new content', 'content not updated');
         equal(breadcrumb.html(), '', 'breadcrumb updated');
-        equal(layout.$elt.is(':visible'), false, 'layout is always hidden');
+        equal(waxe.layout.$tree.is(':visible'), false, 'layout is always hidden');
         equal(versioning_nb_called, 2);
         equal(message_error_nb_called,  1);
         equal(message_success_nb_called,  0);
@@ -163,7 +171,7 @@ var waxe = waxe || {};
         waxe.dom.update(data);
         equal(content.html(), 'My new content', 'content not updated');
         equal(breadcrumb.html(), '', 'breadcrumb updated');
-        equal(layout.$elt.is(':visible'), false, 'layout is always hidden');
+        equal(waxe.layout.$tree.is(':visible'), false, 'layout is always hidden');
         equal(versioning_nb_called, 2);
         equal(message_error_nb_called,  1);
         equal(message_success_nb_called,  0);
@@ -174,6 +182,7 @@ var waxe = waxe || {};
     });
 
     test("load", function() {
+        waxe.layout.init();
         var old_waxe_ajax_GET = waxe.ajax.GET;
         waxe.ajax.GET = function(url, callback){
             callback({'content': url + ' was loaded'});
@@ -187,6 +196,7 @@ var waxe = waxe || {};
     });
 
     test("submit", function() {
+        waxe.layout.init();
         var old_waxe_ajax_POST = waxe.ajax.POST;
         waxe.ajax.POST = function(url, params, callback){
             callback({'content': url + ' was submited'});

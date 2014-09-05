@@ -27,7 +27,7 @@ var waxe = waxe || {};
         update: function(data, msg){
             msg = typeof msg === 'undefined'? 'Loaded!': msg;
 
-            $('body').data('layout').hide('south');
+            waxe.layout.hideReadonly();
             $(document).scrollTop(0);
 
             if ('content' in data){
@@ -53,7 +53,7 @@ var waxe = waxe || {};
             }
 
             if(!('jstree_data' in data)){
-                $('body').data('layout').hide('west');
+                waxe.layout.hideTree();
             }
 
             if (data.error_msg){

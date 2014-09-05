@@ -128,9 +128,8 @@ var waxe = waxe || {};
                 var iframe = $('<iframe frameborder="0">');
                 iframe.css({width: '100%', height: '100%'});
                 iframe.attr('src', $(this).data('href') + '?iframe=1&path=' + waxe.form.filename);
-                $('.ui-layout-south').html(iframe);
-                $('body').data('layout').resizeAll();
-                $('body').data('layout').show('south');
+                waxe.layout.updateReadonly(iframe);
+                waxe.layout.showReadonly();
             }
         });
     };

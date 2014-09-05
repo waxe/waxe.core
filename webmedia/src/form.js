@@ -43,9 +43,9 @@ var waxe = waxe || {};
                 var d = $(document);
                 d.message.apply(d, arguments);
             },
-            treeContainerSelector: '.ui-layout-center'
+            treeContainerSelector: waxe.layout.SELECTORS.center
         }).submit($.proxy(this.save, this)).on('loadedJstree', function(){
-            $('body').data('layout').show('west');
+            waxe.layout.showTree();
         });
         this.$element.on('change.contenteditablesync', 'textarea', function() {
             that.status = that.STATUS_UPDATED;
