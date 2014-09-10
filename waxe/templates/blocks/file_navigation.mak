@@ -1,3 +1,5 @@
+<div class="row" style="margin-right: 0; margin-left: 0;">
+<div class="col-md-8">
 <ul id="file-navigation" class="list-unstyled" data-path="${data['path']}"${' data-versioning-path="%s"' % versioning_status_url if versioning_status_url else ''|n}>
   % if data['previous']:
     <li><i class="glyphicon glyphicon-arrow-left"></i><a data-href="${data['previous']['data_href']}" href="${data['previous']['href']}" class="previous">${data['previous']['name']}</a></li>
@@ -9,6 +11,13 @@
     <li><i class="glyphicon glyphicon-file"></i><a data-href="${dic['data_href']}" href="${dic['href']}" class="file" data-relpath="${dic['data_relpath']}">${dic['name']}</a></li>
   % endfor
 </ul>
+</div>
+% if last_files:
+<div class="col-md-4">
+  ${last_files|n}
+</div>
+% endif
+</div>
 
 
 % if versioning_status_url:

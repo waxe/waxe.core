@@ -4,6 +4,7 @@ from pyramid import testing
 from mock import patch
 from waxe.tests.testing import LoggedBobTestCase, WaxeTestCase, login_user
 from waxe.views.explorer import ExplorerView
+import waxe.models as models
 
 
 class TestExplorerView(LoggedBobTestCase):
@@ -65,6 +66,8 @@ class TestExplorerView(LoggedBobTestCase):
         request.custom_route_path = lambda *args, **kw: '/filepath'
         res = ExplorerView(request)._get_navigation()
         expected = (
+            '<div class="row" style="margin-right: 0; margin-left: 0;">\n'
+            '<div class="col-md-8">\n'
             '<ul id="file-navigation" class="list-unstyled" data-path="">\n'
             '    <li><i class="glyphicon glyphicon-folder-close"></i>'
             '<a data-href="/filepath" href="/filepath" class="folder" '
@@ -78,13 +81,19 @@ class TestExplorerView(LoggedBobTestCase):
             'file1.xml'
             '</a>'
             '</li>\n'
-            '</ul>\n\n\n')
+            '</ul>\n'
+            '</div>\n'
+            '</div>\n\n\n')
         self.assertEqual(res, expected)
 
         request = testing.DummyRequest(params={'path': 'folder1'})
         request.custom_route_path = lambda *args, **kw: '/filepath'
+        request.current_user = self.user_bob
+        self.user_bob.opened_files = [models.UserOpenedFile(path='/path')]
         res = ExplorerView(request)._get_navigation()
         expected = (
+            '<div class="row" style="margin-right: 0; margin-left: 0;">\n'
+            '<div class="col-md-8">\n'
             '<ul id="file-navigation" class="list-unstyled" data-path="folder1">\n'
             '    <li><i class="glyphicon glyphicon-arrow-left"></i>'
             '<a data-href="/filepath" href="/filepath" class="previous">'
@@ -97,7 +106,18 @@ class TestExplorerView(LoggedBobTestCase):
             'file2.xml'
             '</a>'
             '</li>\n'
-            '</ul>\n\n\n')
+            '</ul>\n'
+            '</div>\n'
+            '<div class="col-md-4">\n'
+            '  <div class="panel panel-default">\n'
+            '  <div class="panel-heading">Last opened files</div>\n'
+            '  <div class="panel-body">\n'
+            '      <a href="/filepath" data-href="/filepath">/path</a><br />\n'
+            '  </div>\n'
+            '</div>\n'
+            '\n'
+            '</div>\n'
+            '</div>\n\n\n')
         self.assertEqual(res, expected)
 
         request.custom_route_path = lambda *args, **kw: '/%s' % args[0]
@@ -135,6 +155,8 @@ class TestExplorerView(LoggedBobTestCase):
         res = ExplorerView(request).explore()
         expected = {
             'content': (
+                u'<div class="row" style="margin-right: 0; margin-left: 0;">\n'
+                u'<div class="col-md-8">\n'
                 u'<ul id="file-navigation" class="list-unstyled" '
                 u'data-path="">\n    '
                 u'<li><i class="glyphicon glyphicon-folder-close"></i>'
@@ -145,7 +167,9 @@ class TestExplorerView(LoggedBobTestCase):
                 u'<li><i class="glyphicon glyphicon-file"></i>'
                 u'<a data-href="/edit_json/filepath" href="/edit/filepath" '
                 u'class="file" '
-                u'data-relpath="file1.xml">file1.xml</a></li>\n</ul>\n\n\n'),
+                u'data-relpath="file1.xml">file1.xml</a></li>\n</ul>\n'
+                u'</div>\n'
+                u'</div>\n\n\n'),
             'breadcrumb': '<li class="active">root</li>',
             'editor_login': 'Bob',
             'versioning': False,
@@ -260,6 +284,27 @@ class TestExplorerView(LoggedBobTestCase):
                 self.assertEqual(len(res), 1)
                 self.assertTrue(expected in res['content'])
                 self.assertTrue('class="pagination"' in res['content'])
+
+    def test__get_last_files(self):
+        request = testing.DummyRequest()
+        request.custom_route_path = lambda *args, **kw: '/filepath'
+        res = ExplorerView(request)._get_last_files()
+        self.assertEqual(res, '')
+
+        request.current_user = self.user_bob
+        self.user_bob.opened_files = [models.UserOpenedFile(path='/path')]
+        res = ExplorerView(request)._get_last_files()
+        self.assertTrue('Last opened files' in res)
+        self.assertFalse('Last commited files' in res)
+        self.assertTrue('/path' in res)
+        self.assertFalse('/cpath' in res)
+
+        self.user_bob.commited_files = [models.UserCommitedFile(path='/cpath')]
+        res = ExplorerView(request)._get_last_files()
+        self.assertTrue('Last opened files' in res)
+        self.assertTrue('Last commited files' in res)
+        self.assertTrue('/path' in res)
+        self.assertTrue('/cpath' in res)
 
 
 class TestFunctionalTestExplorerView(WaxeTestCase):
