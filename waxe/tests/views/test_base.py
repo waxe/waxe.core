@@ -3,7 +3,12 @@ from pyramid.httpexceptions import HTTPBadRequest
 from mock import patch
 
 from ..testing import BaseTestCase, LoggedBobTestCase, login_user
-from waxe.models import UserConfig, DBSession
+from waxe.models import (
+    UserConfig,
+    DBSession,
+    UserOpenedFile,
+    UserCommitedFile
+)
 from waxe import security
 from waxe.views.base import (
     BaseView,
@@ -434,6 +439,38 @@ class TestBaseView(BaseTestCase):
             'layout_readonly_position': 'south',
             'layout_tree_position': 'west',
         })
+
+    @login_user('Bob')
+    def test__get_last_files(self):
+        request = testing.DummyRequest()
+        request.custom_route_path = lambda *args, **kw: '/filepath'
+        request.route_path = lambda *args, **kw: '/filepath'
+        res = BaseView(request)._get_last_files()
+        self.assertEqual(res, '')
+
+        request.current_user = self.user_bob
+        self.user_bob.opened_files = [UserOpenedFile(path='/path')]
+        res = BaseView(request)._get_last_files()
+        self.assertTrue('Last opened files' in res)
+        self.assertFalse('Last commited files' in res)
+        expected = '<a href="/filepath" data-href="/filepath">/path</a>'
+        self.assertTrue(expected in res)
+        self.assertFalse('/cpath' in res)
+
+        self.user_bob.opened_files[0].iduser_owner = self.user_fred.iduser
+        res = BaseView(request)._get_last_files()
+        self.assertTrue('Last opened files' in res)
+        self.assertFalse('Last commited files' in res)
+        expected = '<a href="/filepath">/path</a> (Fred)'
+        self.assertTrue(expected in res)
+        self.assertFalse('/cpath' in res)
+
+        self.user_bob.commited_files = [UserCommitedFile(path='/cpath')]
+        res = BaseView(request)._get_last_files()
+        self.assertTrue('Last opened files' in res)
+        self.assertTrue('Last commited files' in res)
+        self.assertTrue('/path' in res)
+        self.assertTrue('/cpath' in res)
 
 
 class TestNavigationView(LoggedBobTestCase):

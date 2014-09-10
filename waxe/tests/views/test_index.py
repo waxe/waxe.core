@@ -77,17 +77,18 @@ class TestIndexView(BaseTestCase):
         request.route_path = lambda *args, **kw: '/editorpath'
         dic = BadRequestView(request).bad_request()
         self.maxDiff = None
-        expected = {
-            'content': (u'Please select the account you want to use:'
-                        '\n<br />\n<br />\n'
-                        '<ul class="list-unstyled">'
-                        '\n  <li>\n    '
-                        '<a href="/editorpath">Bob</a>\n  '
-                        '</li>\n  '
-                        '<li>\n    '
-                        '<a href="/editorpath">editor</a>\n  '
-                        '</li>\n</ul>\n')}
-        self.assertEqual(dic, expected)
+        expected = (
+            u'Please select the account you want to use:'
+            '\n<br />\n<br />\n'
+            '<ul class="list-unstyled">'
+            '\n  <li>\n    '
+            '<a href="/editorpath">Bob</a>\n  '
+            '</li>\n  '
+            '<li>\n    '
+            '<a href="/editorpath">editor</a>\n  '
+            '</li>\n</ul>\n')
+        self.assertEqual(len(dic), 1)
+        self.assertTrue(expected in dic['content'])
 
     @login_user('Fred')
     def test_bad_request_not_admin(self):

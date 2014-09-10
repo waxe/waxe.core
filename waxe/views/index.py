@@ -42,7 +42,10 @@ class BadRequestView(BaseView):
         qs = self.request.query_string
         qs = urlparse.parse_qsl(qs)
         content = render('blocks/login_selection.mak',
-                         {'logins': logins, 'qs': qs},
+                         {'logins': logins,
+                          'qs': qs,
+                          'last_files': self._get_last_files()
+                         },
                          self.request)
         return self._response({'content': content})
 

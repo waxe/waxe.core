@@ -222,6 +222,11 @@ class UserOpenedFile(Base):
                         foreign_keys=[iduser],
                         backref=backref("opened_files"))
 
+    user_owner = relationship(
+        'User',
+        foreign_keys=[iduser_owner],
+    )
+
 
 class UserCommitedFile(Base):
     __tablename__ = 'user_commited_file'
