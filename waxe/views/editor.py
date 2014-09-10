@@ -112,6 +112,7 @@ class EditorView(BaseUserView):
                        }),
                        self.request))
 
+        self.add_opened_file(filename)
         breadcrumb = self._get_breadcrumb(filename)
         nav = self._get_nav_editor(filename, kind=NAV_EDIT)
         return self._response({

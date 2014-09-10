@@ -3,7 +3,7 @@ from pyramid.httpexceptions import HTTPBadRequest
 from mock import patch
 
 from ..testing import BaseTestCase, LoggedBobTestCase, login_user
-from waxe.models import UserConfig
+from waxe.models import UserConfig, DBSession
 from waxe import security
 from waxe.views.base import (
     BaseView,
@@ -547,6 +547,34 @@ class TestBaseUserView(BaseTestCase):
         view = BaseUserView(request)
         res = view.get_search_dirname()
         self.assertEqual(res, '/tmp/fake/user-2')
+
+    def test_add_opened_file(self):
+        request = testing.DummyRequest()
+        request.matched_route = EmptyClass()
+        request.matched_route.name = 'test'
+        self.config.testing_securitypolicy(userid='Bob', permissive=True)
+        view = BaseUserView(request)
+        res = view.add_opened_file('/tmp')
+        self.assertEqual(len(self.user_bob.opened_files), 1)
+        self.assertEqual(self.user_bob.opened_files[0].path, '/tmp')
+        self.assertEqual(res, None)
+
+        # We need to call flush to make the object deletable
+        DBSession.flush()
+        # The previous same path will be deleted and the new one added
+        res = view.add_opened_file('/tmp')
+        self.assertEqual(len(self.user_bob.opened_files), 1)
+        self.assertEqual(self.user_bob.opened_files[0].path, '/tmp')
+
+        view.current_user = self.user_fred
+        res = view.add_opened_file('/tmp-1')
+        self.assertEqual(res, False)
+
+        self.user_bob.config = None
+        res = view.add_opened_file('/tmp-1')
+        self.assertEqual(res, None)
+        self.assertEqual(self.user_bob.opened_files[0].iduser_owner,
+                         self.user_fred.iduser)
 
     def test_add_indexation_task(self):
         request = testing.DummyRequest()

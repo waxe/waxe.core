@@ -223,6 +223,17 @@ class BaseUserView(NavigationView):
             return None
         return self.current_user.get_search_dirname(settings['whoosh.path'])
 
+    def add_opened_file(self, path):
+        iduser_owner = None
+        if self.logged_user != self.current_user:
+            if self.logged_user.config and self.logged_user.config.root_path:
+                # Don't store the last edited files from another account if
+                # there is an account for the logged user.
+                return False
+            iduser_owner = self.current_user.iduser
+
+        self.logged_user.add_opened_file(path, iduser_owner=iduser_owner)
+
     def add_indexation_task(self, paths=None):
         # TODO: Use paths: the only files we want to udpate
         # It's not done for now since search didn't handle this case.

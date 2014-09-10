@@ -39,6 +39,8 @@ LAYOUT_DEFAULTS = {
     'readonly_position': 'south'
 }
 
+MAX_FILE_NUMBER = 10
+
 
 user_role = Table(
     'user_role',
@@ -129,6 +131,36 @@ class User(Base):
             return None
         return os.path.join(whoosh_path, 'user-%s' % self.iduser)
 
+    def add_opened_file(self, path, iduser_owner=None):
+        for f in self.opened_files:
+            if path == f.path:
+                # Remove occurence of the same path
+                # We should not have more than one occurence since we don't
+                # insert any duplicate.
+                self.opened_files.remove(f)
+                DBSession.delete(f)
+                break
+        o = UserOpenedFile(path=path, iduser=self.iduser,
+                           iduser_owner=iduser_owner)
+        self.opened_files.insert(0, o)
+        self.opened_files = self.opened_files[:MAX_FILE_NUMBER]
+        DBSession.add(o)
+
+    def add_commited_file(self, path, iduser_commit=None):
+        for f in self.commited_files:
+            if path == f.path:
+                # Remove occurence of the same path
+                # We should not have more than one occurence since we don't
+                # insert any duplicate.
+                self.commited_files.remove(f)
+                DBSession.delete(f)
+                break
+        o = UserCommitedFile(path=path, iduser=self.iduser,
+                             iduser_commit=iduser_commit)
+        self.commited_files.insert(0, o)
+        self.commited_files = self.commited_files[:MAX_FILE_NUMBER]
+        DBSession.add(o)
+
 
 class UserConfig(Base):
     __tablename__ = 'user_config'
@@ -174,6 +206,37 @@ class VersioningPath(Base):
 
     def __unicode__(self):
         return '%s: %s' % (self.status, self.path)
+
+
+class UserOpenedFile(Base):
+    __tablename__ = 'user_opened_file'
+
+    iduser_opened_file = Column(Integer,
+                                nullable=False,
+                                primary_key=True)
+    iduser = Column(Integer, ForeignKey('user.iduser'))
+    iduser_owner = Column(Integer, ForeignKey('user.iduser'))
+    path = Column(String(255), nullable=False)
+
+    user = relationship('User',
+                        foreign_keys=[iduser],
+                        backref=backref("opened_files"))
+
+
+class UserCommitedFile(Base):
+    __tablename__ = 'user_commited_file'
+
+    iduser_commited_file = Column(Integer,
+                                  nullable=False,
+                                  primary_key=True)
+    iduser = Column(Integer, ForeignKey('user.iduser'))
+    iduser_commit = Column(Integer, ForeignKey('user.iduser'))
+    path = Column(String(255), nullable=False)
+
+    user = relationship('User',
+                        foreign_keys=[iduser],
+                        backref=backref("commited_files"))
+
 
 
 def get_editors():

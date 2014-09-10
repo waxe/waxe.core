@@ -412,8 +412,22 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                                          msg='my commit message')
 
                 with patch('waxe.views.versioning.helper.PysvnVersioning.commit', return_value=True):
+                    self.assertEqual(len(self.user_bob.commited_files), 0)
                     res = self.ClassView(request).commit()
                     self.assertEqual(res, self.ClassView(request).status())
+                    self.assertEqual(len(self.user_bob.commited_files), 1)
+                    iduser_commit = self.user_bob.commited_files[0].iduser_commit
+                    self.assertEqual(iduser_commit, None)
+
+                with patch('waxe.views.versioning.helper.PysvnVersioning.commit', return_value=True):
+                    view = self.ClassView(request)
+                    view.current_user = self.user_fred
+                    self.assertEqual(len(self.user_fred.commited_files), 0)
+                    res = view.commit()
+                    self.assertEqual(res, view.status())
+                    self.assertEqual(len(self.user_fred.commited_files), 1)
+                    iduser_commit = self.user_fred.commited_files[0].iduser_commit
+                    self.assertEqual(iduser_commit, self.user_bob.iduser)
 
                 with patch('waxe.views.versioning.helper.PysvnVersioning.commit', side_effect=Exception('Error')):
                     res = self.ClassView(request).commit()

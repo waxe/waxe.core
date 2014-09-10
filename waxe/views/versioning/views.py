@@ -222,6 +222,13 @@ class VersioningView(BaseUserView):
                 'error_msg': 'Error during the commit %s' % str(e)
             })
 
+        iduser_commit = None
+        if self.logged_user.iduser != self.current_user.iduser:
+            iduser_commit = self.logged_user.iduser
+        for filename in filenames:
+            self.current_user.add_commited_file(filename,
+                                                iduser_commit=iduser_commit)
+
         return self.status()
 
     @view_config(route_name='versioning_update_texts', renderer='index.mak',

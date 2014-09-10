@@ -83,3 +83,57 @@ class TestUser(WaxeTestCase):
         self.user_fred.config = None
         res = self.user_fred.get_search_dirname('/tmp/fake')
         self.assertEqual(res, None)
+
+    def test_add_opened_file(self):
+        self.user_bob.add_opened_file('/tmp')
+        self.assertEqual(len(self.user_bob.opened_files), 1)
+        self.assertEqual(self.user_bob.opened_files[0].path, '/tmp')
+
+        for i in range(9):
+            self.user_bob.add_opened_file('/tmp-%i' % i)
+
+        expected = [
+            '/tmp-8', '/tmp-7', '/tmp-6', '/tmp-5', '/tmp-4',
+            '/tmp-3', '/tmp-2', '/tmp-1', '/tmp-0', '/tmp']
+
+        paths = [o.path for o in self.user_bob.opened_files]
+        self.assertEqual(paths, expected)
+
+        self.user_bob.add_opened_file('/tmp-last',
+                                      iduser_owner=self.user_fred.iduser)
+
+        expected = [
+            '/tmp-last', '/tmp-8', '/tmp-7', '/tmp-6', '/tmp-5',
+            '/tmp-4', '/tmp-3', '/tmp-2', '/tmp-1', '/tmp-0']
+
+        paths = [o.path for o in self.user_bob.opened_files]
+        self.assertEqual(paths, expected)
+        self.assertEqual(self.user_bob.opened_files[0].iduser_owner,
+                         self.user_fred.iduser)
+
+    def test_add_commited_file(self):
+        self.user_bob.add_commited_file('/tmp')
+        self.assertEqual(len(self.user_bob.commited_files), 1)
+        self.assertEqual(self.user_bob.commited_files[0].path, '/tmp')
+
+        for i in range(9):
+            self.user_bob.add_commited_file('/tmp-%i' % i)
+
+        expected = [
+            '/tmp-8', '/tmp-7', '/tmp-6', '/tmp-5', '/tmp-4',
+            '/tmp-3', '/tmp-2', '/tmp-1', '/tmp-0', '/tmp']
+
+        paths = [o.path for o in self.user_bob.commited_files]
+        self.assertEqual(paths, expected)
+
+        self.user_bob.add_commited_file('/tmp-last',
+                                        iduser_commit=self.user_fred.iduser)
+
+        expected = [
+            '/tmp-last', '/tmp-8', '/tmp-7', '/tmp-6', '/tmp-5',
+            '/tmp-4', '/tmp-3', '/tmp-2', '/tmp-1', '/tmp-0']
+
+        paths = [o.path for o in self.user_bob.commited_files]
+        self.assertEqual(paths, expected)
+        self.assertEqual(self.user_bob.commited_files[0].iduser_commit,
+                         self.user_fred.iduser)
