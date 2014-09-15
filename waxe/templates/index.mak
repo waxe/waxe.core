@@ -1,10 +1,18 @@
 <%inherit file="base-navigation.mak" />
 
-<ul class="breadcrumb navbar-fixed-top" style="top: 65px; z-index: 999; background-color: transparent; margin-bottom: 0px; padding-top: 4px; padding-bottom: 2px;">
+<div class="navbar-fixed-top" style="top: 65px; z-index: 999;">
+<ul class="breadcrumb pull-left" style=" background-color: transparent; margin-bottom: 0px; padding-top: 4px; padding-bottom: 2px;">
 % if breadcrumb:
   ${breadcrumb|n}
 % endif
 </ul>
+
+<div class="nav-editor pull-right">
+  % if nav_editor:
+    ${nav_editor|n}
+  %endif
+</div>
+</div>
 
 <div class="ui-layout-center">
   <div class="content">

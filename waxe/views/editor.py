@@ -116,7 +116,8 @@ class EditorView(BaseUserView):
         breadcrumb = self._get_breadcrumb(filename)
         nav = self._get_nav_editor(filename, kind=NAV_EDIT)
         return self._response({
-            'content': nav + html,
+            'content': html,
+            'nav_editor': nav,
             'breadcrumb': breadcrumb,
             'jstree_data': jstree_data,
         })
@@ -152,7 +153,8 @@ class EditorView(BaseUserView):
         breadcrumb = self._get_breadcrumb(filename)
         nav = self._get_nav_editor(filename, kind=NAV_EDIT_TEXT)
         dic = {
-            'content': nav + html,
+            'content': html,
+            'nav_editor': nav,
             'breadcrumb': breadcrumb,
         }
         if exception:
@@ -365,7 +367,8 @@ class EditorView(BaseUserView):
 
         return self._response({
             'breadcrumb': breadcrumb,
-            'content': nav + content,
+            'nav_editor': nav,
+            'content': content,
         })
 
 

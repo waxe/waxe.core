@@ -100,7 +100,8 @@ class TestEditorView(LoggedBobTestCase):
             res = EditorView(request).edit()
             keys = res.keys()
             keys.sort()
-            self.assertEqual(keys, ['breadcrumb', 'content', 'jstree_data'])
+            self.assertEqual(keys, ['breadcrumb', 'content', 'jstree_data',
+                                    'nav_editor'])
             self.assertEqual(res['breadcrumb'],  expected_breadcrumb)
             self.assertTrue(
                 '<form method="POST" '
@@ -121,6 +122,7 @@ class TestEditorView(LoggedBobTestCase):
                                     'editor_login', 'jstree_data',
                                     'layout_readonly_position',
                                     'layout_tree_position',
+                                    'nav_editor',
                                     'search', 'versioning'])
             self.assertEqual(res['breadcrumb'],  expected_breadcrumb)
             self.assertTrue(
@@ -132,7 +134,7 @@ class TestEditorView(LoggedBobTestCase):
                 'id="xmltool-form" '
                 'data-href="/filepath">' in res['content'])
             self.assertTrue(
-                'class="nav nav-tabs"' in res['content'])
+                'class="nav nav-tabs"' in res['nav_editor'])
             self.assertTrue(isinstance(res['jstree_data'], str))
 
         def raise_func(*args, **kw):
@@ -229,7 +231,7 @@ class TestEditorView(LoggedBobTestCase):
                     'name="filename" value="file1.xml" />')
         self.assertTrue(expected in res['content'])
         self.assertTrue(
-            'class="nav nav-tabs"' in res['content'])
+            'class="nav nav-tabs"' in res['nav_editor'])
 
     def test_get_tags(self):
         request = testing.DummyRequest()
@@ -502,15 +504,16 @@ class TestEditorView(LoggedBobTestCase):
         request.registry.settings['versioning'] = 'true'
         self.user_bob.config.use_versioning = True
         res = EditorView(request).diff()
-        self.assertEqual(res.keys(), ['content', 'breadcrumb'])
-        self.assertTrue('class="nav nav-tabs"' in res['content'])
+        self.assertEqual(res.keys(), ['content', 'breadcrumb', 'nav_editor'])
+        self.assertTrue('class="nav nav-tabs"' in res['nav_editor'])
         self.assertTrue('<pre>New file file1.xml' in res['content'])
 
         with patch('waxe.views.versioning.helper.PysvnVersioning.diff',
                    return_value=[]):
             res = EditorView(request).diff()
-            self.assertEqual(res.keys(), ['content', 'breadcrumb'])
-            self.assertTrue('class="nav nav-tabs"' in res['content'])
+            self.assertEqual(res.keys(), ['content', 'breadcrumb',
+                                          'nav_editor'])
+            self.assertTrue('class="nav nav-tabs"' in res['nav_editor'])
             self.assertTrue('The file is not modified!' in res['content'])
 
 
@@ -550,7 +553,7 @@ class FunctionalTestEditorView(WaxeTestCase):
                                status=200,
                                params={'path': 'file1.xml'})
         dic = json.loads(res.body)
-        self.assertEqual(len(dic), 3)
+        self.assertEqual(len(dic), 4)
         expected = (
             '<form method="POST" '
             'data-paste-href="/account/Bob/paste.json" '
@@ -576,7 +579,7 @@ class FunctionalTestEditorView(WaxeTestCase):
                                status=200,
                                params={'path': 'file1.xml'})
         dic = json.loads(res.body)
-        self.assertEqual(len(dic), 2)
+        self.assertEqual(len(dic), 3)
 
         expected = ('<form id="xmltool-form" '
                     'data-href="/account/Bob/update-text.json" method="POST">')

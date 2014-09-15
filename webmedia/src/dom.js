@@ -62,6 +62,14 @@ var waxe = waxe || {};
                 $breadcrumb.html('');
             }
 
+            var $nav_editor = $('.nav-editor');
+            if ('nav_editor' in data){
+                $nav_editor.html(data.nav_editor);
+            }
+            else{
+                $nav_editor.html('');
+            }
+
             if(!('jstree_data' in data)){
                 waxe.layout.hideTree();
             }
