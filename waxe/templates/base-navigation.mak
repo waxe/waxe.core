@@ -1,19 +1,26 @@
 <%inherit file="base.mak" />
-<body style="padding-top: 85px;">
+<body style="padding-top: 95px;">
   <header>
   <nav class="navbar navbar-default navbar-fixed-top">
     <div class="navbar-header">
         <a class="navbar-brand" href="${request.route_path('redirect')}">WAXE</a>
       </div>
 
-    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+    <div class="collapse navbar-collapse">
         <ul class="nav navbar-nav">
-          <li><a class="new" title="New" data-href="${request.custom_route_path('new_json')}" href="#">New</a></li>
-          <li><a class="open" title="Open" data-call="navbar.open" data-fb-href="${request.custom_route_path('open_json')}" href="#">Open</a></li>
-          <li><a class="save" title="Save" data-call="navbar.save" href="#">Save</a></li>
-          <li><a class="saveas" title="Save as" data-call="navbar.saveas" data-fb-href="${request.custom_route_path('open_json')}" data-fb-folder-href="${request.custom_route_path('create_folder_json')}" href="#">Save as</a></li>
-          <li><a class="split" title="Split view" data-call="navbar.split" data-href="${request.custom_route_path('edit')}" href="#">Split view</a></li>
-
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+              File
+              <b class="caret"></b>
+            </a>
+            <ul class="dropdown-menu">
+              <li><i class="fa fa-file-o"></i><a title="New" data-href="${request.custom_route_path('new_json')}" href="#">New</a></li>
+              <li><i class="fa fa-folder-open-o"></i><a title="Open" data-call="navbar.open" data-fb-href="${request.custom_route_path('open_json')}" href="#">Open</a></li>
+              <li><i class="fa fa-save"></i><a title="Save" data-call="navbar.save" href="#">Save</a></li>
+              <li><i class="saveas fa fa-save"></i><a title="Save as" data-call="navbar.saveas" data-fb-href="${request.custom_route_path('open_json')}" data-fb-folder-href="${request.custom_route_path('create_folder_json')}" href="#">Save as</a></li>
+              <li><i class="fa fa-minus"></i><a title="Split view" data-call="navbar.split" data-href="${request.custom_route_path('edit')}" href="#">Split view</a></li>
+            </ul>
+          </li>
           % if versioning:
           <li class="dropdown">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown">
@@ -40,26 +47,29 @@
           % endif
         </ul>
         <ul class="nav navbar-nav navbar-right">
-          % if logins:
-            <li class="dropdown">
-              <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                ${editor_login}
-                <b class="caret"></b>
-              </a>
-              <ul class="dropdown-menu">
+          <li class="dropdown">
+            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+              ${editor_login}
+              <b class="caret"></b>
+            </a>
+            <ul class="dropdown-menu">
+              % if logins:
                 % for login in logins:
                   <li>
                   <a href="${request.route_path('home', login=login)}">${login}</a>
                   </li>
                 % endfor
-              </ul>
-            </li>
-      % else:
-        <li><a>${editor_login}</a></li>
-          % endif
-      <li><a style="margin-right: 10px;" class="glyphicon glyphicon-log-out" title="Logout" href="${request.route_path('logout')}"></a></li>
+              % endif
+              <li><i class="fa fa-sign-out"></i><a title="Logout" href="${request.route_path('logout')}">Logout</a></li>
+            </ul>
+          </li>
         </ul>
       </div>
+      <ul class="nav navbar-nav navbar-icons">
+        <li><a class="fa fa-file-o" title="New" data-href="${request.custom_route_path('new_json')}" href="#"></a></li>
+        <li><a class="fa fa-folder-open-o" title="Open" data-call="navbar.open" data-fb-href="${request.custom_route_path('open_json')}" href="#"></a></li>
+        <li><a class="fa fa-save" title="Save" data-call="navbar.save" href="#"></a></li>
+      </ul>
   </nav>
   </header>
 
