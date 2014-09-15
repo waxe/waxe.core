@@ -161,7 +161,7 @@ class EditorView(BaseUserView):
 
     @view_config(route_name='get_tags_json', renderer='json', permission='edit')
     def get_tags(self):
-        dtd_url = self.request.GET.get('dtd_url', None)
+        dtd_url = self.request.GET.get('dtd-url', None)
 
         if not dtd_url:
             return {}
@@ -170,8 +170,8 @@ class EditorView(BaseUserView):
 
     @view_config(route_name='new_json', renderer='json', permission='edit')
     def new(self):
-        dtd_url = self.request.GET.get('dtd_url') or None
-        dtd_tag = self.request.GET.get('dtd_tag') or None
+        dtd_url = self.request.POST.get('dtd-url') or None
+        dtd_tag = self.request.POST.get('dtd-tag') or None
 
         if dtd_tag and dtd_url:
             try:
@@ -211,7 +211,7 @@ class EditorView(BaseUserView):
                          {'dtd_urls': self.request.dtd_urls,
                           'tags': _get_tags(self.request.dtd_urls[0])},
                          self.request)
-        return {'content': content}
+        return {'modal': content}
 
     @view_config(route_name='update_json', renderer='json', permission='edit')
     def update(self):

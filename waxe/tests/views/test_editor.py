@@ -238,7 +238,7 @@ class TestEditorView(LoggedBobTestCase):
 
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
         dtd_url = os.path.join(path, 'exercise.dtd')
-        request = testing.DummyRequest(params={'dtd_url': dtd_url})
+        request = testing.DummyRequest(params={'dtd-url': dtd_url})
         res = EditorView(request).get_tags()
         expected = {'tags': ['Exercise', 'comments', 'mqm', 'qcm', 'test']}
         self.assertEqual(res, expected)
@@ -255,12 +255,12 @@ class TestEditorView(LoggedBobTestCase):
         res = EditorView(request).new()
         self.assertEqual(len(res), 1)
         self.assertTrue(
-            '<h4 class="modal-title">New file</h4>' in res['content'])
+            '<h4 class="modal-title">New file</h4>' in res['modal'])
 
         request = testing.DummyRequest(
-            params={
-                'dtd_url': dtd_url,
-                'dtd_tag': 'Exercise'
+            post={
+                'dtd-url': dtd_url,
+                'dtd-tag': 'Exercise'
             })
         request.custom_route_path = lambda *args, **kw: '/filepath'
         request.matched_route = C()
@@ -597,7 +597,7 @@ class FunctionalTestEditorView(WaxeTestCase):
 
         res = self.testapp.get('/account/Bob/get-tags.json',
                                status=200,
-                               params={'dtd_url': dtd_url})
+                               params={'dtd-url': dtd_url})
         expected = {'tags': ['Exercise', 'comments', 'mqm', 'qcm', 'test']}
         self.assertEqual(json.loads(res.body), expected)
 
@@ -611,14 +611,15 @@ class FunctionalTestEditorView(WaxeTestCase):
         dic = json.loads(res.body)
         self.assertEqual(len(dic), 1)
         self.assertTrue(
-            '<h4 class="modal-title">New file</h4>' in dic['content'])
+            '<h4 class="modal-title">New file</h4>' in dic['modal'])
 
         dtd_url = os.path.join(path, 'exercise.dtd')
         dtd_tag = 'Exercise'
-        res = self.testapp.get('/account/Bob/new.json',
-                               status=200,
-                               params={'dtd_url': dtd_url,
-                                       'dtd_tag': dtd_tag})
+        res = self.testapp.post(
+            '/account/Bob/new.json',
+            status=200,
+            params={'dtd-url': dtd_url,
+                    'dtd-tag': dtd_tag})
         dic = json.loads(res.body)
         self.assertEqual(len(dic), 3)
         expected = (

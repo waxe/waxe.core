@@ -11,7 +11,6 @@ var waxe = waxe || {};
     NavBar.prototype.init = function(element) {
         this.$element = $(element);
         this.$elements = {
-            'new': this.$element.find('.new'),
             'open': this.$element.find('.open'),
             'saveas': this.$element.find('.saveas'),
             'save': this.$element.find('.save'),
@@ -47,26 +46,6 @@ var waxe = waxe || {};
                 url = url + '?dtd_url=' + dtdUrl + '&dtd_tag=' + dtdTag;
                 waxe.dom.load(url);
                 modal.modal('hide');
-            }
-        });
-    };
-
-    NavBar.prototype.init_new = function() {
-        var that = this;
-        this.$elements.new.click(function(e){
-            e.preventDefault();
-            var $this = $(this);
-            if ($this.data('modal')){
-                $this.data('modal').modal('show');
-            }
-            else{
-                var url = $this.data('href');
-                waxe.ajax.GET(url, function(data){
-                    var modal = $(data.content);
-                    that._setNewModalEvents(modal);
-                    $this.data('modal', modal);
-                    modal.modal();
-                });
             }
         });
     };
