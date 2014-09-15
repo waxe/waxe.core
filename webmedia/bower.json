@@ -15,6 +15,7 @@
     "tests"
   ],
   "dependencies": {
-    "xmltool": "/home/lereskp/dev/github/xmltool#develop"
+    "xmltool": "/home/lereskp/dev/github/xmltool#develop",
+    "font-awesome": "~4.2.0"
   }
 }
