@@ -248,7 +248,8 @@ class EditorView(BaseUserView):
         self.add_indexation_task([absfilename])
         return {
             'status': True,
-            'breadcrumb': self._get_breadcrumb(filename)
+            'breadcrumb': self._get_breadcrumb(filename),
+            'nav_editor': self._get_nav_editor(filename, kind=NAV_EDIT)
         }
 
     @view_config(route_name='update_text_json', renderer='json', permission='edit')

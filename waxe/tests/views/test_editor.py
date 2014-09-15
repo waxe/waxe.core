@@ -328,7 +328,14 @@ class TestEditorView(LoggedBobTestCase):
                 'breadcrumb': (
                     '<li><a data-href="/filepath" href="/filepath">root</a> '
                     '</li>'
-                    '<li class="active">test.xml</li>')
+                    '<li class="active">test.xml</li>'),
+                'nav_editor': (
+                    '<ul class="nav nav-tabs">'
+                    '<li class="active"><a>XML</a></li>'
+                    '<li>'
+                    '<a href="/filepath" data-href="/filepath">Source</a>'
+                    '</li>'
+                    '</ul>')
             }
             self.assertEqual(res, expected)
 
@@ -658,7 +665,16 @@ class FunctionalTestEditorView(WaxeTestCase):
                     "<li><a data-href=\"/account/Bob/explore.json?path=\" "
                     "href=\"/account/Bob/explore?path=\">root</a> "
                     "</li>"
-                    "<li class=\"active\">test.xml</li>")}
+                    "<li class=\"active\">test.xml</li>"),
+                "nav_editor": (
+                    '<ul class="nav nav-tabs">'
+                    '<li class="active"><a>XML</a></li>'
+                    '<li>'
+                    '<a href="/account/Bob/edit-text?path=test.xml" '
+                    'data-href="/account/Bob/edit-text.json?path=test.xml">'
+                    'Source</a>'
+                    '</li></ul>')
+            }
             self.assertEqual(json.loads(res.body), expected)
 
     @login_user('Bob')

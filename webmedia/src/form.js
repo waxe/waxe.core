@@ -79,6 +79,7 @@ var waxe = waxe || {};
                 $(document).message('success', 'Saved');
                 // TODO: we should use waxe.dom to update the content!
                 $('.breadcrumb').html(data.breadcrumb);
+                $('.nav-editor').html(data.nav_editor);
             }
             else{
                 $(document).message('error', data.error_msg);
