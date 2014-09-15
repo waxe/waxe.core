@@ -3,6 +3,16 @@ var waxe = waxe || {};
 (function($, ns){
     "use strict";
 
+
+    // This event should be called first since we also have data-href on some
+    // elements
+    $(document).on('click', '[data-call]', function(e) {
+        var call = $(this).data('call');
+        var fun = waxe;
+        call.split('.').map(function(s){ fun=fun[s];});
+        fun(e, $(this));
+    });
+
     var onclick = function(e){
         if (e.isDefaultPrevented()) {
             return false;

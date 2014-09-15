@@ -75,6 +75,12 @@
 
             this.$submit.click(function(e){self.on_submit(e);});
 
+            if (!self.is_initialize){
+                self._initialize_dialog();
+            }
+
+            self.settings.func.open_dialog(self.$dialog);
+
             this.$element.on('click', function(e){
                 e.preventDefault();
 
@@ -84,12 +90,7 @@
                     return false;
                 }
                 self.$navfile.find('li.file').removeClass(self.settings.css_class.selected_file);
-                if (self.is_initialize){
-                    self.settings.func.open_dialog(self.$dialog);
-                }
-                else{
-                    self._initialize_dialog();
-                }
+                self.settings.func.open_dialog(self.$dialog);
             });
         },
         _initialize_dialog: function(){

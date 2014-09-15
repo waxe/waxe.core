@@ -9,10 +9,10 @@
     <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
         <ul class="nav navbar-nav">
           <li><a class="new" title="New" data-href="${request.custom_route_path('new_json')}" href="#">New</a></li>
-          <li><a class="open" title="Open" data-fb-href="${request.custom_route_path('open_json')}" href="#">Open</a></li>
-          <li><a class="save" title="Save" href="#">Save</a></li>
-          <li><a class="saveas" title="Save as"  data-fb-href="${request.custom_route_path('open_json')}" data-fb-folder-href="${request.custom_route_path('create_folder_json')}" href="#">Save as</a></li>
-          <li><a class="split" title="Split view" data-href="${request.custom_route_path('edit')}" href="#">Split view</a></li>
+          <li><a class="open" title="Open" data-call="navbar.open" data-fb-href="${request.custom_route_path('open_json')}" href="#">Open</a></li>
+          <li><a class="save" title="Save" data-call="navbar.save" href="#">Save</a></li>
+          <li><a class="saveas" title="Save as" data-call="navbar.saveas" data-fb-href="${request.custom_route_path('open_json')}" data-fb-folder-href="${request.custom_route_path('create_folder_json')}" href="#">Save as</a></li>
+          <li><a class="split" title="Split view" data-call="navbar.split" data-href="${request.custom_route_path('edit')}" href="#">Split view</a></li>
 
           % if versioning:
           <li class="dropdown">

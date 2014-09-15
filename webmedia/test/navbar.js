@@ -1,15 +1,12 @@
-var waxe = waxe || {};
 (function($) {
 
     var $navbar = $('<div class="navbar" />');
-    $navbar.append($('<a data-href="/new.json" class="new">New</a>'));
-    $navbar.append($('<a class="open">Open</a>'));
-    $navbar.append($('<a class="save">Save</a>'));
-    $navbar.append($('<a class="saveas">Save as</a>'));
+    $navbar.append($('<a class="open" data-call="navbar.open">Open</a>'));
+    $navbar.append($('<a class="save" data-call="navbar.save">Save</a>'));
+    $navbar.append($('<a class="saveas" data-call="navbar.saveas">Save as</a>'));
 
     var old_waxe_ajax_GET;
     var ajax_cnt = 0;
-    var navbar;
 
     QUnit.module('Test waxe.navbar', {
         setup: function() {
@@ -19,64 +16,10 @@ var waxe = waxe || {};
             waxe.ajax.GET = function() {
                 ajax_cnt += 1;
             };
-            navbar = new waxe.NavBar($navbar);
         },
         teardown: function() {
             waxe.ajax.GET = old_waxe_ajax_GET;
-            navbar.destroy();
         }
-    });
-
-    test("init", function() {
-        equal(navbar.$element.attr('class'), $navbar.attr('class'));
-        equal(navbar.$elements.new.attr('class'), 'new');
-        equal(navbar.$elements.open.attr('class'), 'open');
-        equal(navbar.$elements.save.attr('class'), 'save');
-        equal(navbar.$elements.saveas.attr('class'), 'saveas');
-    });
-
-    test("new", function() {
-        var modalHtml = '<div><select class="dtd-urls" name="dtd-urls"><option value="url1">url1</option></select><select class="dtd-tags" name="dtd-tags"><option>opt1</option></select><input class="submit" /></div>';
-        var old_waxe_ajax_GET = waxe.ajax.GET;
-        var old_waxe_dom_load = waxe.dom.load;
-
-        var count_load = 0;
-        waxe.dom.load = function() {
-            count_load += 1;
-        };
-
-        waxe.ajax.GET = function(url, callback) {
-            ajax_cnt += 1;
-            if (url === '/new.json') {
-                callback({content: modalHtml});
-            }
-            else {
-                ok(false, 'Should not be called');
-            }
-        };
-
-        navbar.$elements.new.trigger('click');
-        var modal = navbar.$elements.new.data('modal');
-        equal(modal.length, 1, 'The modal is created');
-        equal(ajax_cnt, 1, 'waxe.ajax.GET called');
-        equal(count_load, 0, 'The modal is created');
-        ok(modal.is(':visible'), 'The modal is displayed');
-
-        navbar.$elements.new.trigger('click');
-        modal = navbar.$elements.new.data('modal');
-        equal(modal.length, 1, 'The modal is created');
-        equal(ajax_cnt, 1, 'waxe.ajax.GET not called');
-        equal(count_load, 0, 'The modal is created');
-        ok(modal.is(':visible'), 'The modal is displayed');
-
-        // To be continued
-        modal.find('.submit').click();
-        ok(!modal.is(':visible'), 'The modal is closed');
-        equal(ajax_cnt, 1, 'waxe.ajax.GET not called');
-        equal(count_load, 1, 'Create new file');
-
-        waxe.ajax.GET = old_waxe_ajax_GET;
-        waxe.dom.load = old_waxe_dom_load;
     });
 
     test("open", function() {
@@ -86,15 +29,17 @@ var waxe = waxe || {};
         waxe.dom.load = function() {
              load_count += 1;
         };
-        navbar.$elements.open.unbind('before_open').on('before_open', function(e) {
+        var $open = $navbar.find('.open');
+        $open.trigger('click');
+        $open.unbind('before_open').on('before_open', function(e) {
             count += 1;
             e.preventDefault();
         });
-        navbar.$elements.open.trigger('click');
+        $open.trigger('click');
         equal(count, 1, 'filebrowser called');
         equal(load_count, 0, 'select event not called');
 
-        navbar.$elements.open.trigger('select');
+        $open.trigger('select');
         equal(load_count, 1, 'select event called');
         waxe.dom.load = old_waxe_dom_load;
     });
@@ -102,14 +47,18 @@ var waxe = waxe || {};
     test("saveas", function() {
         var count = 0;
         var count_ok = 0;
-        navbar.$elements.saveas.on('before_open', function(e) {
+        var $saveas = $navbar.find('.saveas');
+        waxe.form.$element = 'something';
+        $saveas.trigger('click');
+        $saveas.on('before_open', function(e) {
             count += 1;
             if (!e.isDefaultPrevented()) {
                 count_ok += 1;
             }
         });
-        navbar.$elements.saveas.trigger('click');
-        var filebrowser = navbar.$elements.saveas.data('filebrowser');
+        waxe.form.$element = null;
+        $saveas.trigger('click');
+        var filebrowser = $saveas.data('filebrowser');
         ok(filebrowser, 'filebrowser defined');
         equal(count, 1, 'before_open called');
         equal(count_ok, 0, 'before_open preventDefault not called');
@@ -144,15 +93,15 @@ var waxe = waxe || {};
         e.path = 'filename.xml';
         filebrowser.$element.trigger(e);
         equal(ajax_cnt, 1, 'No ajax request done');
-
-
     });
 
     test("save", function() {
         var old_waxe_form = waxe.form;
         waxe.form = {$element: {}};
         var click_count = 0;
-        navbar.$elements.saveas.unbind('click').on('click', function (){
+        var $saveas = $navbar.find('.saveas');
+        var $save = $navbar.find('.save');
+        $saveas.unbind('click').on('click', function (){
             click_count += 1;
         });
 
@@ -161,12 +110,12 @@ var waxe = waxe || {};
             submit_count += 1;
         };
 
-        navbar.$elements.save.trigger('click');
+        $save.trigger('click');
         equal(click_count, 1, 'saveas called');
         equal(submit_count, 0, 'save not called');
 
         waxe.form.filename = 'plop';
-        navbar.$elements.save.trigger('click');
+        $save.trigger('click');
         equal(click_count, 1, 'saveas not called');
         equal(submit_count, 1, 'save called');
         waxe.form = old_waxe_form;
