@@ -20,18 +20,16 @@ var waxe = waxe || {};
 
         this.save = function(e, $element) {
             e.preventDefault();
-            if (waxe.form.$element) {
-                if (waxe.form.filename){
-                    waxe.form.$element.submit();
-                } else {
-                    // Not really nice but working :)
-                    $('.saveas').trigger('click');
-                }
+            if (waxe.form.filename){
+                waxe.form.$element.submit();
+            } else {
+                // Not really nice but working :)
+                $('.saveas').trigger('click');
             }
         };
 
         this.saveas = function(e, $element) {
-            if(typeof $element.data('filebrowser') === 'undefined' && waxe.form.$element) {
+            if(typeof $element.data('filebrowser') === 'undefined') {
                 var that = this;
                 $element.filebrowser({
                     url: $element.data('fb-href'),
