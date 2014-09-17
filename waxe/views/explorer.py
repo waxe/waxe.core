@@ -37,7 +37,7 @@ class BootstrapPage(paginate.Page):
 class ExplorerView(BaseUserView):
 
     def _get_navigation_data(self, add_previous=False, folder_route='explore',
-                             file_route='edit', only_json=False):
+                             file_route='edit', data_href_name='data-href', only_json=False):
 
         def get_data_href(path, key):
             return self.request.custom_route_path(
@@ -70,6 +70,12 @@ class ExplorerView(BaseUserView):
             data['previous'] = {
                 'name': '..',
                 'data_href': get_data_href(os.path.dirname(relpath), 'path'),
+                'link_tag': self._generate_link_tag(
+                    name='..',
+                    relpath=os.path.dirname(relpath),
+                    route_name=folder_route,
+                    data_href_name=data_href_name,
+                )
             }
             if not only_json:
                 data['previous']['href'] = get_href(os.path.dirname(relpath), 'path')
@@ -79,6 +85,13 @@ class ExplorerView(BaseUserView):
                 'data_relpath': folder,
                 'name': os.path.basename(folder),
                 'data_href': get_data_href(folder, 'path'),
+                'link_tag': self._generate_link_tag(
+                    name=os.path.basename(folder),
+                    relpath=folder,
+                    route_name=folder_route,
+                    data_href_name=data_href_name,
+                    extra_attrs=[('data-relpath', folder)]
+                )
             }
             if not only_json:
                 dic['href'] = get_href(folder, 'path')
@@ -89,6 +102,12 @@ class ExplorerView(BaseUserView):
                 'data_relpath': filename,
                 'name': os.path.basename(filename),
                 'data_href': get_file_data_href(filename, 'path'),
+                'link_tag': self._generate_link_tag(
+                    name=os.path.basename(filename),
+                    relpath=filename,
+                    route_name=file_route,
+                    data_href_name=data_href_name,
+                    extra_attrs=[('data-relpath', filename)])
             }
             if not only_json:
                 dic['href'] = get_file_href(filename,
@@ -135,23 +154,36 @@ class ExplorerView(BaseUserView):
             'breadcrumb': self._get_breadcrumb(path)
         })
 
+    @view_config(route_name='folder_content', renderer='index.mak', permission='edit')
+    @view_config(route_name='folder_content_json', renderer='json', permission='edit')
+    def folder_content(self):
+        data = self._get_navigation_data(
+            add_previous=True,
+            folder_route='folder_content',
+            data_href_name='data-modal-href',
+            only_json=True)
+
+        content = render(
+            'blocks/folder-content.mak',
+            data,
+            self.request)
+        relpath = self.request.GET.get('path') or ''
+        return self._response({
+            'content': content,
+            'breadcrumb': self._get_breadcrumb(
+                relpath,
+                route_name='folder_content',
+                data_href_name='data-modal-href'
+            )
+        })
+
     @view_config(route_name='open_json', renderer='json', permission='edit')
     def open(self):
-        data = self._get_navigation_data(folder_route='open', only_json=True)
-        relpath = self.request.GET.get('path') or ''
-        bdata = self._get_breadcrumb_data(relpath)
-        lis = []
+        modal = render('blocks/open_modal.mak',
+                       self.folder_content(),
+                       self.request)
 
-        def get_data_href(path, key):
-            return self.request.custom_route_path(
-                'open_json', _query=[(key, path)])
-        for name, path in bdata:
-            lis += [{
-                'name': name,
-                'data_href': get_data_href(path, 'path')
-            }]
-        data['nav_btns'] = lis
-        return data
+        return self._response({'modal': modal})
 
     @view_config(route_name='create_folder_json', renderer='json', permission='edit')
     def create_folder(self):
@@ -232,6 +264,8 @@ def includeme(config):
     config.add_route('explore', '/explore')
     config.add_route('explore_json', '/explore.json')
     config.add_route('open_json', '/open.json')
+    config.add_route('folder_content', '/folder-content')
+    config.add_route('folder_content_json', '/folder-content.json')
     config.add_route('create_folder_json', '/create-folder.json')
     config.add_route('search', '/search')
     config.add_route('search_json', '/search.json')

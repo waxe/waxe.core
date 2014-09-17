@@ -13,6 +13,26 @@ var waxe = waxe || {};
         fun(e, $(this));
     });
 
+
+    $(document).on('click', '[data-modal-href]', function(e) {
+        e.preventDefault();
+        var $this = $(this),
+            $modal = $(this).parents('.modal'),
+            url = $(this).data('modal-href');
+        waxe.ajax.GET(url, function(data, textStatus, jqXHR){
+            if (data.content) {
+                $modal.find('.waxe-modal-content').html(data.content);
+            }
+            if (data.breadcrumb) {
+                $modal.find('.waxe-modal-breadcrumb').html(data.breadcrumb);
+            }
+            else {
+                $modal.find('.waxe-modal-breadcrumb').html('');
+            }
+        });
+    });
+
+
     var onclick = function(e){
         if (e.isDefaultPrevented()) {
             return false;
@@ -29,7 +49,9 @@ var waxe = waxe || {};
             $(this).text(),
             $(this).attr('href')
             );
-        waxe.dom.load($(this).data('href'));
+
+        var modal=$(this).parents('.modal');
+        waxe.dom.load($(this).data('href'), modal);
     };
     $(document).on('click', 'a[data-href]', onclick);
 
@@ -83,10 +105,13 @@ var waxe = waxe || {};
 
             waxe.dom.loadCodemirror();
         },
-        load: function(url){
+        load: function(url, modal){
             $(document).message('info', 'Loading...', {'autohide': false});
             waxe.ajax.GET(url, function(data, textStatus, jqXHR){
                 waxe.dom.update(data);
+                if (! data.error_msg && typeof(modal) !== 'undefined') {
+                    modal.modal('hide');
+                }
             });
         },
         submit: function(url, params, msg, modal) {

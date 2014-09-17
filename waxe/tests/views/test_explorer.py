@@ -15,16 +15,29 @@ class TestExplorerView(LoggedBobTestCase):
         res = ExplorerView(request)._get_navigation_data()
         expected = {
             'folders': [
-                {'data_href': '/explore_json/filepath',
-                 'data_relpath': 'folder1',
-                 'href': '/explore/filepath',
-                 'name': 'folder1'}],
+                {
+                    'data_href': '/explore_json/filepath',
+                    'data_relpath': 'folder1',
+                    'href': '/explore/filepath',
+                    'name': 'folder1',
+                    'link_tag': (
+                        '<a data-href="/explore_json/filepath" '
+                        'href="/explore/filepath" '
+                        'data-relpath="folder1">folder1</a>')
+                }],
             'path': '',
             'previous': None,
             'filenames': [
-                {'data_href': '/edit_json/filepath',
-                 'data_relpath': 'file1.xml',
-                 'href': '/edit/filepath', 'name': 'file1.xml'}]
+                {
+                    'data_href': '/edit_json/filepath',
+                    'data_relpath': 'file1.xml',
+                    'href': '/edit/filepath',
+                    'name': 'file1.xml',
+                    'link_tag': (
+                        '<a data-href="/edit_json/filepath" '
+                        'href="/edit/filepath" data-relpath="file1.xml">'
+                        'file1.xml</a>')
+                }]
         }
         self.assertEqual(res, expected)
 
@@ -36,10 +49,18 @@ class TestExplorerView(LoggedBobTestCase):
             'path': 'folder1',
             'previous': None,
             'filenames': [
-                {'data_href': '/edit_json/filepath',
-                 'data_relpath': 'folder1/file2.xml',
-                 'href': '/edit/filepath',
-                 'name': 'file2.xml'}]
+                {
+                    'data_href': '/edit_json/filepath',
+                    'data_relpath': 'folder1/file2.xml',
+                    'href': '/edit/filepath',
+                    'name': 'file2.xml',
+                    'link_tag': (
+                        '<a data-href="/edit_json/filepath" '
+                        'href="/edit/filepath" '
+                        'data-relpath="folder1/file2.xml">'
+                        'file2.xml</a>'
+                    )
+                }]
         }
         self.assertEqual(res, expected)
 
@@ -48,18 +69,31 @@ class TestExplorerView(LoggedBobTestCase):
             folder_route='folder_route',
             file_route='file_route',
             only_json=True)
+
         expected = {
             'folders': [],
             'path': 'folder1',
             'previous': {
-                'data_href': '/folder_route_json/filepath', 'name': '..'
+                'data_href': '/folder_route_json/filepath', 'name': '..',
+                'link_tag': (
+                    '<a data-href="/folder_route_json/filepath" '
+                    'href="/folder_route/filepath">..</a>'
+                )
             },
-            'filenames': [{
-                'data_href': '/file_route_json/filepath',
-                'data_relpath': 'folder1/file2.xml',
-                'name': 'file2.xml'}]
+            'filenames': [
+                {
+                    'data_href': '/file_route_json/filepath',
+                    'data_relpath': 'folder1/file2.xml',
+                    'name': 'file2.xml',
+                    'link_tag': (
+                        '<a data-href="/file_route_json/filepath" '
+                        'href="/file_route/filepath" '
+                        'data-relpath="folder1/file2.xml">'
+                        'file2.xml</a>'
+                    )
+                }]
         }
-        self.assertTrue(res, expected)
+        self.assertEqual(res, expected)
 
     def test__get_navigation(self):
         request = testing.DummyRequest()
@@ -192,26 +226,36 @@ class TestExplorerView(LoggedBobTestCase):
         }
         self.assertEqual(res, expected)
 
-    def test_open(self):
+    def test_folder_content(self):
+        class C(object): pass
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
         self.user_bob.config.root_path = path
         request = testing.DummyRequest()
         request.custom_route_path = lambda *args, **kw: '/filepath'
+        request.matched_route = C()
+        request.matched_route.name = 'route'
+        res = ExplorerView(request).folder_content()
+        self.assertTrue('>folder1<' in res['content'])
+        self.assertTrue('>file1.xml<' in res['content'])
+
+    def test_open(self):
+        class C(object): pass
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        self.user_bob.config.root_path = path
+        request = testing.DummyRequest()
+        request.custom_route_path = lambda *args, **kw: '/filepath'
+        request.matched_route = C()
+        request.matched_route.name = 'route'
         res = ExplorerView(request).open()
-        expected = {
-            'folders': [
-                {'data_href': '/filepath',
-                 'data_relpath': 'folder1',
-                 'name': 'folder1'}
-            ],
-            'path': '',
-            'previous': None,
-            'nav_btns': [{'data_href': '/filepath', 'name': 'root'}],
-            'filenames': [{'data_href': '/filepath',
-                           'data_relpath': 'file1.xml',
-                           'name': 'file1.xml'}]
-        }
-        self.assertEqual(res, expected)
+        keys = res.keys()
+        keys.sort()
+        expected_keys = [
+            'editor_login', 'layout_readonly_position', 'layout_tree_position',
+            'modal', 'search', 'versioning',
+        ]
+        self.assertEqual(keys, expected_keys)
+        self.assertTrue('>folder1<' in res['modal'])
+        self.assertTrue('>file1.xml<' in res['modal'])
 
     def test_create_folder(self):
         try:
@@ -348,6 +392,30 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
 
+    def test_folder_content_forbidden(self):
+        res = self.testapp.get('/account/Bob/folder-content.json', status=302)
+        self.assertEqual(
+            res.location,
+            'http://localhost/login?next=http%3A%2F%2Flocalhost%2Faccount%2FBob%2Ffolder-content.json')
+        res = res.follow()
+        self.assertEqual(res.status, "200 OK")
+        self.assertTrue('<form' in res.body)
+        self.assertTrue('Login' in res.body)
+
+    @login_user('Bob')
+    def test_folder_content(self):
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        self.user_bob.config.root_path = path
+        res = self.testapp.get('/account/Bob/folder-content.json', status=200)
+        self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
+                        res._headerlist)
+        dic = json.loads(res.body)
+        self.assertEqual(len(dic), 2)
+        self.assertTrue('content' in dic)
+        self.assertTrue('breadcrumb' in dic)
+        self.assertTrue('>folder1<' in dic['content'])
+        self.assertTrue('>file1.xml<' in dic['content'])
+
     def test_open_forbidden(self):
         res = self.testapp.get('/account/Bob/open.json', status=302)
         self.assertEqual(
@@ -365,22 +433,11 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
         res = self.testapp.get('/account/Bob/open.json', status=200)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
-        expected = {
-            "folders": [
-                {"data_href": "/account/Bob/open.json?path=folder1",
-                 "data_relpath": "folder1",
-                 "name": "folder1"}],
-            "path": "",
-            "previous": None,
-            "nav_btns": [
-                {"data_href": "/account/Bob/open.json?path=",
-                 "name": "root"}],
-            "filenames": [
-                {"data_href": "/account/Bob/edit.json?path=file1.xml",
-                 "data_relpath": "file1.xml",
-                 "name": "file1.xml"}]
-        }
-        self.assertEqual(json.loads(res.body), expected)
+        dic = json.loads(res.body)
+        self.assertEqual(len(dic), 1)
+        self.assertTrue('modal' in dic)
+        self.assertTrue('>folder1<' in dic['modal'])
+        self.assertTrue('>file1.xml<' in dic['modal'])
 
     def test_create_folder_forbidden(self):
         res = self.testapp.get('/account/Bob/create-folder.json', status=302)

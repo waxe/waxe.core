@@ -15,7 +15,7 @@
             </a>
             <ul class="dropdown-menu">
               <li><i class="fa fa-file-o"></i><a title="New" data-href="${request.custom_route_path('new_json')}" href="#">New</a></li>
-              <li><i class="fa fa-folder-open-o"></i><a title="Open" data-call="navbar.open" data-fb-href="${request.custom_route_path('open_json')}" href="#">Open</a></li>
+              <li><i class="fa fa-folder-open-o"></i><a title="Open" data-href="${request.custom_route_path('open_json')}" href="#">Open</a></li>
               <li><i class="fa fa-save"></i><a title="Save" data-call="navbar.save" href="#">Save</a></li>
               <li><i class="fa fa-save"></i><a class="saveas" title="Save as" data-call="navbar.saveas" data-fb-href="${request.custom_route_path('open_json')}" data-fb-folder-href="${request.custom_route_path('create_folder_json')}" href="#">Save as</a></li>
               <li><i class="fa fa-minus"></i><a title="Split view" data-call="navbar.split" data-href="${request.custom_route_path('edit')}" href="#">Split view</a></li>
@@ -67,7 +67,7 @@
       </div>
       <ul class="nav navbar-nav navbar-icons">
         <li><a class="fa fa-file-o" title="New" data-href="${request.custom_route_path('new_json')}" href="#"></a></li>
-        <li><a class="fa fa-folder-open-o" title="Open" data-call="navbar.open" data-fb-href="${request.custom_route_path('open_json')}" href="#"></a></li>
+        <li><a class="fa fa-folder-open-o" title="Open" data-href="${request.custom_route_path('open_json')}" href="#"></a></li>
         <li><a class="fa fa-save" title="Save" data-call="navbar.save" href="#"></a></li>
       </ul>
   </nav>
