@@ -157,6 +157,29 @@ class BaseView(object):
 
 class NavigationView(BaseView):
 
+    def _generate_link_tag(self, name, relpath, route_name,
+                           data_href_name='data-href', extra_attrs=None):
+        """Generate HTML a with the ajax and natural href.
+        """
+        data_href_link = self.request.custom_route_path(
+            '%s_json' % route_name, _query=[('path', relpath)])
+
+        href_link = self.request.custom_route_path(
+            route_name, _query=[('path', relpath)])
+
+        attrs = [
+            (data_href_name, data_href_link),
+            ('href', href_link),
+        ]
+        if extra_attrs:
+            attrs += extra_attrs
+
+        attrs_str = ''.join([' %s="%s"' % (k, v) for k, v in attrs])
+        return '<a%s>%s</a>' % (
+            attrs_str,
+            name
+        )
+
     def _get_breadcrumb_data(self, relpath):
         tple = []
         while relpath:
@@ -168,29 +191,20 @@ class NavigationView(BaseView):
         tple.reverse()
         return tple
 
-    def _get_breadcrumb(self, relpath, force_link=False):
-        def get_data_href(path, key):
-            return self.request.custom_route_path(
-                'explore_json', _query=[(key, path)])
-
-        def get_href(path, key):
-            return self.request.custom_route_path(
-                'explore', _query=[(key, path)])
-
+    def _get_breadcrumb(self, relpath, route_name='explore',
+                        data_href_name='data-href', force_link=False):
         tple = self._get_breadcrumb_data(relpath)
         html = []
         for index, (name, relpath) in enumerate(tple):
             if index == len(tple) - 1 and not force_link:
                 html += ['<li class="active">%s</li>' % (name)]
             else:
-                html += [(
-                    '<li>'
-                    '<a data-href="%s" href="%s">%s</a> '
-                    '</li>') % (
-                        get_data_href(relpath, 'path'),
-                        get_href(relpath, 'path'),
-                        name,
-                    )]
+                html += ['<li>%s</li>' % (
+                    self._generate_link_tag(
+                        name, relpath,
+                        route_name=route_name,
+                        data_href_name=data_href_name)
+                )]
         return ''.join(html)
 
 

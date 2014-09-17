@@ -290,7 +290,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
             'versioning': True,
             'search': False,
             'breadcrumb': ('<li><a data-href="/explore_json" '
-                           'href="/explore">root</a> </li>'),
+                           'href="/explore">root</a></li>'),
             'layout_readonly_position': 'south',
             'layout_tree_position': 'west',
         }
@@ -388,7 +388,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                     'versioning': True,
                     'search': False,
                     'breadcrumb': ('<li><a data-href="/explore_json" '
-                                   'href="/explore">root</a> </li>'),
+                                   'href="/explore">root</a></li>'),
                     'layout_readonly_position': 'south',
                     'layout_tree_position': 'west',
                 }
@@ -403,7 +403,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                     'versioning': True,
                     'search': False,
                     'breadcrumb': ('<li><a data-href="/explore_json" '
-                                   'href="/explore">root</a> </li>'),
+                                   'href="/explore">root</a></li>'),
                     'layout_readonly_position': 'south',
                     'layout_tree_position': 'west',
                 }
@@ -437,7 +437,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                         'versioning': True,
                         'search': False,
                         'breadcrumb': ('<li><a data-href="/explore_json" '
-                                       'href="/explore">root</a> </li>'),
+                                       'href="/explore">root</a></li>'),
                         'layout_readonly_position': 'south',
                         'layout_tree_position': 'west',
                     }
@@ -452,7 +452,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                         'versioning': True,
                         'search': False,
                         'breadcrumb': ('<li><a data-href="/explore_json" '
-                                       'href="/explore">root</a> </li>'),
+                                       'href="/explore">root</a></li>'),
                         'layout_readonly_position': 'south',
                         'layout_tree_position': 'west',
                     }
@@ -552,7 +552,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
             'versioning': True,
             'search': False,
             'breadcrumb': ('<li><a data-href="/explore_json" '
-                           'href="/explore">root</a> </li>'),
+                           'href="/explore">root</a></li>'),
             'layout_readonly_position': 'south',
             'layout_tree_position': 'west',
         }
@@ -579,7 +579,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                 'versioning': True,
                 'search': False,
                 'breadcrumb': ('<li><a data-href="/explore_json" '
-                               'href="/explore">root</a> </li>'),
+                               'href="/explore">root</a></li>'),
                 'layout_readonly_position': 'south',
                 'layout_tree_position': 'west',
             }
@@ -601,7 +601,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                 'versioning': True,
                 'search': False,
                 'breadcrumb': ('<li><a data-href="/filepath" '
-                               'href="/filepath">root</a> </li>'),
+                               'href="/filepath">root</a></li>'),
                 'layout_readonly_position': 'south',
                 'layout_tree_position': 'west',
             }
@@ -645,7 +645,7 @@ class TestVersioningViewFakeRepo(BaseTestCase, CreateRepo):
             'versioning': True,
             'search': False,
             'breadcrumb': ('<li><a data-href="/explore_json" '
-                           'href="/explore">root</a> </li>'),
+                           'href="/explore">root</a></li>'),
             'layout_readonly_position': 'south',
             'layout_tree_position': 'west',
         }
@@ -696,7 +696,7 @@ class TestVersioningViewFakeRepo(BaseTestCase, CreateRepo):
             'versioning': True,
             'search': False,
             'breadcrumb': ('<li><a data-href="/explore_json" '
-                           'href="/explore">root</a> </li>'),
+                           'href="/explore">root</a></li>'),
             'layout_readonly_position': 'south',
             'layout_tree_position': 'west',
         }
@@ -723,7 +723,7 @@ class TestVersioningViewFakeRepo(BaseTestCase, CreateRepo):
                 'versioning': True,
                 'search': False,
                 'breadcrumb': ('<li><a data-href="/filepath" '
-                               'href="/filepath">root</a> </li>'),
+                               'href="/filepath">root</a></li>'),
                 'layout_readonly_position': 'south',
                 'layout_tree_position': 'west',
             }
@@ -900,7 +900,7 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
         expected = {
             "error_msg": "No file selected!",
             'breadcrumb': ('<li><a data-href="/account/Bob/explore.json?path=" '
-                           'href="/account/Bob/explore?path=">root</a> </li>')
+                           'href="/account/Bob/explore?path=">root</a></li>')
         }
         self.assertEqual(json.loads(res.body), expected)
 
@@ -937,7 +937,7 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
         expected = {
             "error_msg": "Missing parameters!",
             'breadcrumb': ('<li><a data-href="/account/Bob/explore.json?path=" '
-                           'href="/account/Bob/explore?path=">root</a> </li>')
+                           'href="/account/Bob/explore?path=">root</a></li>')
         }
         self.assertEqual(json.loads(res.body), expected)
 
@@ -958,7 +958,7 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
         expected = {
             "error_msg": "A filename should be provided",
             'breadcrumb': ('<li><a data-href="/account/Bob/explore.json?path=" '
-                           'href="/account/Bob/explore?path=">root</a> </li>')
+                           'href="/account/Bob/explore?path=">root</a></li>')
         }
         self.assertEqual(json.loads(res.body), expected)
 
@@ -979,7 +979,7 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
         expected = {
             "error_msg": "Missing parameters!",
             'breadcrumb': ('<li><a data-href="/account/Bob/explore.json?path=" '
-                           'href="/account/Bob/explore?path=">root</a> </li>')
+                           'href="/account/Bob/explore?path=">root</a></li>')
         }
         self.assertEqual(json.loads(res.body), expected)
 

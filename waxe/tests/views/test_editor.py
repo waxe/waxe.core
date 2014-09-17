@@ -89,7 +89,7 @@ class TestEditorView(LoggedBobTestCase):
 
         with patch('xmltool.generate_form', return_value='My form content'):
             expected_breadcrumb = (
-                '<li><a data-href="/filepath" href="/filepath">root</a> '
+                '<li><a data-href="/filepath" href="/filepath">root</a>'
                 '</li>'
                 '<li class="active">file1.xml</li>')
             request = testing.DummyRequest(
@@ -326,7 +326,7 @@ class TestEditorView(LoggedBobTestCase):
             expected = {
                 'status': True,
                 'breadcrumb': (
-                    '<li><a data-href="/filepath" href="/filepath">root</a> '
+                    '<li><a data-href="/filepath" href="/filepath">root</a>'
                     '</li>'
                     '<li class="active">test.xml</li>'),
                 'nav_editor': (
@@ -663,7 +663,7 @@ class FunctionalTestEditorView(WaxeTestCase):
                 "status": True,
                 "breadcrumb": (
                     "<li><a data-href=\"/account/Bob/explore.json?path=\" "
-                    "href=\"/account/Bob/explore?path=\">root</a> "
+                    "href=\"/account/Bob/explore?path=\">root</a>"
                     "</li>"
                     "<li class=\"active\">test.xml</li>"),
                 "nav_editor": (
