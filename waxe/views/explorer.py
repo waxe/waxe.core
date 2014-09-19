@@ -37,25 +37,36 @@ class BootstrapPage(paginate.Page):
 class ExplorerView(BaseUserView):
 
     def _get_navigation_data(self, add_previous=False, folder_route='explore',
-                             file_route='edit', data_href_name='data-href', only_json=False):
+                             file_route='edit', data_href_name='data-href',
+                             only_json=False, relpath=None):
 
         def get_data_href(path, key):
+            if folder_route is None:
+                return ''
             return self.request.custom_route_path(
                 '%s_json' % folder_route, _query=[(key, path)])
 
         def get_href(path, key):
+            if folder_route is None:
+                return ''
             return self.request.custom_route_path(
                 folder_route, _query=[(key, path)])
 
         def get_file_data_href(path, key):
+            if file_route is None:
+                return ''
             return self.request.custom_route_path(
                 '%s_json' % file_route, _query=[(key, path)])
 
         def get_file_href(path, key):
+            if file_route is None:
+                return ''
             return self.request.custom_route_path(
                 file_route, _query=[(key, path)])
 
-        relpath = self.request.GET.get('path') or ''
+        if relpath is None:
+            relpath = self.request.GET.get('path') or ''
+
         root_path = self.root_path
         abspath = browser.absolute_path(relpath, root_path)
         folders, filenames = browser.get_files(abspath, root_path,
@@ -90,7 +101,10 @@ class ExplorerView(BaseUserView):
                     relpath=folder,
                     route_name=folder_route,
                     data_href_name=data_href_name,
-                    extra_attrs=[('data-relpath', folder)]
+                    extra_attrs=[
+                        ('data-relpath', folder),
+                        ('class', 'folder'),
+                    ]
                 )
             }
             if not only_json:
@@ -107,7 +121,10 @@ class ExplorerView(BaseUserView):
                     relpath=filename,
                     route_name=file_route,
                     data_href_name=data_href_name,
-                    extra_attrs=[('data-relpath', filename)])
+                    extra_attrs=[
+                        ('data-relpath', filename),
+                        ('class', 'file')
+                    ])
             }
             if not only_json:
                 dic['href'] = get_file_href(filename,

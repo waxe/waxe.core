@@ -23,7 +23,7 @@ class TestExplorerView(LoggedBobTestCase):
                     'link_tag': (
                         '<a data-href="/explore_json/filepath" '
                         'href="/explore/filepath" '
-                        'data-relpath="folder1">folder1</a>')
+                        'data-relpath="folder1" class="folder">folder1</a>')
                 }],
             'path': '',
             'previous': None,
@@ -35,8 +35,8 @@ class TestExplorerView(LoggedBobTestCase):
                     'name': 'file1.xml',
                     'link_tag': (
                         '<a data-href="/edit_json/filepath" '
-                        'href="/edit/filepath" data-relpath="file1.xml">'
-                        'file1.xml</a>')
+                        'href="/edit/filepath" data-relpath="file1.xml" '
+                        'class="file">file1.xml</a>')
                 }]
         }
         self.assertEqual(res, expected)
@@ -57,7 +57,7 @@ class TestExplorerView(LoggedBobTestCase):
                     'link_tag': (
                         '<a data-href="/edit_json/filepath" '
                         'href="/edit/filepath" '
-                        'data-relpath="folder1/file2.xml">'
+                        'data-relpath="folder1/file2.xml" class="file">'
                         'file2.xml</a>'
                     )
                 }]
@@ -88,9 +88,73 @@ class TestExplorerView(LoggedBobTestCase):
                     'link_tag': (
                         '<a data-href="/file_route_json/filepath" '
                         'href="/file_route/filepath" '
-                        'data-relpath="folder1/file2.xml">'
+                        'data-relpath="folder1/file2.xml" class="file">'
                         'file2.xml</a>'
                     )
+                }]
+        }
+        self.assertEqual(res, expected)
+
+        # With relpath
+        request = testing.DummyRequest(params={'path': ''})
+        request.custom_route_path = lambda *args, **kw: '/%s/filepath' % args[0]
+        res = ExplorerView(request)._get_navigation_data(
+            add_previous=True,
+            folder_route='folder_route',
+            file_route=None,
+            relpath='folder1',
+            only_json=True)
+
+        expected = {
+            'folders': [],
+            'path': 'folder1',
+            'previous': {
+                'data_href': '/folder_route_json/filepath', 'name': '..',
+                'link_tag': (
+                    '<a data-href="/folder_route_json/filepath" '
+                    'href="/folder_route/filepath">..</a>'
+                )
+            },
+            'filenames': [
+                {
+                    'data_href': '',
+                    'data_relpath': 'folder1/file2.xml',
+                    'name': 'file2.xml',
+                    'link_tag': (
+                        '<a href="#" data-relpath="folder1/file2.xml" '
+                        'class="file">file2.xml</a>'
+                    )
+                }]
+        }
+        self.assertEqual(res, expected)
+
+        res = ExplorerView(request)._get_navigation_data(
+            add_previous=True,
+            folder_route=None,
+            file_route=None,
+            relpath='',
+            only_json=True)
+
+        expected = {
+            'folders': [
+                {
+                    'data_href': '',
+                    'data_relpath': 'folder1',
+                    'name': 'folder1',
+                    'link_tag': (
+                        '<a href="#" data-relpath="folder1" '
+                        'class="folder">folder1</a>')
+                }],
+            'path': '',
+            'previous': None,
+            'filenames': [
+                {
+                    'data_href': '',
+                    'data_relpath': 'file1.xml',
+                    'name': 'file1.xml',
+                    'link_tag': (
+                        '<a href="#" data-relpath="file1.xml" '
+                        'class="file">file1.xml</a>')
                 }]
         }
         self.assertEqual(res, expected)
