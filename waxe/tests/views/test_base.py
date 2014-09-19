@@ -504,6 +504,15 @@ class TestNavigationView(LoggedBobTestCase):
         )
         self.assertEqual(res, expected)
 
+        res = obj._generate_link_tag(name='Hello', relpath='/path',
+                                     route_name=None,
+                                     data_href_name='data-modal-href',
+                                     extra_attrs=[('id', 'myid')])
+        expected = (
+            '<a href="#" id="myid">Hello</a>'
+        )
+        self.assertEqual(res, expected)
+
     def test__get_breadcrumb_data(self):
         request = testing.DummyRequest()
         res = NavigationView(request)._get_breadcrumb_data('')

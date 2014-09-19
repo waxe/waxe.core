@@ -161,16 +161,21 @@ class NavigationView(BaseView):
                            data_href_name='data-href', extra_attrs=None):
         """Generate HTML a with the ajax and natural href.
         """
-        data_href_link = self.request.custom_route_path(
-            '%s_json' % route_name, _query=[('path', relpath)])
+        attrs = []
+        if route_name:
+            data_href_link = self.request.custom_route_path(
+                '%s_json' % route_name, _query=[('path', relpath)])
 
-        href_link = self.request.custom_route_path(
-            route_name, _query=[('path', relpath)])
+            href_link = self.request.custom_route_path(
+                route_name, _query=[('path', relpath)])
 
-        attrs = [
-            (data_href_name, data_href_link),
-            ('href', href_link),
-        ]
+            attrs += [
+                (data_href_name, data_href_link),
+                ('href', href_link),
+            ]
+        else:
+            attrs += [('href', '#')]
+
         if extra_attrs:
             attrs += extra_attrs
 
