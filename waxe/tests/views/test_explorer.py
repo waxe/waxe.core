@@ -295,12 +295,26 @@ class TestExplorerView(LoggedBobTestCase):
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
         self.user_bob.config.root_path = path
         request = testing.DummyRequest()
-        request.custom_route_path = lambda *args, **kw: '/filepath'
+        request.custom_route_path = lambda *args, **kw: '%s/path' % args[0]
         request.matched_route = C()
         request.matched_route.name = 'route'
         res = ExplorerView(request).folder_content()
         self.assertTrue('>folder1<' in res['content'])
         self.assertTrue('>file1.xml<' in res['content'])
+        self.assertTrue('data-modal-href' in res['content'])
+        self.assertTrue('href="folder_content/path"' in res['content'])
+
+        res = ExplorerView(request).folder_content(folder_route='edit')
+        self.assertTrue('>folder1<' in res['content'])
+        self.assertTrue('>file1.xml<' in res['content'])
+        self.assertTrue('data-modal-href' in res['content'])
+        self.assertTrue('href="edit/path"' in res['content'])
+
+        res = ExplorerView(request).folder_content(folder_route='edit',
+                                                   relpath='folder1')
+        self.assertTrue('>folder1<' not in res['content'])
+        self.assertTrue('>file2.xml<' in res['content'])
+        self.assertTrue('href="edit/path"' in res['content'])
 
     def test_open(self):
         class C(object): pass
@@ -321,27 +335,83 @@ class TestExplorerView(LoggedBobTestCase):
         self.assertTrue('>folder1<' in res['modal'])
         self.assertTrue('>file1.xml<' in res['modal'])
 
+    def test_saveas_content(self):
+        class C(object): pass
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        self.user_bob.config.root_path = path
+        request = testing.DummyRequest()
+        request.custom_route_path = lambda *args, **kw: '/%s/path' % args[0]
+        request.matched_route = C()
+        request.matched_route.name = 'route'
+        res = ExplorerView(request).saveas_content()
+        keys = res.keys()
+        keys.sort()
+        expected_keys = [
+            'breadcrumb',
+            'content', 'editor_login', 'layout_readonly_position',
+            'layout_tree_position',
+            'search', 'versioning',
+        ]
+        self.assertEqual(keys, expected_keys)
+        self.assertTrue('data-modal-href="/saveas_content_json/path"' in
+                        res['content'])
+        # We have 2 forms
+        self.assertTrue('<form data-modal-action="/create_folder_json/path"' in
+                        res['content'])
+        self.assertTrue('<form class=' in res['content'])
+
+    def test_saveas(self):
+        class C(object): pass
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        self.user_bob.config.root_path = path
+        request = testing.DummyRequest()
+        request.custom_route_path = lambda *args, **kw: '/%s/path' % args[0]
+        request.matched_route = C()
+        request.matched_route.name = 'route'
+        res = ExplorerView(request).saveas()
+        self.assertEqual(len(res), 6)
+        self.assertTrue(res['modal'])
+        self.assertTrue('content' not in res)
+
     def test_create_folder(self):
+        class C(object): pass
         try:
             path = os.path.join(os.getcwd(), 'waxe/tests/files')
             request = testing.DummyRequest()
             res = ExplorerView(request).create_folder()
-            expected = {'status': False, 'error_msg': 'No path given'}
+            expected = {'error_msg': 'No name given'}
             self.assertEqual(res, expected)
-            request = testing.DummyRequest(params={'path': 'new_folder'})
+            request = testing.DummyRequest(post={'name': 'new_folder'})
+            request.custom_route_path = lambda *args, **kw: '/filepath'
+            request.matched_route = C()
+            request.matched_route.name = 'route'
             res = ExplorerView(request).create_folder()
-            expected = {'status': True}
+            keys = res.keys()
+            keys.sort()
+            expected_keys = [
+                'breadcrumb', 'content',
+                'editor_login', 'layout_readonly_position',
+                'layout_tree_position',
+                'search', 'versioning',
+            ]
+            self.assertEqual(keys, expected_keys)
+            self.assertTrue('data-modal-href' in res['content'])
+            self.assertTrue('<li class=\"active\">new_folder</li>' in
+                            res['breadcrumb'])
             self.assertTrue(os.path.isdir(os.path.join(path, 'new_folder')))
-            self.assertEqual(res, expected)
 
             res = ExplorerView(request).create_folder()
-            self.assertEqual(len(res), 2)
-            self.assertEqual(res['status'], False)
-            self.assertTrue('mkdir: cannot create directory' in
-                            res['error_msg'])
+            expected_keys = [
+                'error_msg',
+            ]
+            keys = res.keys()
+            self.assertEqual(keys, expected_keys)
             self.assertTrue('File exists' in res['error_msg'])
         finally:
-            os.rmdir(os.path.join(path, 'new_folder'))
+            try:
+                os.rmdir(os.path.join(path, 'new_folder'))
+            except OSError:
+                pass
 
     def test_search(self):
         class C(object): pass
@@ -503,6 +573,51 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
         self.assertTrue('>folder1<' in dic['modal'])
         self.assertTrue('>file1.xml<' in dic['modal'])
 
+    def test_saveas_content_forbidden(self):
+        res = self.testapp.get('/account/Bob/saveas-content.json', status=302)
+        self.assertEqual(
+            res.location,
+            'http://localhost/login?next=http%3A%2F%2Flocalhost%2Faccount%2FBob%2Fsaveas-content.json')
+        res = res.follow()
+        self.assertEqual(res.status, "200 OK")
+        self.assertTrue('<form' in res.body)
+        self.assertTrue('Login' in res.body)
+
+    @login_user('Bob')
+    def test_saveas_content(self):
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        self.user_bob.config.root_path = path
+        res = self.testapp.get('/account/Bob/saveas-content.json', status=200)
+        self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
+                        res._headerlist)
+        dic = json.loads(res.body)
+        self.assertEqual(len(dic), 2)
+        self.assertTrue('>folder1<' in dic['content'])
+        self.assertTrue('>file1.xml<' in dic['content'])
+
+    def test_saveas_forbidden(self):
+        res = self.testapp.get('/account/Bob/saveas.json', status=302)
+        self.assertEqual(
+            res.location,
+            'http://localhost/login?next=http%3A%2F%2Flocalhost%2Faccount%2FBob%2Fsaveas.json')
+        res = res.follow()
+        self.assertEqual(res.status, "200 OK")
+        self.assertTrue('<form' in res.body)
+        self.assertTrue('Login' in res.body)
+
+    @login_user('Bob')
+    def test_saveas(self):
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        self.user_bob.config.root_path = path
+        res = self.testapp.get('/account/Bob/saveas.json', status=200)
+        self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
+                        res._headerlist)
+        dic = json.loads(res.body)
+        self.assertEqual(len(dic), 1)
+        self.assertTrue('modal' in dic)
+        self.assertTrue('>folder1<' in dic['modal'])
+        self.assertTrue('>file1.xml<' in dic['modal'])
+
     def test_create_folder_forbidden(self):
         res = self.testapp.get('/account/Bob/create-folder.json', status=302)
         self.assertEqual(
@@ -517,37 +632,41 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
     def test_create_folder(self):
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
         self.user_bob.config.root_path = path
-        res = self.testapp.get('/account/Bob/create-folder.json', status=200)
+        res = self.testapp.post('/account/Bob/create-folder.json', status=200)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
-        expected = {"status": False, "error_msg": "No path given"}
+        expected = {"error_msg": "No name given"}
         self.assertEqual(json.loads(res.body), expected)
 
         try:
-            res = self.testapp.get('/account/Bob/create-folder.json',
-                                   status=200,
-                                   params={'path': 'new_folder'})
+            res = self.testapp.post(
+                '/account/Bob/create-folder.json',
+                status=200,
+                params={'name': 'new_folder'})
+            dic = json.loads(res.body)
+            self.assertEqual(len(dic), 2)
+            self.assertTrue('data-modal-href' in dic['content'])
+            self.assertTrue('<li class=\"active\">new_folder</li>' in
+                            dic['breadcrumb'])
             self.assertTrue(os.path.isdir(os.path.join(path, 'new_folder')))
-            expected = {'status': True}
-            self.assertEqual(json.loads(res.body), expected)
 
-            res = self.testapp.get('/account/Bob/create-folder.json',
-                                   status=200,
-                                   params={'path': 'new_folder'})
+            res = self.testapp.post(
+                '/account/Bob/create-folder.json',
+                status=200,
+                params={'name': 'new_folder'})
             expected = {
-                u'status': False,
                 u'error_msg': (
                     u"mkdir: cannot create directory \u2018%s\u2019"
                     u": File exists\n") % (os.path.join(path, 'new_folder'))
             }
             dic = json.loads(res.body)
-            self.assertEqual(len(dic), 2)
-            self.assertEqual(dic['status'], False)
-            self.assertTrue('mkdir: cannot create directory' in
-                            dic['error_msg'])
+            self.assertEqual(len(dic), 1)
             self.assertTrue('File exists' in dic['error_msg'])
         finally:
-            os.rmdir(os.path.join(path, 'new_folder'))
+            try:
+                os.rmdir(os.path.join(path, 'new_folder'))
+            except OSError:
+                pass
 
     @login_user('Bob')
     def test_search_json(self):

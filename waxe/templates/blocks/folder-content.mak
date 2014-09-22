@@ -12,7 +12,7 @@
   % for f in filenames:
     <div class="col-md-6">
       <i class="fa fa-file-excel-o"></i>
-      <a data-href="${f['data_href']}" href="">${f['name']}</a>
+      ${f['link_tag']|n}
     </div>
   % endfor
 </div>

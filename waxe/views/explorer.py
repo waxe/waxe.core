@@ -173,23 +173,26 @@ class ExplorerView(BaseUserView):
 
     @view_config(route_name='folder_content', renderer='index.mak', permission='edit')
     @view_config(route_name='folder_content_json', renderer='json', permission='edit')
-    def folder_content(self):
+    def folder_content(self, file_route='edit', folder_route='folder_content', relpath=None):
+        if relpath is None:
+            relpath = self.request.GET.get('path') or ''
         data = self._get_navigation_data(
             add_previous=True,
-            folder_route='folder_content',
+            file_route=file_route,
+            folder_route=folder_route,
             data_href_name='data-modal-href',
+            relpath=relpath,
             only_json=True)
 
         content = render(
             'blocks/folder-content.mak',
             data,
             self.request)
-        relpath = self.request.GET.get('path') or ''
         return self._response({
             'content': content,
             'breadcrumb': self._get_breadcrumb(
                 relpath,
-                route_name='folder_content',
+                route_name=folder_route,
                 data_href_name='data-modal-href'
             )
         })
@@ -202,20 +205,74 @@ class ExplorerView(BaseUserView):
 
         return self._response({'modal': modal})
 
+    @view_config(route_name='saveas_content', renderer='index.mak', permission='edit')
+    @view_config(route_name='saveas_content_json', renderer='json', permission='edit')
+    def saveas_content(self, relpath=None):
+        if relpath is None:
+            relpath = self.request.GET.get('path', '')
+        dic = self.folder_content(
+            file_route=None,
+            folder_route='saveas_content',
+            relpath=relpath)
+
+        # TODO: not really nice, we should put this in a template
+        dic['content'] += (
+            '<br />'
+            '<br />'
+            '<br />'
+            '<form class="form-saveas form-inline">'
+            '  <input type="hidden" name="path" value="%s" />'
+            '<div class="form-group">'
+            '  <label>Filename:</label><br />'
+            '  <input type="text" class="form-control" name="name" required="required" style="width: auto;" />'
+            '  <input type="submit" class="btn btn-primary" value="Save as" />'
+            '</div>'
+            '</form>'
+            '<br />'
+            '<hr />'
+            '<br />'
+            '<form data-modal-action="%s" class="form-inline">'
+            '  <input type="hidden" name="path" value="%s" />'
+            '  <div class="form-group">'
+            '    <label>Create a new folder:</label><br />'
+            '    <input type="text" name="name" class="form-control" required="required" style="width: auto;" />'
+            '    <input type="submit" class="btn btn-default" value="Create" />'
+            '  </div>'
+            '</form>'
+        ) % (
+            relpath,
+            self.request.custom_route_path('create_folder_json'),
+            relpath
+        )
+        return self._response(dic)
+
+    @view_config(route_name='saveas_json', renderer='json', permission='edit')
+    def saveas(self):
+        modal = render('blocks/saveas_modal.mak',
+                       self.saveas_content(),
+                       self.request)
+
+        return self._response({'modal': modal})
+
     @view_config(route_name='create_folder_json', renderer='json', permission='edit')
     def create_folder(self):
-        path = self.request.GET.get('path', None)
+        path = self.request.POST.get('path', '')
+        name = self.request.POST.get('name', None)
 
-        if not path:
-            return {'status': False, 'error_msg': 'No path given'}
+        if not name:
+            return {'error_msg': 'No name given'}
 
+        relpath = os.path.join(path, name)
         root_path = self.root_path
-        abspath = browser.absolute_path(path, root_path)
-        process = Popen(['mkdir', abspath], stdout=PIPE, stderr=PIPE)
-        error = process.stderr.read()
+        abspath = browser.absolute_path(relpath, root_path)
+        try:
+            error = None
+            os.mkdir(abspath)
+        except Exception, e:
+            error = str(e)
         if error:
-            return {'status': False, 'error_msg': error}
-        return {'status': True}
+            return {'error_msg': error}
+        return self.saveas_content(relpath=relpath)
 
     @view_config(route_name='search', renderer='index.mak', permission='edit')
     @view_config(route_name='search_json', renderer='json', permission='edit')
@@ -280,9 +337,12 @@ def includeme(config):
     config.add_route('home_json', '/home.json')
     config.add_route('explore', '/explore')
     config.add_route('explore_json', '/explore.json')
-    config.add_route('open_json', '/open.json')
     config.add_route('folder_content', '/folder-content')
     config.add_route('folder_content_json', '/folder-content.json')
+    config.add_route('open_json', '/open.json')
+    config.add_route('saveas_content', '/saveas-content')
+    config.add_route('saveas_content_json', '/saveas-content.json')
+    config.add_route('saveas_json', '/saveas.json')
     config.add_route('create_folder_json', '/create-folder.json')
     config.add_route('search', '/search')
     config.add_route('search_json', '/search.json')

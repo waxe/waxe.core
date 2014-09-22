@@ -13,6 +13,22 @@ var waxe = waxe || {};
         fun(e, $(this));
     });
 
+    var updateModal = function($modal, data) {
+        if (data.error_msg){
+            $(document).message('error', data.error_msg);
+            return false;
+        }
+        if (data.content) {
+            $modal.find('.waxe-modal-content').html(data.content);
+        }
+        if (data.breadcrumb) {
+            $modal.find('.waxe-modal-breadcrumb').html(data.breadcrumb);
+        }
+        else {
+            $modal.find('.waxe-modal-breadcrumb').html('');
+        }
+    };
+
 
     $(document).on('click', '[data-modal-href]', function(e) {
         e.preventDefault();
@@ -20,15 +36,19 @@ var waxe = waxe || {};
             $modal = $(this).parents('.modal'),
             url = $(this).data('modal-href');
         waxe.ajax.GET(url, function(data, textStatus, jqXHR){
-            if (data.content) {
-                $modal.find('.waxe-modal-content').html(data.content);
-            }
-            if (data.breadcrumb) {
-                $modal.find('.waxe-modal-breadcrumb').html(data.breadcrumb);
-            }
-            else {
-                $modal.find('.waxe-modal-breadcrumb').html('');
-            }
+            updateModal($modal, data);
+        });
+    });
+
+    $(document).on('submit', 'form[data-modal-action]', function(e){
+        e.preventDefault();
+        var $this = $(this),
+            $modal = $this.parents('.modal'),
+            url = $this.data('modal-action');
+
+        var params = $this.serialize();
+        waxe.ajax.POST(url, params, function(data, textStatus, jqXHR){
+            updateModal($modal, data);
         });
     });
 
@@ -37,6 +57,7 @@ var waxe = waxe || {};
         if (e.isDefaultPrevented()) {
             return false;
         }
+
         if (waxe.form.status === waxe.form.STATUS_UPDATED) {
             var res = confirm('The file has been updated, continue without saving?');
             if (! res) {
@@ -70,10 +91,19 @@ var waxe = waxe || {};
                 $(document).message('info', msg);
             }
 
+            if (data.error_msg){
+                $(document).message('error', data.error_msg);
+            }
+            else if (data.info_msg){
+                $(document).message('info', data.info_msg);
+            }
+
             if ('modal' in data){
                 var modal = $(data.modal);
                 modal.modal('show');
                 $(document).message('info', msg);
+                // It's a modal we shouldn't update the next parts
+                return false;
             }
 
             var $breadcrumb = $('.breadcrumb');
@@ -96,12 +126,6 @@ var waxe = waxe || {};
                 waxe.layout.hideTree();
             }
 
-            if (data.error_msg){
-                $(document).message('error', data.error_msg);
-            }
-            else if (data.info_msg){
-                $(document).message('info', data.info_msg);
-            }
 
             waxe.dom.loadCodemirror();
         },
