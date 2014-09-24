@@ -7,6 +7,11 @@ var waxe = waxe || {};
     // This event should be called first since we also have data-href on some
     // elements
     $(document).on('click', '[data-call]', function(e) {
+
+        if ($(this).hasClass('event-disabled')) {
+            return false;
+        }
+
         var call = $(this).data('call');
         var fun = waxe;
         call.split('.').map(function(s){ fun=fun[s];});
@@ -32,6 +37,10 @@ var waxe = waxe || {};
 
     $(document).on('click', '[data-modal-href]', function(e) {
         e.preventDefault();
+
+        if ($(this).hasClass('event-disabled')) {
+            return false;
+        }
         var $this = $(this),
             $modal = $(this).parents('.modal'),
             url = $(this).data('modal-href');
@@ -55,6 +64,10 @@ var waxe = waxe || {};
 
     var onclick = function(e){
         if (e.isDefaultPrevented()) {
+            return false;
+        }
+
+        if ($(this).hasClass('event-disabled')) {
             return false;
         }
 

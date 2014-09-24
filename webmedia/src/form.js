@@ -28,8 +28,10 @@ var waxe = waxe || {};
         if(!$e.length) {
             // Add css on the save buttons to be clear that these buttons
             // are disabled!
+            $('.save,.saveas,.split').addClass('event-disabled').parent('li').addClass('disabled');
             return false;
         }
+        $('.save,.saveas,.split').removeClass('event-disabled').parent('li').removeClass('disabled');
         this.$element = $e;
         // We assume we always have the hidden input in the form
         this.$filename = $e.find(this.filename_selector);
