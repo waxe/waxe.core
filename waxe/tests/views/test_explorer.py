@@ -198,60 +198,40 @@ class TestExplorerView(LoggedBobTestCase):
         request.custom_route_path = lambda *args, **kw: '/filepath'
         res = ExplorerView(request)._get_navigation()
         expected = (
-            '<div class="row" style="margin-right: 0; margin-left: 0;">\n'
-            '<div class="col-md-8">\n'
-            '<ul id="file-navigation" class="list-unstyled" data-path="">\n'
-            '    <li><i class="glyphicon glyphicon-folder-close"></i>'
-            '<a data-href="/filepath" href="/filepath" class="folder" '
-            'data-relpath="folder1">'
+            '<a data-href="/filepath" href="/filepath" '
+            'data-relpath="folder1" class="folder">'
             'folder1'
             '</a>'
-            '</li>\n'
-            '    <li><i class="glyphicon glyphicon-file"></i>'
-            '<a data-href="/filepath" href="/filepath" class="file" '
-            'data-relpath="file1.xml">'
+        )
+        self.assertTrue(expected in res)
+
+        expected = (
+            '<a data-href="/filepath" href="/filepath" '
+            'data-relpath="file1.xml" class="file">'
             'file1.xml'
             '</a>'
-            '</li>\n'
-            '</ul>\n'
-            '</div>\n'
-            '</div>\n\n\n')
-        self.assertEqual(res, expected)
+        )
+        self.assertTrue(expected in res)
 
         request = testing.DummyRequest(params={'path': 'folder1'})
         request.custom_route_path = lambda *args, **kw: '/filepath'
         request.current_user = self.user_bob
         self.user_bob.opened_files = [models.UserOpenedFile(path='/path')]
         res = ExplorerView(request)._get_navigation()
+
         expected = (
-            '<div class="row" style="margin-right: 0; margin-left: 0;">\n'
-            '<div class="col-md-8">\n'
-            '<ul id="file-navigation" class="list-unstyled" data-path="folder1">\n'
-            '    <li><i class="glyphicon glyphicon-arrow-left"></i>'
-            '<a data-href="/filepath" href="/filepath" class="previous">'
-            '..'
-            '</a>'
-            '</li>\n'
-            '    <li><i class="glyphicon glyphicon-file"></i>'
-            '<a data-href="/filepath" href="/filepath" class="file" '
-            'data-relpath="folder1/file2.xml">'
+            '<a data-href="/filepath" href="/filepath" '
+            'data-relpath="folder1/file2.xml" class="file">'
             'file2.xml'
             '</a>'
-            '</li>\n'
-            '</ul>\n'
-            '</div>\n'
-            '<div class="col-md-4">\n'
-            '  <div class="panel panel-default">\n'
-            '  <div class="panel-heading">Last opened files</div>\n'
-            '  <div class="panel-body">\n'
-            '        <a href="/filepath" data-href="/filepath">/path</a>\n'
-            '      <br />\n'
-            '  </div>\n'
-            '</div>\n'
-            '\n'
-            '</div>\n'
-            '</div>\n\n\n')
-        self.assertEqual(res, expected)
+        )
+        self.assertTrue(expected in res)
+
+        expected = '<div class="panel-heading">Last opened files</div>'
+        self.assertTrue(expected in res)
+
+        expected = '<a href="/filepath" data-href="/filepath">/path</a>'
+        self.assertTrue(expected in res)
 
         request.custom_route_path = lambda *args, **kw: '/%s' % args[0]
         o = ExplorerView(request)
@@ -287,22 +267,6 @@ class TestExplorerView(LoggedBobTestCase):
         request.matched_route.name = 'route'
         res = ExplorerView(request).explore()
         expected = {
-            'content': (
-                u'<div class="row" style="margin-right: 0; margin-left: 0;">\n'
-                u'<div class="col-md-8">\n'
-                u'<ul id="file-navigation" class="list-unstyled" '
-                u'data-path="">\n    '
-                u'<li><i class="glyphicon glyphicon-folder-close"></i>'
-                u'<a data-href="/explore_json/filepath" '
-                u'href="/explore/filepath" class="folder" '
-                u'data-relpath="folder1">folder1</a>'
-                u'</li>\n    '
-                u'<li><i class="glyphicon glyphicon-file"></i>'
-                u'<a data-href="/edit_json/filepath" href="/edit/filepath" '
-                u'class="file" '
-                u'data-relpath="file1.xml">file1.xml</a></li>\n</ul>\n'
-                u'</div>\n'
-                u'</div>\n\n\n'),
             'breadcrumb': '<li class="active">root</li>',
             'editor_login': 'Bob',
             'versioning': False,
@@ -310,7 +274,21 @@ class TestExplorerView(LoggedBobTestCase):
             'layout_readonly_position': 'south',
             'layout_tree_position': 'west',
         }
-        self.assertEqual(res, expected)
+        for key in expected:
+            self.assertEqual(res[key], expected[key])
+
+        expected = (
+            '<a data-href="/explore_json/filepath" '
+            'href="/explore/filepath" data-relpath="folder1" '
+            'class="folder">folder1</a>'
+        )
+        self.assertTrue(expected in res['content'])
+        expected = (
+            '<a data-href="/edit_json/filepath" '
+            'href="/edit/filepath" data-relpath="file1.xml" '
+            'class="file">file1.xml</a>'
+        )
+        self.assertTrue(expected in res['content'])
 
         self.user_bob.config.root_path = '/unexisting'
         res = ExplorerView(request).explore()

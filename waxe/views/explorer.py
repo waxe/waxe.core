@@ -141,8 +141,13 @@ class ExplorerView(BaseUserView):
             versioning_status_url = self.request.custom_route_path(
                 'versioning_short_status_json',
                 _query=[('path', data['path'])])
+
+        content = render(
+            'blocks/folder-content.mak',
+            data,
+            self.request)
         return render('blocks/file_navigation.mak',
-                      {'data': data,
+                      {'content': content,
                        'last_files': self._get_last_files(),
                        'versioning_status_url': versioning_status_url},
                       self.request)
