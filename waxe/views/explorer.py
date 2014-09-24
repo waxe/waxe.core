@@ -37,7 +37,9 @@ class BootstrapPage(paginate.Page):
 class ExplorerView(BaseUserView):
 
     def _get_navigation_data(self, add_previous=False, folder_route='explore',
-                             file_route='edit', data_href_name='data-href',
+                             file_route='edit',
+                             file_data_href_name='data-href',
+                             folder_data_href_name='data-href',
                              only_json=False, relpath=None):
 
         def get_data_href(path, key):
@@ -85,7 +87,7 @@ class ExplorerView(BaseUserView):
                     name='..',
                     relpath=os.path.dirname(relpath),
                     route_name=folder_route,
-                    data_href_name=data_href_name,
+                    data_href_name=folder_data_href_name,
                 )
             }
             if not only_json:
@@ -100,7 +102,7 @@ class ExplorerView(BaseUserView):
                     name=os.path.basename(folder),
                     relpath=folder,
                     route_name=folder_route,
-                    data_href_name=data_href_name,
+                    data_href_name=folder_data_href_name,
                     extra_attrs=[
                         ('data-relpath', folder),
                         ('class', 'folder'),
@@ -120,7 +122,7 @@ class ExplorerView(BaseUserView):
                     name=os.path.basename(filename),
                     relpath=filename,
                     route_name=file_route,
-                    data_href_name=data_href_name,
+                    data_href_name=file_data_href_name,
                     extra_attrs=[
                         ('data-relpath', filename),
                         ('class', 'file')
@@ -180,7 +182,8 @@ class ExplorerView(BaseUserView):
             add_previous=True,
             file_route=file_route,
             folder_route=folder_route,
-            data_href_name='data-modal-href',
+            folder_data_href_name='data-modal-href',
+            file_data_href_name='data-href',
             relpath=relpath,
             only_json=True)
 
@@ -199,9 +202,10 @@ class ExplorerView(BaseUserView):
 
     @view_config(route_name='open_json', renderer='json', permission='edit')
     def open(self):
-        modal = render('blocks/open_modal.mak',
-                       self.folder_content(),
-                       self.request)
+        modal = render(
+            'blocks/open_modal.mak',
+            self.folder_content(),
+            self.request)
 
         return self._response({'modal': modal})
 

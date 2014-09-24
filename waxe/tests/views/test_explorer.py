@@ -159,6 +159,40 @@ class TestExplorerView(LoggedBobTestCase):
         }
         self.assertEqual(res, expected)
 
+        res = ExplorerView(request)._get_navigation_data(
+            add_previous=True,
+            folder_route='folder_route',
+            file_route='file_route',
+            relpath='folder1',
+            file_data_href_name='data-file-href',
+            folder_data_href_name='data-folder-href',
+            only_json=True)
+
+        expected = {
+            'folders': [],
+            'path': 'folder1',
+            'previous': {
+                'data_href': '/folder_route_json/filepath', 'name': '..',
+                'link_tag': (
+                    '<a data-folder-href="/folder_route_json/filepath" '
+                    'href="/folder_route/filepath">..</a>'
+                )
+            },
+            'filenames': [
+                {
+                    'data_href': '/file_route_json/filepath',
+                    'data_relpath': 'folder1/file2.xml',
+                    'name': 'file2.xml',
+                    'link_tag': (
+                        '<a data-file-href="/file_route_json/filepath" '
+                        'href="/file_route/filepath" '
+                        'data-relpath="folder1/file2.xml" '
+                        'class="file">file2.xml</a>'
+                    )
+                }]
+        }
+        self.assertEqual(res, expected)
+
     def test__get_navigation(self):
         request = testing.DummyRequest()
         request.custom_route_path = lambda *args, **kw: '/filepath'
@@ -332,8 +366,17 @@ class TestExplorerView(LoggedBobTestCase):
             'modal', 'search', 'versioning',
         ]
         self.assertEqual(keys, expected_keys)
-        self.assertTrue('>folder1<' in res['modal'])
-        self.assertTrue('>file1.xml<' in res['modal'])
+        expected = (
+            '<a data-modal-href="/filepath" href="/filepath" '
+            'data-relpath="folder1" class="folder">folder1</a>'
+        )
+        self.assertTrue(expected in res['modal'])
+
+        expected = (
+            '<a data-href="/filepath" href="/filepath" '
+            'data-relpath="file1.xml" class="file">file1.xml</a>'
+        )
+        self.assertTrue(expected in res['modal'])
 
     def test_saveas_content(self):
         class C(object): pass
