@@ -371,6 +371,12 @@ class PysvnVersioning(object):
         # don't raise exception
         self.client.resolved(abspath)
 
+    def revert(self, path):
+        """Revert the modification on the given path (filename)
+        """
+        abspath = browser.absolute_path(path, self.root_path)
+        self.client.revert(abspath)
+
     def has_conflict(self, path=None):
         lis = self.full_status(path)
         for so in lis:

@@ -1477,6 +1477,34 @@ class TestHelper(CreateRepo):
         s = o.empty_status(file1)
         self.assertEqual(s.status, helper.STATUS_MODIFED)
 
+    def test_revert(self):
+        o = helper.PysvnVersioning(None, None, self.client_dir)
+        self.assertEqual(o.get_commitable_files(), [])
+        file1 = os.path.join(self.client_dir, 'file1.xml')
+        open(file1, 'w').write('Hello')
+        self.client.add(file1)
+        self.client.checkin([file1], 'Initial commit')
+        open(file1, 'w').write('Hello Fred')
+        s = o.empty_status(file1)
+        self.assertEqual(s.status, helper.STATUS_MODIFED)
+        o.revert('file1.xml')
+        s = o.empty_status(file1)
+        self.assertEqual(s.status, helper.STATUS_NORMAL)
+
+        # Revert not modified file
+        o.revert('file1.xml')
+        s = o.empty_status(file1)
+        self.assertEqual(s.status, helper.STATUS_NORMAL)
+
+        # Revert not versionned file
+        new_file = os.path.join(self.client_dir, 'new-file.xml')
+        open(new_file, 'w').write('Hello')
+        s = o.empty_status(new_file)
+        self.assertEqual(s.status, helper.STATUS_UNVERSIONED)
+        o.revert('new-file.xml')
+        s = o.empty_status(new_file)
+        self.assertEqual(s.status, helper.STATUS_UNVERSIONED)
+
     def test_has_conflict(self):
         o = helper.PysvnVersioning(None, None, self.client_dir)
         self.assertEqual(o.get_commitable_files(), [])
