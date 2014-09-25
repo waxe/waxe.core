@@ -63,10 +63,10 @@
             this.$element.attr('class', this._get_class(settings.extra_class));
             this.$text.html(msg);
             if(settings.overlay){
-                this.$overlay.show();
+                this.$overlay.stop().show();
             }
             else{
-                this.$overlay.hide();
+                this.$overlay.stop().hide();
             }
             if (this.$close_btn){
                 if(settings.modal){
@@ -77,7 +77,7 @@
                 }
             }
             this.set_position(settings);
-            this.$element.show();
+            this.$element.stop().show();
             if(settings.autohide){
                 var self = this;
                 this.autohide_timeout = setTimeout(function(){self.close()}, settings.autohide);
