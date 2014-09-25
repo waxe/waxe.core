@@ -36,69 +36,31 @@ class BootstrapPage(paginate.Page):
 
 class ExplorerView(BaseUserView):
 
-    def _get_navigation_data(self, add_previous=False, folder_route='explore',
+    def _get_navigation_data(self, relpath, folder_route='explore',
                              file_route='edit',
                              file_data_href_name='data-href',
-                             folder_data_href_name='data-href',
-                             only_json=False, relpath=None):
-
-        def get_data_href(path, key):
-            if folder_route is None:
-                return ''
-            return self.request.custom_route_path(
-                '%s_json' % folder_route, _query=[(key, path)])
-
-        def get_href(path, key):
-            if folder_route is None:
-                return ''
-            return self.request.custom_route_path(
-                folder_route, _query=[(key, path)])
-
-        def get_file_data_href(path, key):
-            if file_route is None:
-                return ''
-            return self.request.custom_route_path(
-                '%s_json' % file_route, _query=[(key, path)])
-
-        def get_file_href(path, key):
-            if file_route is None:
-                return ''
-            return self.request.custom_route_path(
-                file_route, _query=[(key, path)])
-
-        if relpath is None:
-            relpath = self.request.GET.get('path') or ''
+                             folder_data_href_name='data-href'):
 
         root_path = self.root_path
         abspath = browser.absolute_path(relpath, root_path)
         folders, filenames = browser.get_files(abspath, root_path,
                                                relative=True)
         data = {
-            'folders': [],
-            'filenames': [],
-            'previous': None,
-            'path': relpath,
+            'previous_tag': None,
+            'folder_tags': [],
+            'filename_tags': [],
         }
-        if add_previous and root_path != abspath:
-            data['previous'] = {
-                'name': '..',
-                'data_href': get_data_href(os.path.dirname(relpath), 'path'),
-                'link_tag': self._generate_link_tag(
-                    name='..',
-                    relpath=os.path.dirname(relpath),
-                    route_name=folder_route,
-                    data_href_name=folder_data_href_name,
-                )
-            }
-            if not only_json:
-                data['previous']['href'] = get_href(os.path.dirname(relpath), 'path')
+        if root_path != abspath:
+            data['previous_tag'] = self._generate_link_tag(
+                name='..',
+                relpath=os.path.dirname(relpath),
+                route_name=folder_route,
+                data_href_name=folder_data_href_name,
+            )
 
         for folder in folders:
-            dic = {
-                'data_relpath': folder,
-                'name': os.path.basename(folder),
-                'data_href': get_data_href(folder, 'path'),
-                'link_tag': self._generate_link_tag(
+            data['folder_tags'] += [
+                self._generate_link_tag(
                     name=os.path.basename(folder),
                     relpath=folder,
                     route_name=folder_route,
@@ -108,17 +70,11 @@ class ExplorerView(BaseUserView):
                         ('class', 'folder'),
                     ]
                 )
-            }
-            if not only_json:
-                dic['href'] = get_href(folder, 'path')
-            data['folders'] += [dic]
+            ]
 
         for filename in filenames:
-            dic = {
-                'data_relpath': filename,
-                'name': os.path.basename(filename),
-                'data_href': get_file_data_href(filename, 'path'),
-                'link_tag': self._generate_link_tag(
+            data['filename_tags'] += [
+                self._generate_link_tag(
                     name=os.path.basename(filename),
                     relpath=filename,
                     route_name=file_route,
@@ -127,20 +83,17 @@ class ExplorerView(BaseUserView):
                         ('data-relpath', filename),
                         ('class', 'file')
                     ])
-            }
-            if not only_json:
-                dic['href'] = get_file_href(filename,
-                                            'path')
-            data['filenames'] += [dic]
+            ]
         return data
 
     def _get_navigation(self):
-        data = self._get_navigation_data(add_previous=True)
+        relpath = self.request.GET.get('path') or ''
+        data = self._get_navigation_data(relpath)
         versioning_status_url = None
         if self.has_versioning():
             versioning_status_url = self.request.custom_route_path(
                 'versioning_short_status_json',
-                _query=[('path', data['path'])])
+                _query=[('path', relpath)])
 
         content = render(
             'blocks/folder-content.mak',
@@ -184,13 +137,11 @@ class ExplorerView(BaseUserView):
         if relpath is None:
             relpath = self.request.GET.get('path') or ''
         data = self._get_navigation_data(
-            add_previous=True,
             file_route=file_route,
             folder_route=folder_route,
             folder_data_href_name='data-modal-href',
             file_data_href_name='data-href',
-            relpath=relpath,
-            only_json=True)
+            relpath=relpath)
 
         content = render(
             'blocks/folder-content.mak',
@@ -275,12 +226,9 @@ class ExplorerView(BaseUserView):
         root_path = self.root_path
         abspath = browser.absolute_path(relpath, root_path)
         try:
-            error = None
             os.mkdir(abspath)
         except Exception, e:
-            error = str(e)
-        if error:
-            return {'error_msg': error}
+            return {'error_msg': str(e)}
         return self.saveas_content(relpath=relpath)
 
     @view_config(route_name='search', renderer='index.mak', permission='edit')

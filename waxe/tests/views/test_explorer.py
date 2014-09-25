@@ -12,184 +12,117 @@ class TestExplorerView(LoggedBobTestCase):
     def test__get_navigation_data(self):
         request = testing.DummyRequest()
         request.custom_route_path = lambda *args, **kw: '/%s/filepath' % args[0]
-        res = ExplorerView(request)._get_navigation_data()
+        res = ExplorerView(request)._get_navigation_data(relpath='')
         expected = {
-            'folders': [
-                {
-                    'data_href': '/explore_json/filepath',
-                    'data_relpath': 'folder1',
-                    'href': '/explore/filepath',
-                    'name': 'folder1',
-                    'link_tag': (
-                        '<a data-href="/explore_json/filepath" '
-                        'href="/explore/filepath" '
-                        'data-relpath="folder1" class="folder">folder1</a>')
-                }],
-            'path': '',
-            'previous': None,
-            'filenames': [
-                {
-                    'data_href': '/edit_json/filepath',
-                    'data_relpath': 'file1.xml',
-                    'href': '/edit/filepath',
-                    'name': 'file1.xml',
-                    'link_tag': (
-                        '<a data-href="/edit_json/filepath" '
-                        'href="/edit/filepath" data-relpath="file1.xml" '
-                        'class="file">file1.xml</a>')
-                }]
+            'previous_tag': None,
+            'folder_tags': [
+                ('<a data-href="/explore_json/filepath" '
+                 'href="/explore/filepath" '
+                 'data-relpath="folder1" class="folder">folder1</a>')
+            ],
+            'filename_tags': [
+                ('<a data-href="/edit_json/filepath" '
+                 'href="/edit/filepath" data-relpath="file1.xml" '
+                 'class="file">file1.xml</a>')
+            ]
         }
         self.assertEqual(res, expected)
 
-        request = testing.DummyRequest(params={'path': 'folder1'})
+        request = testing.DummyRequest()
         request.custom_route_path = lambda *args, **kw: '/%s/filepath' % args[0]
-        res = ExplorerView(request)._get_navigation_data()
+        res = ExplorerView(request)._get_navigation_data(relpath='folder1')
         expected = {
-            'folders': [],
-            'path': 'folder1',
-            'previous': None,
-            'filenames': [
-                {
-                    'data_href': '/edit_json/filepath',
-                    'data_relpath': 'folder1/file2.xml',
-                    'href': '/edit/filepath',
-                    'name': 'file2.xml',
-                    'link_tag': (
-                        '<a data-href="/edit_json/filepath" '
-                        'href="/edit/filepath" '
-                        'data-relpath="folder1/file2.xml" class="file">'
-                        'file2.xml</a>'
-                    )
-                }]
+            'previous_tag': (
+                '<a data-href="/explore_json/filepath" '
+                'href="/explore/filepath">..</a>'
+            ),
+            'folder_tags': [],
+            'filename_tags': [
+                ('<a data-href="/edit_json/filepath" '
+                 'href="/edit/filepath" '
+                 'data-relpath="folder1/file2.xml" class="file">'
+                 'file2.xml</a>')
+            ]
         }
         self.assertEqual(res, expected)
 
         res = ExplorerView(request)._get_navigation_data(
-            add_previous=True,
+            relpath='folder1',
             folder_route='folder_route',
-            file_route='file_route',
-            only_json=True)
+            file_route='file_route')
 
         expected = {
-            'folders': [],
-            'path': 'folder1',
-            'previous': {
-                'data_href': '/folder_route_json/filepath', 'name': '..',
-                'link_tag': (
-                    '<a data-href="/folder_route_json/filepath" '
-                    'href="/folder_route/filepath">..</a>'
-                )
-            },
-            'filenames': [
-                {
-                    'data_href': '/file_route_json/filepath',
-                    'data_relpath': 'folder1/file2.xml',
-                    'name': 'file2.xml',
-                    'link_tag': (
-                        '<a data-href="/file_route_json/filepath" '
-                        'href="/file_route/filepath" '
-                        'data-relpath="folder1/file2.xml" class="file">'
-                        'file2.xml</a>'
-                    )
-                }]
+            'previous_tag': (
+                '<a data-href="/folder_route_json/filepath" '
+                'href="/folder_route/filepath">..</a>'
+            ),
+            'folder_tags': [],
+            'filename_tags': [
+                ('<a data-href="/file_route_json/filepath" '
+                 'href="/file_route/filepath" '
+                 'data-relpath="folder1/file2.xml" class="file">'
+                 'file2.xml</a>')
+            ]
         }
         self.assertEqual(res, expected)
 
-        # With relpath
-        request = testing.DummyRequest(params={'path': ''})
+        request = testing.DummyRequest()
         request.custom_route_path = lambda *args, **kw: '/%s/filepath' % args[0]
         res = ExplorerView(request)._get_navigation_data(
-            add_previous=True,
             folder_route='folder_route',
             file_route=None,
-            relpath='folder1',
-            only_json=True)
+            relpath='folder1')
 
         expected = {
-            'folders': [],
-            'path': 'folder1',
-            'previous': {
-                'data_href': '/folder_route_json/filepath', 'name': '..',
-                'link_tag': (
-                    '<a data-href="/folder_route_json/filepath" '
-                    'href="/folder_route/filepath">..</a>'
-                )
-            },
-            'filenames': [
-                {
-                    'data_href': '',
-                    'data_relpath': 'folder1/file2.xml',
-                    'name': 'file2.xml',
-                    'link_tag': (
-                        '<a href="#" data-relpath="folder1/file2.xml" '
-                        'class="file">file2.xml</a>'
-                    )
-                }]
+            'previous_tag': (
+                '<a data-href="/folder_route_json/filepath" '
+                'href="/folder_route/filepath">..</a>'
+            ),
+            'folder_tags': [],
+            'filename_tags': [
+                ('<a href="#" data-relpath="folder1/file2.xml" '
+                 'class="file">file2.xml</a>')
+            ]
         }
         self.assertEqual(res, expected)
 
         res = ExplorerView(request)._get_navigation_data(
-            add_previous=True,
             folder_route=None,
             file_route=None,
-            relpath='',
-            only_json=True)
+            relpath='')
 
         expected = {
-            'folders': [
-                {
-                    'data_href': '',
-                    'data_relpath': 'folder1',
-                    'name': 'folder1',
-                    'link_tag': (
-                        '<a href="#" data-relpath="folder1" '
-                        'class="folder">folder1</a>')
-                }],
-            'path': '',
-            'previous': None,
-            'filenames': [
-                {
-                    'data_href': '',
-                    'data_relpath': 'file1.xml',
-                    'name': 'file1.xml',
-                    'link_tag': (
-                        '<a href="#" data-relpath="file1.xml" '
-                        'class="file">file1.xml</a>')
-                }]
+            'previous_tag': None,
+            'folder_tags': [
+                ('<a href="#" data-relpath="folder1" '
+                 'class="folder">folder1</a>')
+            ],
+            'filename_tags': [
+                ('<a href="#" data-relpath="file1.xml" '
+                 'class="file">file1.xml</a>')
+            ]
         }
         self.assertEqual(res, expected)
 
         res = ExplorerView(request)._get_navigation_data(
-            add_previous=True,
             folder_route='folder_route',
             file_route='file_route',
             relpath='folder1',
             file_data_href_name='data-file-href',
-            folder_data_href_name='data-folder-href',
-            only_json=True)
+            folder_data_href_name='data-folder-href')
 
         expected = {
-            'folders': [],
-            'path': 'folder1',
-            'previous': {
-                'data_href': '/folder_route_json/filepath', 'name': '..',
-                'link_tag': (
-                    '<a data-folder-href="/folder_route_json/filepath" '
-                    'href="/folder_route/filepath">..</a>'
-                )
-            },
-            'filenames': [
-                {
-                    'data_href': '/file_route_json/filepath',
-                    'data_relpath': 'folder1/file2.xml',
-                    'name': 'file2.xml',
-                    'link_tag': (
-                        '<a data-file-href="/file_route_json/filepath" '
-                        'href="/file_route/filepath" '
-                        'data-relpath="folder1/file2.xml" '
-                        'class="file">file2.xml</a>'
-                    )
-                }]
+            'previous_tag': (
+                '<a data-folder-href="/folder_route_json/filepath" '
+                'href="/folder_route/filepath">..</a>'
+            ),
+            'folder_tags': [],
+            'filename_tags': [
+                ('<a data-file-href="/file_route_json/filepath" '
+                 'href="/file_route/filepath" '
+                 'data-relpath="folder1/file2.xml" '
+                 'class="file">file2.xml</a>')
+            ]
         }
         self.assertEqual(res, expected)
 
@@ -416,7 +349,7 @@ class TestExplorerView(LoggedBobTestCase):
                 'search', 'versioning',
             ]
             self.assertEqual(keys, expected_keys)
-            self.assertTrue('data-modal-href' in res['content'])
+            self.assertTrue('data-modal-action' in res['content'])
             self.assertTrue('<li class=\"active\">new_folder</li>' in
                             res['breadcrumb'])
             self.assertTrue(os.path.isdir(os.path.join(path, 'new_folder')))
@@ -666,7 +599,7 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
                 params={'name': 'new_folder'})
             dic = json.loads(res.body)
             self.assertEqual(len(dic), 2)
-            self.assertTrue('data-modal-href' in dic['content'])
+            self.assertTrue('data-modal-action' in dic['content'])
             self.assertTrue('<li class=\"active\">new_folder</li>' in
                             dic['breadcrumb'])
             self.assertTrue(os.path.isdir(os.path.join(path, 'new_folder')))
