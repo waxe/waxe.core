@@ -68,7 +68,8 @@ var waxe = waxe || {};
             return false;
         }
 
-        if ($(this).hasClass('event-disabled')) {
+        var $this = $(this);
+        if ($this.hasClass('event-disabled')) {
             return false;
         }
 
@@ -79,18 +80,25 @@ var waxe = waxe || {};
             }
         }
         e.preventDefault();
-        window.history.pushState(
-            {'json_url': $(this).data('href')},
-            $(this).text(),
-            $(this).attr('href')
-            );
-
-        var modal=$(this).parents('.modal');
-        waxe.dom.load($(this).data('href'), modal);
+        if ($this.attr('href')) {
+            // Don't pushState if we don't have attribute href, since it's only
+            // json link.
+            waxe.dom.pushState($this.attr('href'), $this.data('href'), $this.text());
+        }
+        var modal = $this.parents('.modal');
+        waxe.dom.load($this.data('href'), modal);
     };
+
     $(document).on('click', 'a[data-href]', onclick);
 
     ns.dom = {
+        pushState: function(url, data_url, text) {
+            window.history.pushState(
+                {'json_url': data_url},
+                text,
+                url
+            );
+        },
         update: function(data, msg){
             msg = typeof msg === 'undefined'? 'Loaded!': msg;
 
@@ -98,6 +106,11 @@ var waxe = waxe || {};
 
             waxe.layout.hideReadonly();
             $(document).scrollTop(0);
+
+            if ('push_stat' in data) {
+                var ps = data.push_stat;
+                ns.dom.pushState(ps.href, ps.data_href, ps.text);
+            }
 
             if ('content' in data){
                 var $content = $('.content');
