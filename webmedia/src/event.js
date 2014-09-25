@@ -14,3 +14,12 @@ $(document).on('change', '.dtd-urls', function(){
         });
     }
 });
+
+
+$(document).on('click', '[data-confirm]', function(e) {
+    var msg = $(this).data('confirm');
+    var res = confirm(msg);
+    if (! res) {
+        e.preventDefault();
+    }
+});
