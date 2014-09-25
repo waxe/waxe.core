@@ -45,7 +45,18 @@ module.exports = function(grunt) {
             'bower_components/jquery.contenteditablesync/src/*.js',
             'bower_components/xmltool/webmedia/src/*.js',
             'src/jquery.filebrowser.js',
-            'src/*js'
+            'src/ajax.js',
+            'src/event.js',
+            'src/form.js',
+            'src/layout.js',
+            'src/utils.js',
+            'src/dom.js',
+            'src/jquery.filebrowser.js',
+            'src/navbar.js',
+            'src/versioning.js',
+            'src/jstree.js',
+            'src/plugins-options.js',
+            'src/window.js',
         ],
         dest: '../waxe/static/js/<%= pkg.name %>.js'
       }
