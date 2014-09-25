@@ -19,6 +19,7 @@ var waxe = waxe || {};
     });
 
     var updateModal = function($modal, data) {
+        $(document).message('close');
         if (data.error_msg){
             $(document).message('error', data.error_msg);
             return false;
@@ -92,6 +93,8 @@ var waxe = waxe || {};
     ns.dom = {
         update: function(data, msg){
             msg = typeof msg === 'undefined'? 'Loaded!': msg;
+
+            $(document).message('close');
 
             waxe.layout.hideReadonly();
             $(document).scrollTop(0);
