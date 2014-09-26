@@ -6,6 +6,11 @@ from .. import security, models, search, browser
 from taskq.models import Task
 
 
+NAV_EDIT = 'edit'
+NAV_EDIT_TEXT = 'edit_text'
+NAV_DIFF = 'diff'
+
+
 class JSONHTTPBadRequest(HTTPBadRequest):
     pass
 
@@ -285,3 +290,29 @@ class BaseUserView(NavigationView):
             # For example if we use ldap authentication, self.logged_user can
             # be None if the user is not in the DB.
             models.DBSession.add(self.logged_user)
+
+    def _get_nav_editor(self, filename, kind):
+        """Navs to display XML or Source when we edit a file
+        """
+        html = []
+        lis = [
+            ('XML', 'edit', NAV_EDIT),
+            ('Source', 'edit_text', NAV_EDIT_TEXT),
+        ]
+        if self.has_versioning():
+            lis += [('Diff', 'versioning_diff', NAV_DIFF)]
+
+        for name, route, k in lis:
+            li_class = ''
+            attrs = ''
+            if kind == k:
+                li_class = ' class="active"'
+            else:
+                attrs = ' href="%s" data-href="%s"' % (
+                    self.request.custom_route_path(route,
+                                                   _query=[('path', filename)]),
+                    self.request.custom_route_path('%s_json' % route,
+                                                   _query=[('path', filename)]),
+                )
+            html += ['<li%s><a%s>%s</a></li>' % (li_class, attrs, name)]
+        return '<ul class="nav nav-tabs">%s</ul>' % ''.join(html)

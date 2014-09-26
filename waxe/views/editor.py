@@ -9,14 +9,10 @@ from urllib2 import HTTPError, URLError
 from pyramid.view import view_config
 from pyramid.renderers import render, Response
 from .. import browser, utils
-from base import BaseUserView
+from base import BaseUserView, NAV_EDIT, NAV_EDIT_TEXT
 import pyramid_logging
 
 log = pyramid_logging.getLogger(__name__)
-
-NAV_EDIT = 'edit'
-NAV_EDIT_TEXT = 'edit_text'
-NAV_DIFF = 'diff'
 
 
 def _get_tags(dtd_url):
@@ -31,32 +27,6 @@ def _get_tags(dtd_url):
 
 
 class EditorView(BaseUserView):
-
-    def _get_nav_editor(self, filename, kind):
-        """Navs to display XML or Source when we edit a file
-        """
-        html = []
-        lis = [
-            ('XML', 'edit', NAV_EDIT),
-            ('Source', 'edit_text', NAV_EDIT_TEXT),
-        ]
-        if self.has_versioning():
-            lis += [('Diff', 'diff', NAV_DIFF)]
-
-        for name, route, k in lis:
-            li_class = ''
-            attrs = ''
-            if kind == k:
-                li_class = ' class="active"'
-            else:
-                attrs = ' href="%s" data-href="%s"' % (
-                    self.request.custom_route_path(route,
-                                                   _query=[('path', filename)]),
-                    self.request.custom_route_path('%s_json' % route,
-                                                   _query=[('path', filename)]),
-                )
-            html += ['<li%s><a%s>%s</a></li>' % (li_class, attrs, name)]
-        return '<ul class="nav nav-tabs">%s</ul>' % ''.join(html)
 
     @view_config(route_name='edit', renderer='index.mak', permission='edit')
     @view_config(route_name='edit_json', renderer='json', permission='edit')
@@ -340,38 +310,6 @@ class EditorView(BaseUserView):
                          {'comment': comment}, self.request)
         return {'content': content}
 
-    @view_config(route_name='diff', renderer='index.mak', permission='edit')
-    @view_config(route_name='diff_json', renderer='json', permission='edit')
-    def diff(self):
-        filename = self.request.GET.get('path', '')
-        if not filename:
-            return {'error_msg': 'No filename given'}
-
-        absfilename = browser.absolute_path(filename, self.root_path)
-        if not os.path.isfile(absfilename):
-            return self._response({
-                'error_msg': 'File %s doesn\'t exist' % filename
-            })
-
-        vobj = self.get_versioning_obj()
-        lis = vobj.diff(filename)
-        content = ''
-        for l in lis:
-            l = utils.escape_entities(l)
-            content += '<pre>%s</pre>' % l
-
-        if not content:
-            content = '<br />The file is not modified!'
-
-        nav = self._get_nav_editor(filename, kind=NAV_DIFF)
-        breadcrumb = self._get_breadcrumb(filename)
-
-        return self._response({
-            'breadcrumb': breadcrumb,
-            'nav_editor': nav,
-            'content': content,
-        })
-
 
 def includeme(config):
     config.add_route('edit', '/edit')
@@ -386,6 +324,4 @@ def includeme(config):
     config.add_route('get_comment_modal_json', '/get-comment-modal.json')
     config.add_route('copy_json', '/copy.json')
     config.add_route('paste_json', '/paste.json')
-    config.add_route('diff', '/diff')
-    config.add_route('diff_json', '/diff.json')
     config.scan(__name__)

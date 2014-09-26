@@ -6,7 +6,7 @@ from pyramid.view import view_config
 from waxe import browser
 from waxe import models
 from waxe.utils import escape_entities
-from ..base import BaseUserView
+from ..base import BaseUserView, NAV_DIFF
 from . import helper
 
 
@@ -106,25 +106,42 @@ class VersioningView(BaseUserView):
             dic['error_msg'] = error_msg
         return self._response(dic)
 
-    @view_config(route_name='versioning_short_diff', renderer='index.mak',
-                 permission='edit')
-    @view_config(route_name='versioning_short_diff_json', renderer='json',
-                 permission='edit')
-    def short_diff(self):
-        relpath = self.request.GET.get('path', '')
-        vobj = self.get_versioning_obj()
-        lis = vobj.diff(relpath)
-        content = ''
-        for l in lis:
-            l = escape_entities(l)
-            content += '<pre>%s</pre>' % l
-        return self._response({'content': content})
-
     @view_config(route_name='versioning_diff', renderer='index.mak',
                  permission='edit')
     @view_config(route_name='versioning_diff_json', renderer='json',
                  permission='edit')
     def diff(self):
+        relpath = self.request.GET.get('path', '')
+        if not relpath:
+            return self._response({'error_msg': 'No filename given'})
+
+        absfilename = browser.absolute_path(relpath, self.root_path)
+        if not os.path.isfile(absfilename):
+            return self._response({
+                'error_msg': 'File %s doesn\'t exist' % relpath
+            })
+
+        vobj = self.get_versioning_obj()
+        lis = vobj.diff(relpath)
+        content = ''
+        if not lis:
+            content = '<br />The file is not modified!'
+
+        for l in lis:
+            l = escape_entities(l)
+            content += '<pre>%s</pre>' % l
+        return self._response({
+            'content': content,
+            'nav_editor': self._get_nav_editor(relpath, kind=NAV_DIFF)
+        })
+
+    @view_config(route_name='versioning_full_diff', renderer='index.mak',
+                 permission='edit')
+    @view_config(route_name='versioning_full_diff_json', renderer='json',
+                 permission='edit')
+    def full_diff(self):
+        """ditable diff of all the files
+        """
         filenames = self.request.POST.getall('filenames') or ''
         if not filenames:
             return self._response({
@@ -144,7 +161,7 @@ class VersioningView(BaseUserView):
             if can_commit and not self.can_commit(absfilename):
                 can_commit = False
 
-        content = render('blocks/versioning_diff.mak', {
+        content = render('blocks/versioning_full_diff.mak', {
             'files': lis,
             'can_commit': can_commit,
         }, self.request)
@@ -348,10 +365,10 @@ def includeme(config):
     config.add_route('versioning_short_status_json', '/short-status.json')
     config.add_route('versioning_status', '/status')
     config.add_route('versioning_status_json', '/status.json')
-    config.add_route('versioning_short_diff', '/short-diff')
-    config.add_route('versioning_short_diff_json', '/short-diff.json')
     config.add_route('versioning_diff', '/diff')
     config.add_route('versioning_diff_json', '/diff.json')
+    config.add_route('versioning_full_diff', '/full-diff')
+    config.add_route('versioning_full_diff_json', '/full-diff.json')
     config.add_route('versioning_update', '/update')
     config.add_route('versioning_update_json', '/update.json')
     config.add_route('versioning_commit', '/commit')

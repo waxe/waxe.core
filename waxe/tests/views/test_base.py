@@ -15,6 +15,9 @@ from waxe.views.base import (
     NavigationView,
     BaseUserView,
     JSONHTTPBadRequest,
+    NAV_EDIT,
+    NAV_EDIT_TEXT,
+    NAV_DIFF,
 )
 
 
@@ -674,3 +677,57 @@ class TestBaseUserView(BaseTestCase):
             request.registry.settings['whoosh.path'] = '/tmp/fake'
             res = view.add_indexation_task()
             m.assert_called_once()
+
+    def test__get_nav_editor(self):
+        class C(object): pass
+        request = testing.DummyRequest()
+        request.custom_route_path = lambda *args, **kw: '/%s/filepath' % args[0]
+        request.matched_route = C()
+        request.matched_route.name = 'route'
+        self.config.testing_securitypolicy(userid='Bob', permissive=True)
+
+        res = BaseUserView(request)._get_nav_editor(
+            'file1.xml',
+            kind=NAV_EDIT)
+        expected = (
+            '<ul class="nav nav-tabs">'
+            '<li class="active"><a>XML</a></li>'
+            '<li><a href="/edit_text/filepath" '
+            'data-href="/edit_text_json/filepath">Source</a></li>'
+            '</ul>'
+        )
+        self.assertEqual(res, expected)
+
+        request.registry.settings['versioning'] = 'true'
+        self.user_bob.config.use_versioning = True
+        res = BaseUserView(request)._get_nav_editor(
+            'file1.xml',
+            kind=NAV_EDIT)
+        expected = (
+            '<ul class="nav nav-tabs">'
+            '<li class="active"><a>XML</a></li>'
+            '<li><a href="/edit_text/filepath" '
+            'data-href="/edit_text_json/filepath">Source</a></li>'
+            '<li><a href="/versioning_diff/filepath" '
+            'data-href="/versioning_diff_json/filepath">Diff</a></li>'
+            '</ul>'
+        )
+        self.assertEqual(res, expected)
+
+        res = BaseUserView(request)._get_nav_editor(
+            'file1.xml',
+            kind=NAV_EDIT_TEXT)
+        expected = (
+            '<ul class="nav nav-tabs">'
+            '<li>'
+            '<a href="/edit/filepath" data-href="/edit_json/filepath">XML</a>'
+            '</li>'
+            '<li class="active"><a>Source</a></li>'
+            '<li>'
+            '<a href="/versioning_diff/filepath" '
+            'data-href="/versioning_diff_json/filepath">'
+            'Diff</a></li>'
+            '</ul>'
+        )
+        self.assertEqual(res, expected)
+

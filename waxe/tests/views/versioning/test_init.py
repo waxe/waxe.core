@@ -222,45 +222,27 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
         self.assertTrue('value="Commit"' in res['content'])
 
     @login_user('Bob')
-    def test_short_diff(self):
+    def test_diff(self):
         self.user_bob.config.root_path = self.client_dir
         request = self.DummyRequest()
-        res = self.ClassView(request).short_diff()
-        self.assertEqual(len(res), 7)
-        keys = res.keys()
-        keys.sort()
-        self.assertEqual(keys, ['breadcrumb', 'content', 'editor_login',
-                                'layout_readonly_position',
-                                'layout_tree_position',
-                                'search', 'versioning'])
-        content = res['content']
-        expected = (
-            '<pre>Index: file1.xml\n'
-            '===================================='
-            '===============================\n'
-            '--- file1.xml\t(revision 1)\n'
-            '+++ file1.xml\t(working copy)\n'
-            '@@ -1 +1 @@\n'
-            '-Hello\n'
-            '\ No newline at end of file\n'
-            '+Hello world\n'
-            '\ No newline at end of file\n'
-            '</pre><pre>New file file3.xml\n'
-            '\n'
-            'Hello</pre><pre>New file file4.xml\n'
-            '\n'
-            'Hello</pre>'
-        )
-        self.assertEqual(content, expected)
+        res = self.ClassView(request).diff()
+        expected = 'No filename given'
+        self.assertEqual(res['error_msg'], expected)
+
+        request = self.DummyRequest(params={'path': 'unexisting.xml'})
+        res = self.ClassView(request).diff()
+        expected = 'File unexisting.xml doesn\'t exist'
+        self.assertEqual(res['error_msg'], expected)
 
         request = self.DummyRequest(params={'path': 'file1.xml'})
-        res = self.ClassView(request).short_diff()
-        self.assertEqual(len(res), 7)
+        res = self.ClassView(request).diff()
+        self.assertEqual(len(res), 8)
         keys = res.keys()
         keys.sort()
         self.assertEqual(keys, ['breadcrumb', 'content', 'editor_login',
                                 'layout_readonly_position',
                                 'layout_tree_position',
+                                'nav_editor',
                                 'search', 'versioning'])
         content = res['content']
         expected = (
@@ -276,14 +258,19 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
             '\ No newline at end of file\n'
             '</pre>'
         )
-        self.assertEqual(content, expected)
+        self.assertTrue(expected in content)
+
+        with patch('waxe.views.versioning.helper.PysvnVersioning.diff',
+                   return_value=[]):
+            res = self.ClassView(request).diff()
+            self.assertTrue('The file is not modified!' in res['content'])
 
     @login_user('Bob')
-    def test_diff(self):
+    def test_full_diff(self):
         self.user_bob.config.root_path = self.client_dir
         request = self.DummyRequest()
         request.POST = MultiDict()
-        res = self.ClassView(request).diff()
+        res = self.ClassView(request).full_diff()
         expected = {
             'error_msg': 'You should provide at least one filename.',
             'editor_login': 'Bob',
@@ -299,7 +286,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
         request = self.DummyRequest(root_path=self.client_dir,
                                     params={'filenames': 'file1.xml'})
         request.POST = MultiDict({'filenames': 'file1.xml'})
-        res = self.ClassView(request).diff()
+        res = self.ClassView(request).full_diff()
         self.assertEqual(len(res), 7)
         keys = res.keys()
         keys.sort()
@@ -315,7 +302,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
         request = self.DummyRequest(root_path=self.client_dir,
                                     params={'filenames': 'file3.xml'})
         request.POST = MultiDict({'filenames': 'file3.xml'})
-        res = self.ClassView(request).diff()
+        res = self.ClassView(request).full_diff()
         self.assertEqual(len(res), 7)
         keys = res.keys()
         keys.sort()
@@ -332,7 +319,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                                     params={'filenames': 'file3.xml'})
         request.POST = MultiDict({'filenames': 'file3.xml'})
         self.user_bob.roles = [self.role_contributor]
-        res = self.ClassView(request).diff()
+        res = self.ClassView(request).full_diff()
         self.assertEqual(len(res), 7)
         keys = res.keys()
         keys.sort()
@@ -347,7 +334,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
 
         request.POST = MultiDict([('filenames', 'file1.xml'),
                                  ('filenames', 'file3.xml')])
-        res = self.ClassView(request).diff()
+        res = self.ClassView(request).full_diff()
         self.assertEqual(len(res), 7)
         keys = res.keys()
         keys.sort()
@@ -364,7 +351,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
         request.POST = MultiDict([('filenames', 'file1.xml'),
                                  ('filenames', 'file3.xml'),
                                  ('submit', 'Commit')])
-        res = self.ClassView(request).diff()
+        res = self.ClassView(request).full_diff()
         self.assertEqual(len(res), 7)
         keys = res.keys()
         keys.sort()
@@ -803,8 +790,8 @@ class FunctionalTestViewsNoVersioning(WaxeTestCase):
         for url in [
             '/account/Bob/versioning/status',
             '/account/Bob/versioning/status.json',
-            '/account/Bob/versioning/diff',
-            '/account/Bob/versioning/diff.json',
+            '/account/Bob/versioning/full-diff',
+            '/account/Bob/versioning/full-diff.json',
             '/account/Bob/versioning/update',
             '/account/Bob/versioning/update.json',
             '/account/Bob/versioning/commit.json',
@@ -820,8 +807,8 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
         for url in [
             '/account/Bob/versioning/status',
             '/account/Bob/versioning/status.json',
-            '/account/Bob/versioning/diff',
-            '/account/Bob/versioning/diff.json',
+            '/account/Bob/versioning/full-diff',
+            '/account/Bob/versioning/full-diff.json',
             '/account/Bob/versioning/update',
             '/account/Bob/versioning/update.json',
             '/account/Bob/versioning/commit.json',
@@ -863,28 +850,28 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
                         res._headerlist)
 
     @login_user('Bob')
-    def test_diff(self):
+    def test__full_diff(self):
         self.user_bob.config = UserConfig(root_path=self.client_dir)
-        res = self.testapp.get('/account/Bob/versioning/diff', status=200)
+        res = self.testapp.get('/account/Bob/versioning/full-diff', status=200)
         self.assertTrue('You should provide at least one filename' in res.body)
 
-        res = self.testapp.post('/account/Bob/versioning/diff', status=200)
+        res = self.testapp.post('/account/Bob/versioning/full-diff', status=200)
         self.assertTrue('You should provide at least one filename' in res.body)
 
-        res = self.testapp.post('/account/Bob/versioning/diff', status=200,
+        res = self.testapp.post('/account/Bob/versioning/full-diff', status=200,
                                 params={'filenames': 'file1.xml'})
         self.assertTrue('diff' in res.body)
 
     @login_user('Bob')
-    def test_diff_json(self):
+    def test_full_diff_json(self):
         self.user_bob.config = UserConfig(root_path=self.client_dir)
-        res = self.testapp.get('/account/Bob/versioning/diff.json', status=200)
+        res = self.testapp.get('/account/Bob/versioning/full-diff.json', status=200)
         self.assertTrue('You should provide at least one filename' in res.body)
 
-        res = self.testapp.post('/account/Bob/versioning/diff.json', status=200)
+        res = self.testapp.post('/account/Bob/versioning/full-diff.json', status=200)
         self.assertTrue('You should provide at least one filename' in res.body)
 
-        res = self.testapp.post('/account/Bob/versioning/diff.json', status=200,
+        res = self.testapp.post('/account/Bob/versioning/full-diff.json', status=200,
                                 params={'filenames': 'file1.xml'})
         self.assertTrue('diff' in res.body)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in

@@ -19,7 +19,7 @@
   <div class="panel panel-default">
     <div class="panel-heading">List of updated files:</div>
     <div class="panel-body">
-      <form data-action="${request.custom_route_path('versioning_diff_json')}" action="${request.custom_route_path('versioning_diff')}" method="POST">
+      <form data-action="${request.custom_route_path('versioning_full_diff_json')}" action="${request.custom_route_path('versioning_full_diff')}" method="POST">
         <div>
           Select: <a href="#" class="select-all">All</a> / <a href="#" class="select-none">None</a>
         </div>
@@ -43,7 +43,7 @@
   <div class="panel panel-default">
     <div class="panel-heading">List of commitable files:</div>
     <div class="panel-body">
-      <form data-action="${request.custom_route_path('versioning_diff_json')}" action="${request.custom_route_path('versioning_diff')}" method="POST">
+      <form data-action="${request.custom_route_path('versioning_full_diff_json')}" action="${request.custom_route_path('versioning_full_diff')}" method="POST">
         <div>
             Select: <a href="#" class="select-all">All</a> / <a href="#" class="select-none">None</a>
         </div>
