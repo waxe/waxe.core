@@ -259,6 +259,19 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
             '</pre>'
         )
         self.assertTrue(expected in content)
+        self.assertTrue('data-href="/versioning_prepare_commit_json"'
+                        in content)
+        self.assertTrue('data-href="/versioning_revert_json"'
+                        in content)
+
+        with patch('waxe.views.versioning.views.VersioningView.can_commit', return_value=False):
+            res = self.ClassView(request).diff()
+            content = res['content']
+            self.assertTrue(expected in content)
+            self.assertFalse('data-href="/versioning_prepare_commit_json"'
+                             in content)
+            self.assertTrue('data-href="/versioning_revert_json"'
+                            in content)
 
         with patch('waxe.views.versioning.helper.PysvnVersioning.diff',
                    return_value=[]):
