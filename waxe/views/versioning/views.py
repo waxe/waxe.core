@@ -189,14 +189,18 @@ class VersioningView(BaseUserView):
         self.add_indexation_task()
         return self.status(info_msg='The repository has been updated!')
 
+    @view_config(route_name='versioning_prepare_commit_json', renderer='json',
+                 permission='edit')
     def prepare_commit(self, files=None):
         relpath = self.request.GET.get('path', '')
         vobj = self.get_versioning_obj()
         if not files:
-            files = [f.relpath for f in vobj.get_commitable_files(relpath)]
+            files = [f.relpath for f in vobj.get_commitable_files(relpath)
+                     if f.relpath]
+
         if not files:
             return self._response({
-                'info_msg': 'No file to commit in %s' % relpath,
+                'info_msg': 'No file to commit in %s' % (relpath or '/'),
             })
         modal = render('blocks/prepare_commit_modal.mak', {
             'files': files,
@@ -395,6 +399,7 @@ def includeme(config):
     config.add_route('versioning_update_json', '/update.json')
     config.add_route('versioning_commit', '/commit')
     config.add_route('versioning_commit_json', '/commit.json')
+    config.add_route('versioning_prepare_commit_json', '/prepare-commit.json')
     config.add_route('versioning_update_texts', '/update-texts')
     config.add_route('versioning_update_texts_json', '/update-texts.json')
     config.add_route('versioning_edit_conflict', '/edit-conflict')

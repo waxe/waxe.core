@@ -549,6 +549,25 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                     self.assertEqual(res, True)
 
     @login_user('Bob')
+    def test_prepare_commit(self):
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        self.user_bob.config.root_path = path
+        request = self.DummyRequest(params={})
+        res = self.ClassView(request).prepare_commit()
+        expected = 'No file to commit in /'
+        self.assertEqual(res['info_msg'], expected)
+
+        self.user_bob.config.root_path = self.client_dir
+        res = self.ClassView(request).prepare_commit()
+        self.assertTrue('data-action="/versioning_commit_json"'
+                        in res['modal'])
+        expected = (
+            '<label>'
+            '<input type="checkbox" checked="checked" '
+            'name="path" value="file1.xml"/>file1.xml</label>')
+        self.assertTrue(expected in res['modal'])
+
+    @login_user('Bob')
     def test_update_texts(self):
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
         self.user_bob.config.root_path = path
