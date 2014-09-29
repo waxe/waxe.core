@@ -170,6 +170,8 @@ class UserConfig(Base):
                       primary_key=True)
     root_path = Column(String(255),
                        nullable=True)
+    root_template_path = Column(String(255),
+                                nullable=True)
     use_versioning = Column(Boolean, nullable=False, default=False)
 
     versioning_password = Column(

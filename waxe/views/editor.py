@@ -144,7 +144,9 @@ class EditorView(BaseUserView):
     def new(self):
         dtd_url = self.request.POST.get('dtd-url') or None
         dtd_tag = self.request.POST.get('dtd-tag') or None
+        relpath = self.request.GET.get('path')
 
+        obj = None
         if dtd_tag and dtd_url:
             try:
                 dic = dtd_parser.parse(dtd_url=dtd_url)
@@ -160,6 +162,15 @@ class EditorView(BaseUserView):
                 }
             obj = dic[dtd_tag]()
             obj._xml_dtd_url = dtd_url
+        elif relpath:
+            absfilename = browser.absolute_path(relpath, self.root_path)
+            try:
+                obj = xmltool.load(absfilename)
+            except Exception, e:
+                log.exception(e, request=self.request)
+                return {'error_msg': str(e)}
+
+        if obj:
             html = xmltool.generate_form_from_obj(
                 obj,
                 form_attrs={
@@ -317,6 +328,7 @@ def includeme(config):
     config.add_route('edit_text', '/edit-text')
     config.add_route('edit_text_json', '/edit-text.json')
     config.add_route('get_tags_json', '/get-tags.json')
+    config.add_route('new', '/new')
     config.add_route('new_json', '/new.json')
     config.add_route('update_json', '/update.json')
     config.add_route('update_text_json', '/update-text.json')

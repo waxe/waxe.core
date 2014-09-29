@@ -208,13 +208,6 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
         self.user_bob.config.root_path = self.client_dir
         request = self.DummyRequest()
         res = self.ClassView(request).status()
-        self.assertEqual(len(res), 7)
-        keys = res.keys()
-        keys.sort()
-        self.assertEqual(keys, ['breadcrumb', 'content', 'editor_login',
-                                'layout_readonly_position',
-                                'layout_tree_position',
-                                'search', 'versioning'])
         self.assertTrue('file1.xml' in res['content'])
         self.assertTrue('file3.xml' in res['content'])
         self.assertTrue('file4.xml' in res['content'])
@@ -236,14 +229,6 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
 
         request = self.DummyRequest(params={'path': 'file1.xml'})
         res = self.ClassView(request).diff()
-        self.assertEqual(len(res), 8)
-        keys = res.keys()
-        keys.sort()
-        self.assertEqual(keys, ['breadcrumb', 'content', 'editor_login',
-                                'layout_readonly_position',
-                                'layout_tree_position',
-                                'nav_editor',
-                                'search', 'versioning'])
         content = res['content']
         expected = (
             '<pre>Index: file1.xml\n'
@@ -305,29 +290,13 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
         request = self.DummyRequest()
         request.POST = MultiDict()
         res = self.ClassView(request).full_diff()
-        expected = {
-            'error_msg': 'You should provide at least one filename.',
-            'editor_login': 'Bob',
-            'versioning': True,
-            'search': False,
-            'breadcrumb': ('<li><a data-href="/explore_json" '
-                           'href="/explore">root</a></li>'),
-            'layout_readonly_position': 'south',
-            'layout_tree_position': 'west',
-        }
-        self.assertEqual(res, expected)
+        expected = 'You should provide at least one filename.'
+        self.assertEqual(res['error_msg'], expected)
 
         request = self.DummyRequest(root_path=self.client_dir,
                                     params={'filenames': 'file1.xml'})
         request.POST = MultiDict({'filenames': 'file1.xml'})
         res = self.ClassView(request).full_diff()
-        self.assertEqual(len(res), 7)
-        keys = res.keys()
-        keys.sort()
-        self.assertEqual(keys, ['breadcrumb', 'content', 'editor_login',
-                                'layout_readonly_position',
-                                'layout_tree_position',
-                                'search', 'versioning'])
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 1)
         self.assertTrue('submit' in res['content'])
@@ -337,13 +306,6 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                                     params={'filenames': 'file3.xml'})
         request.POST = MultiDict({'filenames': 'file3.xml'})
         res = self.ClassView(request).full_diff()
-        self.assertEqual(len(res), 7)
-        keys = res.keys()
-        keys.sort()
-        self.assertEqual(keys, ['breadcrumb', 'content', 'editor_login',
-                                'layout_readonly_position',
-                                'layout_tree_position',
-                                'search', 'versioning'])
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 1)
         self.assertTrue('submit' in res['content'])
@@ -354,13 +316,6 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
         request.POST = MultiDict({'filenames': 'file3.xml'})
         self.user_bob.roles = [self.role_contributor]
         res = self.ClassView(request).full_diff()
-        self.assertEqual(len(res), 7)
-        keys = res.keys()
-        keys.sort()
-        self.assertEqual(keys, ['breadcrumb', 'content', 'editor_login',
-                                'layout_readonly_position',
-                                'layout_tree_position',
-                                'search', 'versioning'])
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 1)
         self.assertTrue('submit' in res['content'])
@@ -369,13 +324,6 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
         request.POST = MultiDict([('filenames', 'file1.xml'),
                                  ('filenames', 'file3.xml')])
         res = self.ClassView(request).full_diff()
-        self.assertEqual(len(res), 7)
-        keys = res.keys()
-        keys.sort()
-        self.assertEqual(keys, ['breadcrumb', 'content', 'editor_login',
-                                'layout_readonly_position',
-                                'layout_tree_position',
-                                'search', 'versioning'])
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 2)
         self.assertTrue('submit' in res['content'])
@@ -386,13 +334,6 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                                  ('filenames', 'file3.xml'),
                                  ('submit', 'Commit')])
         res = self.ClassView(request).full_diff()
-        self.assertEqual(len(res), 7)
-        keys = res.keys()
-        keys.sort()
-        self.assertEqual(keys, ['breadcrumb', 'editor_login',
-                                'layout_readonly_position',
-                                'layout_tree_position', 'modal',
-                                'search', 'versioning'])
         self.assertTrue('Choose the files you want to commit' in res['modal'])
 
     @login_user('Bob')
@@ -403,32 +344,14 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                 request = self.DummyRequest(root_path=self.client_dir)
                 request.POST = MultiDict()
                 res = self.ClassView(request).commit()
-                expected = {
-                    'error_msg': "No file selected!",
-                    'editor_login': 'Bob',
-                    'versioning': True,
-                    'search': False,
-                    'breadcrumb': ('<li><a data-href="/explore_json" '
-                                   'href="/explore">root</a></li>'),
-                    'layout_readonly_position': 'south',
-                    'layout_tree_position': 'west',
-                }
-                self.assertEqual(res, expected)
+                expected = "No file selected!"
+                self.assertEqual(res['error_msg'], expected)
 
                 request = self.DummyRequest(root_path=self.client_dir)
                 request.POST = MultiDict(path='test.xml')
                 res = self.ClassView(request).commit()
-                expected = {
-                    'error_msg': "No commit message!",
-                    'editor_login': 'Bob',
-                    'versioning': True,
-                    'search': False,
-                    'breadcrumb': ('<li><a data-href="/explore_json" '
-                                   'href="/explore">root</a></li>'),
-                    'layout_readonly_position': 'south',
-                    'layout_tree_position': 'west',
-                }
-                self.assertEqual(res, expected)
+                expected = "No commit message!"
+                self.assertEqual(res['error_msg'], expected)
                 request.POST = MultiDict(path='test.xml',
                                          msg='my commit message')
 
@@ -452,32 +375,15 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
 
                 with patch('waxe.views.versioning.helper.PysvnVersioning.commit', side_effect=Exception('Error')):
                     res = self.ClassView(request).commit()
-                    expected = {
-                        'error_msg': 'Error during the commit Error',
-                        'editor_login': 'Bob',
-                        'versioning': True,
-                        'search': False,
-                        'breadcrumb': ('<li><a data-href="/explore_json" '
-                                       'href="/explore">root</a></li>'),
-                        'layout_readonly_position': 'south',
-                        'layout_tree_position': 'west',
-                    }
-                    self.assertEqual(res, expected)
+                    expected = 'Error during the commit Error'
+                    self.assertEqual(res['error_msg'], expected)
 
                 with patch('waxe.views.versioning.views.VersioningView.can_commit', return_value=False):
                     res = self.ClassView(request).commit()
-                    expected = {
-                        'error_msg': ('You don\'t have the permission '
-                                      'to commit: test.xml'),
-                        'editor_login': 'Bob',
-                        'versioning': True,
-                        'search': False,
-                        'breadcrumb': ('<li><a data-href="/explore_json" '
-                                       'href="/explore">root</a></li>'),
-                        'layout_readonly_position': 'south',
-                        'layout_tree_position': 'west',
-                    }
-                    self.assertEqual(res, expected)
+                    expected = (
+                        'You don\'t have the permission '
+                        'to commit: test.xml')
+                    self.assertEqual(res['error_msg'], expected)
 
                 # No permission
                 self.user_bob.roles = []
@@ -586,17 +492,8 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
         self.user_bob.config.root_path = path
         request = self.DummyRequest(params={})
         res = self.ClassView(request).update_texts()
-        expected = {
-            'error_msg': 'Missing parameters!',
-            'editor_login': 'Bob',
-            'versioning': True,
-            'search': False,
-            'breadcrumb': ('<li><a data-href="/explore_json" '
-                           'href="/explore">root</a></li>'),
-            'layout_readonly_position': 'south',
-            'layout_tree_position': 'west',
-        }
-        self.assertEqual(res, expected)
+        expected = 'Missing parameters!'
+        self.assertEqual(res['error_msg'], expected)
 
         request = self.DummyRequest(
             params={
@@ -612,18 +509,10 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
         with patch('xmltool.load_string') as m:
             m.side_effect = raise_func
             res = self.ClassView(request).update_texts()
-            expected = {
-                'error_msg': ('thefilename1.xml: My error<br />'
-                              'thefilename2.xml: My error'),
-                'editor_login': 'Bob',
-                'versioning': True,
-                'search': False,
-                'breadcrumb': ('<li><a data-href="/explore_json" '
-                               'href="/explore">root</a></li>'),
-                'layout_readonly_position': 'south',
-                'layout_tree_position': 'west',
-            }
-            self.assertEqual(res,  expected)
+            expected = (
+                'thefilename1.xml: My error<br />'
+                'thefilename2.xml: My error')
+            self.assertEqual(res['error_msg'],  expected)
 
         filecontent = open(os.path.join(path, 'file1.xml'), 'r').read()
         filecontent = filecontent.replace('exercise.dtd',
@@ -635,21 +524,11 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
 
         with patch('xmltool.elements.Element.write', return_value=None):
             res = self.ClassView(request).update_texts()
-            expected = {
-                'content': 'Files updated',
-                'editor_login': 'Bob',
-                'versioning': True,
-                'search': False,
-                'breadcrumb': ('<li><a data-href="/filepath" '
-                               'href="/filepath">root</a></li>'),
-                'layout_readonly_position': 'south',
-                'layout_tree_position': 'west',
-            }
-            self.assertEqual(res,  expected)
+            expected = 'Files updated'
+            self.assertEqual(res['content'],  expected)
 
             request.params['commit'] = True
             res = self.ClassView(request).update_texts()
-            self.assertEqual(len(res), 7)
             self.assertTrue('breadcrumb' in res)
             self.assertEqual(res['versioning'], True)
             self.assertEqual(res['editor_login'], 'Bob')
@@ -679,18 +558,9 @@ class TestVersioningViewFakeRepo(BaseTestCase, CreateRepo):
         request.matched_route = C()
         request.matched_route.name = 'route'
         request.route_path = lambda *args, **kw: '/%s' % args[0]
-        expected = {
-            'editor_login': 'Bob',
-            'error_msg': 'A filename should be provided',
-            'versioning': True,
-            'search': False,
-            'breadcrumb': ('<li><a data-href="/explore_json" '
-                           'href="/explore">root</a></li>'),
-            'layout_readonly_position': 'south',
-            'layout_tree_position': 'west',
-        }
+        expected = 'A filename should be provided'
         res = VersioningView(request).edit_conflict()
-        self.assertEqual(res, expected)
+        self.assertEqual(res['error_msg'], expected)
 
         request = testing.DummyRequest(params={'path': 'file1.xml'})
         request.matched_route = C()
@@ -730,17 +600,8 @@ class TestVersioningViewFakeRepo(BaseTestCase, CreateRepo):
         request.matched_route.name = 'route'
         request.route_path = lambda *args, **kw: '/%s' % args[0]
         res = VersioningView(request).update_conflict()
-        expected = {
-            'error_msg': 'Missing parameters!',
-            'editor_login': 'Bob',
-            'versioning': True,
-            'search': False,
-            'breadcrumb': ('<li><a data-href="/explore_json" '
-                           'href="/explore">root</a></li>'),
-            'layout_readonly_position': 'south',
-            'layout_tree_position': 'west',
-        }
-        self.assertEqual(res, expected)
+        expected = 'Missing parameters!'
+        self.assertEqual(res['error_msg'], expected)
 
         request = testing.DummyRequest(
             params={'filecontent': 'content of the file',
@@ -757,17 +618,8 @@ class TestVersioningViewFakeRepo(BaseTestCase, CreateRepo):
         with patch('xmltool.load_string') as m:
             m.side_effect = raise_func
             res = VersioningView(request).update_conflict()
-            expected = {
-                'error_msg': 'The conflict is not resolved: My error',
-                'editor_login': 'Bob',
-                'versioning': True,
-                'search': False,
-                'breadcrumb': ('<li><a data-href="/filepath" '
-                               'href="/filepath">root</a></li>'),
-                'layout_readonly_position': 'south',
-                'layout_tree_position': 'west',
-            }
-            self.assertEqual(res,  expected)
+            expected = 'The conflict is not resolved: My error'
+            self.assertEqual(res['error_msg'],  expected)
 
         filecontent = open(file1, 'r').read()
         request = testing.DummyRequest(
@@ -805,13 +657,6 @@ class TestVersioningViewFakeRepo(BaseTestCase, CreateRepo):
         request.matched_route.name = 'route'
 
         res = VersioningView(request).update()
-        self.assertEqual(len(res), 8)
-        keys = res.keys()
-        keys.sort()
-        expected = ['breadcrumb', 'content', 'editor_login', 'info_msg',
-                    'layout_readonly_position', 'layout_tree_position',
-                    'search', 'versioning']
-        self.assertEqual(keys, expected)
         self.assertEqual(res['info_msg'], 'The repository has been updated!')
         self.assertTrue('List of updated files:' in res['content'])
 
@@ -823,13 +668,6 @@ class TestVersioningViewFakeRepo(BaseTestCase, CreateRepo):
         self.client.update(self.client_dir)
 
         res = VersioningView(request).update()
-        self.assertEqual(len(res), 8)
-        keys = res.keys()
-        keys.sort()
-        expected = ['breadcrumb', 'content', 'editor_login', 'error_msg',
-                    'layout_readonly_position', 'layout_tree_position',
-                    'search', 'versioning']
-        self.assertEqual(keys, expected)
         expected_error_msg = ('You can\'t update the repository, '
                               'you have to fix the conflicts first')
         self.assertEqual(res['error_msg'], expected_error_msg)

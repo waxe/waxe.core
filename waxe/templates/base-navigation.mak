@@ -15,6 +15,9 @@
             </a>
             <ul class="dropdown-menu">
               <li><i class="fa fa-file-o"></i><a title="New" data-href="${request.custom_route_path('new_json')}" href="#">New</a></li>
+              % if root_template_path:
+                <li><i class="fa fa-file-excel-o"></i><a title="New from template" data-href="${request.custom_route_path('open_template_json')}" href="#">New (template)</a></li>
+              % endif
               <li><i class="fa fa-folder-open-o"></i><a title="Open" data-href="${request.custom_route_path('open_json')}" href="#">Open</a></li>
               <li class="disabled"><i class="fa fa-save"></i><a title="Save" class="save" data-call="navbar.save" href="#">Save</a></li>
               <li><i class="fa fa-save"></i><a class="saveas" title="Save as" data-href="${request.custom_route_path('saveas_json')}" href="#">Save as</a></li>

@@ -225,15 +225,8 @@ class TestExplorerView(LoggedBobTestCase):
 
         self.user_bob.config.root_path = '/unexisting'
         res = ExplorerView(request).explore()
-        expected = {
-            'error_msg': "Directory . doesn't exist",
-            'editor_login': u'Bob',
-            'versioning': False,
-            'search': False,
-            'layout_readonly_position': 'south',
-            'layout_tree_position': 'west',
-        }
-        self.assertEqual(res, expected)
+        expected = "Directory . doesn't exist"
+        self.assertEqual(res['error_msg'], expected)
 
     def test_folder_content(self):
         class C(object): pass
@@ -270,13 +263,6 @@ class TestExplorerView(LoggedBobTestCase):
         request.matched_route = C()
         request.matched_route.name = 'route'
         res = ExplorerView(request).open()
-        keys = res.keys()
-        keys.sort()
-        expected_keys = [
-            'editor_login', 'layout_readonly_position', 'layout_tree_position',
-            'modal', 'search', 'versioning',
-        ]
-        self.assertEqual(keys, expected_keys)
         expected = (
             '<a data-modal-href="/filepath" href="/filepath" '
             'data-relpath="folder1" class="folder">folder1</a>'
@@ -289,6 +275,58 @@ class TestExplorerView(LoggedBobTestCase):
         )
         self.assertTrue(expected in res['modal'])
 
+    def test_open_template_content(self):
+        class C(object): pass
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        self.user_bob.config.root_path = path
+        self.user_bob.config.root_template_path = os.path.join(
+            path,
+            'folder1')
+        request = testing.DummyRequest()
+        request.custom_route_path = lambda *args, **kw: '/filepath/%s' % args[0]
+        request.matched_route = C()
+        request.matched_route.name = 'route'
+        res = ExplorerView(request).open_template_content()
+        expected = (
+            '<a data-href="/filepath/new_json" href="/filepath/new" '
+            'data-relpath="file1.xml" class="file">file1.xml</a>'
+        )
+        self.assertTrue(expected in res['content'])
+
+        expected = (
+            '<a data-modal-href="/filepath/open_template_content_json" '
+            'href="/filepath/open_template_content" data-relpath="folder1" '
+            'class="folder">folder1</a>'
+        )
+        self.assertTrue(expected in res['content'])
+
+        res = ExplorerView(request).open_template_content('folder1')
+        expected = (
+            '<a data-href="/filepath/new_json" href="/filepath/new" '
+            'data-relpath="folder1/file2.xml" class="file">file2.xml</a>'
+        )
+        self.assertTrue(expected in res['content'])
+        expected = '<li class="active">root</li>'
+        self.assertEqual(res['breadcrumb'], expected)
+
+    def test_open_template(self):
+        class C(object): pass
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        self.user_bob.config.root_path = path
+        self.user_bob.config.root_template_path = os.path.join(
+            path,
+            'folder1')
+        request = testing.DummyRequest()
+        request.custom_route_path = lambda *args, **kw: '/filepath/%s' % args[0]
+        request.matched_route = C()
+        request.matched_route.name = 'route'
+        res = ExplorerView(request).open_template()
+        expected = (
+            '<a data-href="/filepath/new_json" href="/filepath/new" '
+            'data-relpath="folder1/file2.xml" class="file">file2.xml</a>'
+        )
+        self.assertTrue(expected in res['modal'])
+
     def test_saveas_content(self):
         class C(object): pass
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
@@ -298,15 +336,6 @@ class TestExplorerView(LoggedBobTestCase):
         request.matched_route = C()
         request.matched_route.name = 'route'
         res = ExplorerView(request).saveas_content()
-        keys = res.keys()
-        keys.sort()
-        expected_keys = [
-            'breadcrumb',
-            'content', 'editor_login', 'layout_readonly_position',
-            'layout_tree_position',
-            'search', 'versioning',
-        ]
-        self.assertEqual(keys, expected_keys)
         self.assertTrue('data-modal-href="/saveas_content_json/path"' in
                         res['content'])
         # We have 2 forms
@@ -323,7 +352,6 @@ class TestExplorerView(LoggedBobTestCase):
         request.matched_route = C()
         request.matched_route.name = 'route'
         res = ExplorerView(request).saveas()
-        self.assertEqual(len(res), 6)
         self.assertTrue(res['modal'])
         self.assertTrue('content' not in res)
 
@@ -340,15 +368,6 @@ class TestExplorerView(LoggedBobTestCase):
             request.matched_route = C()
             request.matched_route.name = 'route'
             res = ExplorerView(request).create_folder()
-            keys = res.keys()
-            keys.sort()
-            expected_keys = [
-                'breadcrumb', 'content',
-                'editor_login', 'layout_readonly_position',
-                'layout_tree_position',
-                'search', 'versioning',
-            ]
-            self.assertEqual(keys, expected_keys)
             self.assertTrue('data-modal-action' in res['content'])
             self.assertTrue('<li class=\"active\">new_folder</li>' in
                             res['breadcrumb'])
@@ -375,15 +394,8 @@ class TestExplorerView(LoggedBobTestCase):
         request.matched_route = C()
         request.matched_route.name = 'route'
         res = ExplorerView(request).search()
-        expected = {
-            'error_msg': 'Nothing to search',
-            'editor_login': 'Bob',
-            'search': False,
-            'versioning': False,
-            'layout_readonly_position': 'south',
-            'layout_tree_position': 'west',
-        }
-        self.assertEqual(res, expected)
+        expected = 'Nothing to search'
+        self.assertEqual(res['error_msg'], expected)
 
         request = testing.DummyRequest(params={'search': 'new_folder'})
         request.matched_route = C()

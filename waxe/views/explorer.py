@@ -133,7 +133,8 @@ class ExplorerView(BaseUserView):
 
     @view_config(route_name='folder_content', renderer='index.mak', permission='edit')
     @view_config(route_name='folder_content_json', renderer='json', permission='edit')
-    def folder_content(self, file_route='edit', folder_route='folder_content', relpath=None):
+    def folder_content(self, file_route='edit', folder_route='folder_content',
+                       relpath=None, rootpath=None):
         if relpath is None:
             relpath = self.request.GET.get('path') or ''
         data = self._get_navigation_data(
@@ -151,6 +152,7 @@ class ExplorerView(BaseUserView):
             'content': content,
             'breadcrumb': self._get_breadcrumb(
                 relpath,
+                rootpath=rootpath,
                 route_name=folder_route,
                 data_href_name='data-modal-href'
             )
@@ -161,6 +163,36 @@ class ExplorerView(BaseUserView):
         modal = render(
             'blocks/open_modal.mak',
             self.folder_content(),
+            self.request)
+
+        return self._response({'modal': modal})
+
+
+    @view_config(route_name='open_template_content_json', renderer='json', permission='edit')
+    def open_template_content(self, relpath=None):
+        if relpath is None:
+            relpath = self.request.GET.get('path', '')
+        rootpath = browser.relative_path(
+            self.current_user.config.root_template_path,
+            self.root_path,
+        )
+        dic = self.folder_content(
+            file_route='new',
+            folder_route='open_template_content',
+            relpath=relpath,
+            rootpath=rootpath,
+        )
+        return self._response(dic)
+
+    @view_config(route_name='open_template_json', renderer='json', permission='edit')
+    def open_template(self):
+        relpath = browser.relative_path(
+            self.current_user.config.root_template_path,
+            self.root_path,
+        )
+        modal = render(
+            'blocks/open_modal.mak',
+            self.open_template_content(relpath=relpath),
             self.request)
 
         return self._response({'modal': modal})
@@ -297,6 +329,9 @@ def includeme(config):
     config.add_route('folder_content', '/folder-content')
     config.add_route('folder_content_json', '/folder-content.json')
     config.add_route('open_json', '/open.json')
+    config.add_route('open_template_json', '/open-template.json')
+    config.add_route('open_template_content', '/open-template-content')
+    config.add_route('open_template_content_json', '/open-template-content.json')
     config.add_route('saveas_content', '/saveas-content')
     config.add_route('saveas_content_json', '/saveas-content.json')
     config.add_route('saveas_json', '/saveas.json')

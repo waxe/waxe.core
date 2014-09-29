@@ -138,8 +138,12 @@ class BaseView(object):
             return dic
 
         editor_login = self.logged_user_login
+        dic['root_template_path'] = None
         if self.current_user:
             editor_login = self.current_user.login
+            config = self.current_user.config
+            if config:
+                dic['root_template_path'] = config.root_template_path
         dic['editor_login'] = editor_login
         # Layout option
         if self.logged_user and self.logged_user.config:
@@ -190,20 +194,21 @@ class NavigationView(BaseView):
             name
         )
 
-    def _get_breadcrumb_data(self, relpath):
+    def _get_breadcrumb_data(self, relpath, rootpath=None):
         tple = []
-        while relpath:
+        while relpath and relpath != rootpath:
             name = os.path.basename(relpath)
             tple += [(name, relpath)]
             relpath = os.path.dirname(relpath)
 
-        tple += [('root', '')]
+        tple += [('root', rootpath or '')]
         tple.reverse()
         return tple
 
     def _get_breadcrumb(self, relpath, route_name='explore',
-                        data_href_name='data-href', force_link=False):
-        tple = self._get_breadcrumb_data(relpath)
+                        data_href_name='data-href', force_link=False,
+                        rootpath=None):
+        tple = self._get_breadcrumb_data(relpath, rootpath)
         html = []
         for index, (name, relpath) in enumerate(tple):
             if index == len(tple) - 1 and not force_link:

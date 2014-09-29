@@ -29,16 +29,9 @@ class TestEditorView(LoggedBobTestCase):
         request = testing.DummyRequest()
         request.matched_route = C()
         request.matched_route.name = 'route'
-        expected = {
-            'editor_login': 'Bob',
-            'error_msg': 'A filename should be provided',
-            'versioning': False,
-            'search': False,
-            'layout_readonly_position': 'south',
-            'layout_tree_position': 'west',
-        }
+        expected = 'A filename should be provided'
         res = EditorView(request).edit()
-        self.assertEqual(res, expected)
+        self.assertEqual(res['error_msg'], expected)
 
         with patch('xmltool.generate_form', return_value='My form content'):
             expected_breadcrumb = (
@@ -69,14 +62,6 @@ class TestEditorView(LoggedBobTestCase):
 
             request.matched_route.name = 'route'
             res = EditorView(request).edit()
-            keys = res.keys()
-            keys.sort()
-            self.assertEqual(keys, ['breadcrumb', 'content',
-                                    'editor_login', 'jstree_data',
-                                    'layout_readonly_position',
-                                    'layout_tree_position',
-                                    'nav_editor',
-                                    'search', 'versioning'])
             self.assertEqual(res['breadcrumb'],  expected_breadcrumb)
             self.assertTrue(
                 '<form method="POST" '
@@ -159,16 +144,9 @@ class TestEditorView(LoggedBobTestCase):
         request = testing.DummyRequest()
         request.matched_route = C()
         request.matched_route.name = 'route'
-        expected = {
-            'editor_login': 'Bob',
-            'error_msg': 'A filename should be provided',
-            'versioning': False,
-            'search': False,
-            'layout_readonly_position': 'south',
-            'layout_tree_position': 'west',
-        }
+        expected = 'A filename should be provided'
         res = EditorView(request).edit_text()
-        self.assertEqual(res, expected)
+        self.assertEqual(res['error_msg'], expected)
 
         request = testing.DummyRequest(params={'path': 'file1.xml'})
         request.matched_route = C()
@@ -247,6 +225,31 @@ class TestEditorView(LoggedBobTestCase):
             'data-href="/filepath">' in res['content'])
         self.assertTrue('<a data-href="/filepath" href="/filepath">root</a>'
                         in res['breadcrumb'])
+        self.assertTrue(isinstance(res['jstree_data'], str))
+
+        request = testing.DummyRequest(
+            params={
+                'path': 'file1.xml',
+            })
+        request.custom_route_path = lambda *args, **kw: '/filepath'
+        request.matched_route = C()
+        request.matched_route.name = 'route'
+        res = EditorView(request).new()
+        self.assertEqual(len(res), 3)
+        self.assertTrue(
+            '<form method="POST" '
+            'data-paste-href="/filepath" '
+            'data-add-href="/filepath" '
+            'data-comment-href="/filepath" '
+            'data-copy-href="/filepath" '
+            'id="xmltool-form" '
+            'data-href="/filepath">' in res['content'])
+        self.assertTrue('<a data-href="/filepath" href="/filepath">root</a>'
+                        in res['breadcrumb'])
+        self.assertTrue(
+            '<input type="hidden" name="_xml_filename" '
+            'id="_xml_filename" value="" />' in res['content']
+        )
         self.assertTrue(isinstance(res['jstree_data'], str))
 
     def test_update(self):

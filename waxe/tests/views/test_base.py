@@ -258,6 +258,7 @@ class TestBaseView(BaseTestCase):
             'search': False,
             'layout_readonly_position': 'south',
             'layout_tree_position': 'west',
+            'root_template_path': None,
         }
         self.assertEqual(res, expected)
 
@@ -272,6 +273,7 @@ class TestBaseView(BaseTestCase):
             'search': False,
             'layout_readonly_position': 'south',
             'layout_tree_position': 'west',
+            'root_template_path': None,
         }
         self.assertEqual(res, expected)
 
@@ -284,6 +286,7 @@ class TestBaseView(BaseTestCase):
             'search': False,
             'layout_readonly_position': 'south',
             'layout_tree_position': 'west',
+            'root_template_path': None,
         }
         self.assertEqual(res, expected)
 
@@ -300,6 +303,7 @@ class TestBaseView(BaseTestCase):
             'search': False,
             'layout_readonly_position': 'south',
             'layout_tree_position': 'west',
+            'root_template_path': None,
         })
 
         view = BaseView(request)
@@ -312,6 +316,7 @@ class TestBaseView(BaseTestCase):
             'search': False,
             'layout_readonly_position': 'south',
             'layout_tree_position': 'west',
+            'root_template_path': None,
         })
 
         request.registry.settings['versioning'] = 'true'
@@ -324,6 +329,7 @@ class TestBaseView(BaseTestCase):
             'search': False,
             'layout_readonly_position': 'south',
             'layout_tree_position': 'west',
+            'root_template_path': None,
         })
 
         # The user which we edit support versioning!
@@ -335,6 +341,7 @@ class TestBaseView(BaseTestCase):
             'search': False,
             'layout_readonly_position': 'south',
             'layout_tree_position': 'west',
+            'root_template_path': None,
         })
 
         self.user_admin.config = UserConfig()
@@ -347,6 +354,7 @@ class TestBaseView(BaseTestCase):
             'search': False,
             'layout_readonly_position': 'readonly_position',
             'layout_tree_position': 'tree_position',
+            'root_template_path': None,
         })
 
     def test__response_unexisting_user(self):
@@ -365,6 +373,7 @@ class TestBaseView(BaseTestCase):
             'search': False,
             'layout_readonly_position': 'south',
             'layout_tree_position': 'west',
+            'root_template_path': None,
         }
         self.assertEqual(res, expected)
 
@@ -381,6 +390,7 @@ class TestBaseView(BaseTestCase):
             'search': False,
             'layout_readonly_position': 'south',
             'layout_tree_position': 'west',
+            'root_template_path': None,
         })
 
         res = BaseView(request)._response({})
@@ -390,6 +400,7 @@ class TestBaseView(BaseTestCase):
             'search': False,
             'layout_readonly_position': 'south',
             'layout_tree_position': 'west',
+            'root_template_path': None,
         })
 
         self.user_fred.roles = [self.role_editor, self.role_contributor]
@@ -401,6 +412,7 @@ class TestBaseView(BaseTestCase):
             'search': False,
             'layout_readonly_position': 'south',
             'layout_tree_position': 'west',
+            'root_template_path': None,
         })
 
     @login_user('LeResKP')
@@ -416,6 +428,7 @@ class TestBaseView(BaseTestCase):
             'search': False,
             'layout_readonly_position': 'south',
             'layout_tree_position': 'west',
+            'root_template_path': None,
         })
 
     @login_user('Admin')
@@ -431,6 +444,7 @@ class TestBaseView(BaseTestCase):
             'search': False,
             'layout_readonly_position': 'south',
             'layout_tree_position': 'west',
+            'root_template_path': None,
         })
 
         request.registry.settings['whoosh.path'] = '/tmp/fake'
@@ -441,6 +455,7 @@ class TestBaseView(BaseTestCase):
             'search': True,
             'layout_readonly_position': 'south',
             'layout_tree_position': 'west',
+            'root_template_path': None,
         })
 
     @login_user('Bob')
@@ -524,6 +539,13 @@ class TestNavigationView(LoggedBobTestCase):
 
         res = NavigationView(request)._get_breadcrumb_data('folder1')
         expected = [('root', ''), ('folder1', 'folder1')]
+        self.assertEqual(res, expected)
+
+        res = NavigationView(request)._get_breadcrumb_data(
+            'folder1/folder2/folder3',
+            'folder1/folder2')
+        expected = [('root', 'folder1/folder2'),
+                    ('folder3', 'folder1/folder2/folder3')]
         self.assertEqual(res, expected)
 
     def test__get_breadcrumb(self):

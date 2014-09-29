@@ -74,6 +74,7 @@ def main(argv=sys.argv):
         contributor_user = User(login='contributor', password=pwd)
         contributor_user.config = UserConfig(
             root_path='/home/lereskp/temp/waxe/client1',
+            root_template_path='/home/lereskp/temp/waxe/client1/templates',
             use_versioning=True
         )
         contributor_user.roles = [contributor_role]
