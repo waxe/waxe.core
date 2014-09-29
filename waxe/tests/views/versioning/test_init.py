@@ -266,6 +266,27 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
             self.assertTrue('The file is not modified!' in res['content'])
 
     @login_user('Bob')
+    def test_revert(self):
+        self.user_bob.config.root_path = self.client_dir
+        request = self.DummyRequest()
+        res = self.ClassView(request).revert()
+        expected = {'error_msg': 'No filename given'}
+        self.assertEqual(res, expected)
+
+        request = self.DummyRequest(params={'path': 'nonexisting.xml'})
+        res = self.ClassView(request).revert()
+        expected = 'File nonexisting.xml doesn\'t exist'
+        self.assertEqual(res['error_msg'], expected)
+
+        request = self.DummyRequest(params={'path': 'file1.xml'})
+        res = self.ClassView(request).revert()
+        expected = {
+            'info_msg': 'The modification has been reverted!',
+            'redirect_url': '/edit_json',
+        }
+        self.assertEqual(res, expected)
+
+    @login_user('Bob')
     def test_full_diff(self):
         self.user_bob.config.root_path = self.client_dir
         request = self.DummyRequest()
@@ -1488,6 +1509,13 @@ class TestHelper(CreateRepo):
         open(new_file, 'w').write('Hello')
         s = o.empty_status(new_file)
         self.assertEqual(s.status, helper.STATUS_UNVERSIONED)
+        o.revert('new-file.xml')
+        s = o.empty_status(new_file)
+        self.assertEqual(s.status, helper.STATUS_UNVERSIONED)
+
+        s = o.add('new-file.xml')
+        s = o.empty_status(new_file)
+        self.assertEqual(s.status, helper.STATUS_ADDED)
         o.revert('new-file.xml')
         s = o.empty_status(new_file)
         self.assertEqual(s.status, helper.STATUS_UNVERSIONED)

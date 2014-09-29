@@ -360,6 +360,28 @@ class VersioningView(BaseUserView):
         self.add_indexation_task([absfilename])
         return self.status()
 
+    @view_config(route_name='versioning_revert_json', renderer='json', permission='edit')
+    def revert(self):
+        filename = self.request.GET.get('path', '')
+        if not filename:
+            return {'error_msg': 'No filename given'}
+
+        absfilename = browser.absolute_path(filename, self.root_path)
+        if not os.path.isfile(absfilename):
+            return self._response({
+                'error_msg': 'File %s doesn\'t exist' % filename
+            })
+
+        vobj = self.get_versioning_obj()
+        vobj.revert(filename)
+        url = self.request.custom_route_path(
+            'edit_json',
+            _query=[('path', filename)])
+        return {
+            'info_msg': 'The modification has been reverted!',
+            'redirect_url': url
+        }
+
 
 def includeme(config):
     config.add_route('versioning_short_status_json', '/short-status.json')
@@ -379,4 +401,5 @@ def includeme(config):
     config.add_route('versioning_edit_conflict_json', 'edit-conflict.json')
     config.add_route('versioning_update_conflict', '/update-conflict')
     config.add_route('versioning_update_conflict_json', 'update-conflict.json')
+    config.add_route('versioning_revert_json', '/revert.json')
     config.scan(__name__)

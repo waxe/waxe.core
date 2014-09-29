@@ -102,14 +102,22 @@ var waxe = waxe || {};
         update: function(data, msg){
             msg = typeof msg === 'undefined'? 'Loaded!': msg;
 
+            // TODO: improve message to not do this
             $(document).message('close');
 
             waxe.layout.hideReadonly();
             $(document).scrollTop(0);
 
-            if ('push_stat' in data) {
-                var ps = data.push_stat;
-                ns.dom.pushState(ps.href, ps.data_href, ps.text);
+            if (data.error_msg){
+                $(document).message('error', data.error_msg);
+            }
+            else if (data.info_msg){
+                $(document).message('info', data.info_msg);
+            }
+
+            if ('redirect_url' in data) {
+                waxe.dom.load(data['redirect_url']);
+                return;
             }
 
             if ('content' in data){
@@ -118,13 +126,6 @@ var waxe = waxe || {};
                 waxe.form.load(data.jstree_data);
                 waxe.versioning.init();
                 $(document).message('info', msg);
-            }
-
-            if (data.error_msg){
-                $(document).message('error', data.error_msg);
-            }
-            else if (data.info_msg){
-                $(document).message('info', data.info_msg);
             }
 
             if ('modal' in data){
