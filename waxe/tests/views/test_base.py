@@ -458,6 +458,13 @@ class TestBaseView(BaseTestCase):
             'root_template_path': None,
         })
 
+    def test__get_last_files_no_current_user(self):
+        request = testing.DummyRequest()
+        request.custom_route_path = lambda *args, **kw: '/filepath'
+        request.route_path = lambda *args, **kw: '/filepath'
+        res = BaseView(request)._get_last_files()
+        self.assertEqual(res, '')
+
     @login_user('Bob')
     def test__get_last_files(self):
         request = testing.DummyRequest()
@@ -661,6 +668,14 @@ class TestBaseUserView(BaseTestCase):
         request = testing.DummyRequest()
         request.matched_route = EmptyClass()
         request.matched_route.name = 'test'
+
+        # No logged user
+        self.config.testing_securitypolicy(userid='Bob', permissive=True)
+        view = BaseUserView(request)
+        view.logged_user = None
+        res = view.add_opened_file('/tmp')
+        self.assertEqual(res, False)
+
         self.config.testing_securitypolicy(userid='Bob', permissive=True)
         view = BaseUserView(request)
         res = view.add_opened_file('/tmp')

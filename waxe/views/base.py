@@ -43,6 +43,9 @@ class BaseView(object):
         """This function should be defined here since we need use it for the
         user without config or config.root_path.
         """
+        if not self.current_user:
+            # User is authenticated but not in the DB
+            return ''
         opened_files = self.current_user.opened_files[::-1]
         commited_files = self.current_user.commited_files[::-1]
         html = render('blocks/last_files.mak',
@@ -266,6 +269,9 @@ class BaseUserView(NavigationView):
         return self.current_user.get_search_dirname(settings['whoosh.path'])
 
     def add_opened_file(self, path):
+        if not self.logged_user:
+            # User is authenticated but not in the DB
+            return False
         iduser_owner = None
         if self.logged_user != self.current_user:
             if self.logged_user.config and self.logged_user.config.root_path:
