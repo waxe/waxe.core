@@ -311,15 +311,6 @@ class ExplorerView(BaseUserView):
                          self.request)
         return self._response({'content': content})
 
-    def _get_last_files(self):
-        opened_files = self.current_user.opened_files[::-1]
-        commited_files = self.current_user.commited_files[::-1]
-        html = render('blocks/last_files.mak',
-                      {'opened_files': opened_files,
-                       'commited_files': commited_files},
-                      self.request)
-        return html
-
 
 def includeme(config):
     config.add_route('home', '/')
