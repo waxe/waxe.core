@@ -28,7 +28,7 @@ class TestSearch(unittest.TestCase):
         ix = index.open_dir(indexpath)
         with ix.searcher() as searcher:
             fields = list(searcher.all_stored_fields())
-            self.assertEqual(len(fields), 4)
+            self.assertEqual(len(fields), 5)
 
     def test_incremental_index(self):
         # Create the index
@@ -40,7 +40,7 @@ class TestSearch(unittest.TestCase):
         with ix.searcher() as searcher:
             for field in searcher.all_stored_fields():
                 dic[field['path']] = field['content']
-        self.assertEqual(len(dic), 4)
+        self.assertEqual(len(dic), 5)
 
         content = 'New file'
         newfile = os.path.join(filepath, 'newfile.xml')
@@ -53,7 +53,7 @@ class TestSearch(unittest.TestCase):
             with ix.searcher() as searcher:
                 for field in searcher.all_stored_fields():
                     newdic[field['path']] = field['content']
-            self.assertEqual(len(newdic), 5)
+            self.assertEqual(len(newdic), 6)
             self.assertEqual(newdic[newfile], content)
             newdic.pop(newfile)
             self.assertEqual(dic, newdic)
@@ -66,7 +66,7 @@ class TestSearch(unittest.TestCase):
             with ix.searcher() as searcher:
                 for field in searcher.all_stored_fields():
                     newdic[field['path']] = field['content']
-            self.assertEqual(len(newdic), 5)
+            self.assertEqual(len(newdic), 6)
             self.assertEqual(newdic[newfile], content + ' updated')
             newdic.pop(newfile)
             self.assertEqual(dic, newdic)
@@ -81,7 +81,7 @@ class TestSearch(unittest.TestCase):
             for field in searcher.all_stored_fields():
                 newdic[field['path']] = field['content']
 
-        self.assertEqual(len(newdic), 4)
+        self.assertEqual(len(newdic), 5)
         self.assertEqual(newdic, dic)
 
     def test_do_index(self):
@@ -92,7 +92,7 @@ class TestSearch(unittest.TestCase):
         ix = index.open_dir(indexpath)
         with ix.searcher() as searcher:
             fields = list(searcher.all_stored_fields())
-            self.assertEqual(len(fields), 4)
+            self.assertEqual(len(fields), 5)
 
     def test_do_search(self):
         paths = browser.get_all_files(filepath, filepath)[1]
@@ -103,8 +103,33 @@ class TestSearch(unittest.TestCase):
             (os.path.join(filepath, '1.xml'),
              u'<b class="match term0">File</b> 1'),
             (os.path.join(filepath, '2.xml'),
-             u'<b class="match term0">File</b> 2')
-        ], 2)
+             u'<b class="match term0">File</b> 2'),
+            (os.path.join(filepath, 'sub/1.xml'),
+             u'<b class="match term0">File</b> 1')
+        ], 3)
+        self.assertEqual(res, expected)
+
+        # Make sure it searches in sub folder when we pass abspath
+        res = search.do_search(indexpath, 'file', abspath=filepath)
+        expected = ([
+            (os.path.join(filepath, '1.xml'),
+             u'<b class="match term0">File</b> 1'),
+            (os.path.join(filepath, '2.xml'),
+             u'<b class="match term0">File</b> 2'),
+            (os.path.join(filepath, 'sub/1.xml'),
+             u'<b class="match term0">File</b> 1')
+        ], 3)
+        self.assertEqual(res, expected)
+
+        # Search in a subfolder
+        res = search.do_search(
+            indexpath,
+            'file',
+            abspath=os.path.join(filepath, 'sub'))
+        expected = ([
+            (os.path.join(filepath, 'sub/1.xml'),
+             u'<b class="match term0">File</b> 1')
+        ], 1)
         self.assertEqual(res, expected)
 
         res = search.do_search(indexpath, u'Téster')

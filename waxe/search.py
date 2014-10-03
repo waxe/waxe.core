@@ -5,7 +5,6 @@ from whoosh.support.charset import accent_map
 from whoosh import index
 from whoosh.qparser import QueryParser, FuzzyTermPlugin
 import re
-import math
 
 
 HITS_PER_PAGE = 20
@@ -120,19 +119,23 @@ def do_index(dirname, paths):
     clean_index(dirname, paths)
 
 
-def do_search(dirname, expr, page=1):
+def do_search(dirname, expr, abspath=None, page=1):
     """Search for the given expr in the given index path dirname
     """
     ix = index.open_dir(dirname)
 
     qp = QueryParser("content", schema=ix.schema)
     qp.add_plugin(FuzzyTermPlugin())
-    q = qp.parse(u"%(expr)s" % {'expr': expr})
+    search_str = expr
+    if abspath:
+        search_str += u' AND path:%s' % abspath
+
+    q = qp.parse(search_str)
 
     lis = []
     nb = 0
-    with ix.searcher() as s:
-        results = s.search_page(q, page, pagelen=HITS_PER_PAGE, terms=True)
+    with ix.searcher() as searcher:
+        results = searcher.search_page(q, page, pagelen=HITS_PER_PAGE, terms=True)
         nb = len(results)
         for hit in results:
             lis += [(hit['path'], hit.highlights("content"))]
