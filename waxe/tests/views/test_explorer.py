@@ -105,6 +105,23 @@ class TestExplorerView(LoggedBobTestCase):
         self.assertEqual(res, expected)
 
         res = ExplorerView(request)._get_navigation_data(
+            folder_route=None,
+            file_route=None,
+            relpath='',
+            folder_only=True,
+        )
+
+        expected = {
+            'previous_tag': None,
+            'folder_tags': [
+                ('<a href="#" data-relpath="folder1" '
+                 'class="folder">folder1</a>')
+            ],
+            'filename_tags': []
+        }
+        self.assertEqual(res, expected)
+
+        res = ExplorerView(request)._get_navigation_data(
             folder_route='folder_route',
             file_route='file_route',
             relpath='folder1',
@@ -386,33 +403,76 @@ class TestExplorerView(LoggedBobTestCase):
             except OSError:
                 pass
 
-    def test_search(self):
+    def test_search_folder_content(self):
+        class C(object): pass
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        self.user_bob.config.root_path = path
+        self.user_bob.config.root_template_path = os.path.join(
+            path,
+            'folder1')
+        request = testing.DummyRequest()
+        request.custom_route_path = lambda *args, **kw: '/filepath/%s' % args[0]
+        request.matched_route = C()
+        request.matched_route.name = 'route'
+        res = ExplorerView(request).search_folder_content()
+        # No file
+        self.assertTrue('file1.xml' not in res['content'])
+        expected = (
+            '<a data-modal-href="/filepath/search_folder_content_json" '
+            'href="/filepath/search_folder_content" data-relpath="folder1" '
+            'class="folder">folder1</a>'
+        )
+        self.assertTrue(expected in res['content'])
+
+        res = ExplorerView(request).search_folder_content('folder1')
+        self.assertTrue('file2.xml' not in res['content'])
+        expected = (
+            '<li>'
+            '<a data-modal-href="/filepath/search_folder_content_json" '
+            'href="/filepath/search_folder_content">root</a></li>'
+            '<li class="active">folder1</li>'
+        )
+        self.assertEqual(res['breadcrumb'], expected)
+
+    def test_search_folder(self):
         class C(object): pass
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
         self.user_bob.config.root_path = path
         request = testing.DummyRequest()
+        request.custom_route_path = lambda *args, **kw: '/filepath'
         request.matched_route = C()
         request.matched_route.name = 'route'
-        res = ExplorerView(request).search()
-        expected = 'Nothing to search'
-        self.assertEqual(res['error_msg'], expected)
+        res = ExplorerView(request).search_folder()
+        expected = (
+            '<a data-modal-href="/filepath" href="/filepath" '
+            'data-relpath="folder1" class="folder">folder1</a>'
+        )
+        self.assertTrue(expected in res['modal'])
+        # No file
+        self.assertTrue('file1.xml' not in res['modal'])
+
+    def test_search(self):
+        class C(object): pass
+        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        self.user_bob.config.root_path = path
 
         request = testing.DummyRequest(params={'search': 'new_folder'})
         request.matched_route = C()
         request.matched_route.name = 'route_json'
         res = ExplorerView(request).search()
         expected = {'error_msg': 'The search is not available'}
+        self.assertEqual(res, expected)
 
         request.registry.settings['whoosh.path'] = '/tmp/fake'
         request.custom_route_path = lambda *args, **kw: '/filepath'
         res = ExplorerView(request).search()
         expected = {'error_msg': 'The search is not available'}
+        self.assertEqual(res, expected)
 
         with patch('os.path.exists', return_value=True):
             with patch('waxe.search.do_search', return_value=(None, 0)):
                 res = ExplorerView(request).search()
-                expected = {'content': 'No result!'}
-                self.assertEqual(res, expected)
+                self.assertTrue('No result!' in res['content'])
 
             return_value = ([
                 (os.path.join(path, 'file1.xml'), 'Excerpt of the file1')
@@ -420,15 +480,32 @@ class TestExplorerView(LoggedBobTestCase):
             with patch('waxe.search.do_search', return_value=return_value):
                 res = ExplorerView(request).search()
                 expected = (
-                    '\n  <a href="/filepath" '
+                    '<a href="/filepath" '
                     'data-href="/filepath">'
-                    '<i class="glyphicon glyphicon-file"></i>'
-                    'file1.xml</a>\n  '
+                    ' file1.xml</a>\n  '
                     '<p>Excerpt of the file1</p>\n\n')
                 self.maxDiff = None
                 self.assertEqual(len(res), 1)
-                self.assertTrue(expected in res['content'])
+                expected1 = (
+                    '<a href="/filepath" data-href="/filepath">'
+                    ' file1.xml</a>'
+                )
+                expected2 = '<p>Excerpt of the file1</p>'
+                self.assertTrue(expected1 in res['content'])
+                self.assertTrue(expected2 in res['content'])
                 self.assertTrue('class="pagination"' in res['content'])
+                self.assertTrue('name="search"' in res['content'])
+                self.assertTrue('value="new_folder"' in res['content'])
+                self.assertTrue('name="path"' in res['content'])
+
+            request = testing.DummyRequest()
+            request.matched_route = C()
+            request.matched_route.name = 'route_json'
+            request.custom_route_path = lambda *args, **kw: '/filepath'
+            res = ExplorerView(request).search()
+            self.assertTrue('name="search"' in res['content'])
+            self.assertTrue('name="path"' in res['content'])
+            self.assertFalse('class="pagination"' in res['content'])
 
 
 class TestFunctionalTestExplorerView(WaxeTestCase):

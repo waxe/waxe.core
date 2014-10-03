@@ -1,12 +1,11 @@
 import os
-from subprocess import Popen, PIPE
 from pyramid.view import view_config
 from pyramid.renderers import render
 from pyramid.httpexceptions import HTTPFound
 from base import BaseUserView
 import webhelpers.paginate as paginate
 from webhelpers.html import HTML
-from .. import browser, search
+from .. import browser, search as mod_search
 
 
 class BootstrapPage(paginate.Page):
@@ -39,7 +38,9 @@ class ExplorerView(BaseUserView):
     def _get_navigation_data(self, relpath, folder_route='explore',
                              file_route='edit',
                              file_data_href_name='data-href',
-                             folder_data_href_name='data-href'):
+                             folder_data_href_name='data-href',
+                             folder_only=False
+                            ):
 
         root_path = self.root_path
         abspath = browser.absolute_path(relpath, root_path)
@@ -72,18 +73,19 @@ class ExplorerView(BaseUserView):
                 )
             ]
 
-        for filename in filenames:
-            data['filename_tags'] += [
-                self._generate_link_tag(
-                    name=os.path.basename(filename),
-                    relpath=filename,
-                    route_name=file_route,
-                    data_href_name=file_data_href_name,
-                    extra_attrs=[
-                        ('data-relpath', filename),
-                        ('class', 'file')
-                    ])
-            ]
+        if not folder_only:
+            for filename in filenames:
+                data['filename_tags'] += [
+                    self._generate_link_tag(
+                        name=os.path.basename(filename),
+                        relpath=filename,
+                        route_name=file_route,
+                        data_href_name=file_data_href_name,
+                        extra_attrs=[
+                            ('data-relpath', filename),
+                            ('class', 'file')
+                        ])
+                ]
         return data
 
     def _get_navigation(self):
@@ -134,7 +136,7 @@ class ExplorerView(BaseUserView):
     @view_config(route_name='folder_content', renderer='index.mak', permission='edit')
     @view_config(route_name='folder_content_json', renderer='json', permission='edit')
     def folder_content(self, file_route='edit', folder_route='folder_content',
-                       relpath=None, rootpath=None):
+                       relpath=None, rootpath=None, folder_only=False):
         if relpath is None:
             relpath = self.request.GET.get('path') or ''
         data = self._get_navigation_data(
@@ -142,7 +144,9 @@ class ExplorerView(BaseUserView):
             folder_route=folder_route,
             folder_data_href_name='data-modal-href',
             file_data_href_name='data-href',
-            relpath=relpath)
+            relpath=relpath,
+            folder_only=folder_only,
+        )
 
         content = render(
             'blocks/folder-content.mak',
@@ -263,51 +267,79 @@ class ExplorerView(BaseUserView):
             return {'error_msg': str(e)}
         return self.saveas_content(relpath=relpath)
 
+    @view_config(route_name='search_folder_content', renderer='index.mak', permission='edit')
+    @view_config(route_name='search_folder_content_json', renderer='json', permission='edit')
+    def search_folder_content(self, relpath=None):
+        if relpath is None:
+            relpath = self.request.GET.get('path', '')
+        dic = self.folder_content(
+            file_route=None,
+            folder_route='search_folder_content',
+            folder_only=True,
+            relpath=relpath)
+
+        dic['relpath'] = relpath
+        return self._response(dic)
+
+    @view_config(route_name='search_folder_json', renderer='json', permission='edit')
+    def search_folder(self):
+        modal = render('blocks/search_folder_modal.mak',
+                       self.search_folder_content(),
+                       self.request)
+        return self._response({'modal': modal})
+
     @view_config(route_name='search', renderer='index.mak', permission='edit')
     @view_config(route_name='search_json', renderer='json', permission='edit')
     def search(self):
-        s = self.request.params.get('search')
-        if not s:
-            return self._response({'error_msg': 'Nothing to search'})
+
+        def search_url(page, json=False):
+            """Use for the BootstrapPage object
+            """
+            routename = 'search'
+            if json:
+                routename += '_json'
+            return self.request.custom_route_path(
+                routename,
+                _query=[('search', search),
+                        ('page', page)])
 
         dirname = self.get_search_dirname()
         if not dirname or not os.path.exists(dirname):
             return self._response({'error_msg': 'The search is not available'})
 
-        p = self.request.params.get('page') or 1
-        try:
-            p = int(p)
-        except ValueError:
-            p = 1
-
-        res, nb_hits = search.do_search(dirname, s, p)
-        if not res:
-            return self._response({'content': 'No result!'})
-        lis = []
-        for path, excerpt in res:
-            path = browser.relative_path(path, self.root_path)
-            href = self.request.custom_route_path('edit',
-                                                  _query=[('path', path)])
-            data_href = self.request.custom_route_path('edit_json',
-                                                       _query=[('path', path)])
-            lis += [(path, href, data_href, excerpt)]
-
-        def search_url(page, json=False):
-            routename = 'search'
-            if json:
-                routename += '_json'
-            return self.request.custom_route_path(routename,
-                                                  _query=[('search', s),
-                                                          ('page', page)])
-
-        pageobj = BootstrapPage(None, p, item_count=nb_hits, url=search_url,
-                                items_per_page=search.HITS_PER_PAGE)
+        dic = {
+            'search': '',
+            'relpath': '',
+            'result': '',
+        }
+        if self.request.params.get('search'):
+            search = self.request.params.get('search')
+            path = self.request.params.get('path', '')
+            p = self.request.params.get('page') or 1
+            try:
+                p = int(p)
+            except ValueError:
+                p = 1
+            dic['search'] = search
+            dic['relpath'] = path
+            abspath = None
+            if path:
+                abspath = browser.absolute_path(path, self.root_path)
+            res, nb_hits = mod_search.do_search(
+                dirname, search, abspath=abspath, page=p)
+            if not res:
+                dic['result'] = 'No result!'
+            else:
+                lis = []
+                for path, excerpt in res:
+                    path = browser.relative_path(path, self.root_path)
+                    lis += [(path, excerpt)]
+                dic['data'] = lis
+                dic['pageobj'] = BootstrapPage(
+                    None, p, item_count=nb_hits, url=search_url,
+                    items_per_page=mod_search.HITS_PER_PAGE)
         content = render('blocks/search.mak',
-                         {
-                             'data': lis,
-                             'pageobj': pageobj,
-                             'search_url': search_url,
-                         },
+                         dic,
                          self.request)
         return self._response({'content': content})
 
@@ -329,4 +361,7 @@ def includeme(config):
     config.add_route('create_folder_json', '/create-folder.json')
     config.add_route('search', '/search')
     config.add_route('search_json', '/search.json')
+    config.add_route('search_folder_json', '/search-folder.json')
+    config.add_route('search_folder_content', '/search-folder-content')
+    config.add_route('search_folder_content_json', '/search-folder-content.json')
     config.scan(__name__)

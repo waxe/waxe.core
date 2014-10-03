@@ -33,6 +33,10 @@ var waxe = waxe || {};
         else {
             $modal.find('.waxe-modal-breadcrumb').html('');
         }
+        if (data.relpath) {
+            // Need for the search.
+            $modal.find('.relpath').val(data.relpath);
+        }
     };
 
 

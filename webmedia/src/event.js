@@ -23,3 +23,10 @@ $(document).on('click', '[data-confirm]', function(e) {
         e.preventDefault();
     }
 });
+
+
+$(document).on('submit', '.form-search-folder', function(e) {
+    e.preventDefault();
+    $('#search-path').val($(this).find('[name="search-folder"]').val());
+    $(this).parents('.modal').modal('hide');
+});
