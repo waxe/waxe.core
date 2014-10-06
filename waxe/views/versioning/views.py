@@ -22,9 +22,8 @@ class VersioningView(BaseUserView):
         return super(VersioningView, self)._response(dic)
 
     def can_commit(self, path):
-        if not os.path.exists(path):
-            raise Exception('Invalid path %s' % path)
-
+        """It's possible path didn't exist since we can commit deleted file
+        """
         if self.user_is_admin():
             return True
 
@@ -33,7 +32,7 @@ class VersioningView(BaseUserView):
 
         assert self.user_is_contributor(), 'You are not a contributor'
 
-        if os.path.isfile(path):
+        if not os.path.isdir(path):
             path = os.path.dirname(path)
 
         path = os.path.normpath(path)
@@ -78,6 +77,9 @@ class VersioningView(BaseUserView):
         uncommitables = []
         tmps = []
         for so in lis:
+            if os.path.isdir(so.abspath):
+                # For now don't allow action on folder
+                continue
             if so.status == helper.STATUS_CONFLICTED:
                 conflicteds += [so]
                 conflicteds_abspath += [so.abspath]
@@ -105,6 +107,45 @@ class VersioningView(BaseUserView):
         if error_msg:
             dic['error_msg'] = error_msg
         return self._response(dic)
+
+    @view_config(route_name='versioning_status_post', renderer='index.mak',
+                 permission='edit')
+    @view_config(route_name='versioning_status_post_json', renderer='json',
+                 permission='edit')
+    def status_post(self):
+        filenames = self.request.POST.getall('filenames') or ''
+        if not filenames:
+            return self._response({
+                'error_msg': 'You should provide at least one filename.',
+            })
+
+        if self.request.POST.get('submit') == 'Revert':
+            vobj = self.get_versioning_obj()
+            for filename in filenames:
+                absfilename = browser.absolute_path(filename, self.root_path)
+                if not os.path.isfile(absfilename):
+                    continue
+                vobj.revert(filename)
+            return self.status(info_msg='The files have been reverted!')
+
+        if self.request.POST.get('submit') == 'Remove':
+            vobj = self.get_versioning_obj()
+            for filename in filenames:
+                absfilename = browser.absolute_path(filename, self.root_path)
+                if not os.path.isfile(absfilename):
+                    continue
+                vobj.remove(filename)
+            return self.status(info_msg='The files have been removed!')
+
+        if self.request.POST.get('submit') == 'Commit':
+            # We have clicked on the commit button
+            return self.prepare_commit(filenames)
+
+        if self.request.POST.get('submit') == 'Generate diff':
+            return self.full_diff()
+
+        # TODO: find better expection
+        raise Exception('Unsupported method')
 
     @view_config(route_name='versioning_diff', renderer='index.mak',
                  permission='edit')
@@ -156,17 +197,13 @@ class VersioningView(BaseUserView):
     @view_config(route_name='versioning_full_diff_json', renderer='json',
                  permission='edit')
     def full_diff(self):
-        """ditable diff of all the files
+        """Editable diff of all the files
         """
         filenames = self.request.POST.getall('filenames') or ''
         if not filenames:
             return self._response({
                 'error_msg': 'You should provide at least one filename.',
             })
-
-        if self.request.POST.get('submit') == 'Commit':
-            # We have clicked on the commit button
-            return self.prepare_commit(filenames)
 
         vobj = self.get_versioning_obj()
         lis = []
@@ -409,6 +446,8 @@ def includeme(config):
     config.add_route('versioning_status_json', '/status.json')
     config.add_route('versioning_diff', '/diff')
     config.add_route('versioning_diff_json', '/diff.json')
+    config.add_route('versioning_status_post', '/status-post')
+    config.add_route('versioning_status_post_json', '/status-post.json')
     config.add_route('versioning_full_diff', '/full-diff')
     config.add_route('versioning_full_diff_json', '/full-diff.json')
     config.add_route('versioning_update', '/update')

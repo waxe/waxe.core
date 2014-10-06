@@ -329,12 +329,53 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
         self.assertTrue('submit' in res['content'])
         self.assertTrue('name="commit" ' not in res['content'])
 
-        # We should call prepare_commit
+    @login_user('Bob')
+    def test_status_post(self):
+        self.user_bob.config.root_path = self.client_dir
+        request = self.DummyRequest()
+        request.POST = MultiDict()
+        res = self.ClassView(request).status_post()
+        expected = 'You should provide at least one filename.'
+        self.assertEqual(res['error_msg'], expected)
+
+        # Revert
+        request.POST = MultiDict([('filenames', 'file1.xml'),
+                                 ('filenames', 'file3.xml'),
+                                 ('submit', 'Revert')])
+        res = self.ClassView(request).status_post()
+        self.assertEqual(res['info_msg'], 'The files have been reverted!')
+
+        # Remove
+        request.POST = MultiDict([('filenames', 'file1.xml'),
+                                 ('filenames', 'file3.xml'),
+                                 ('submit', 'Remove')])
+        res = self.ClassView(request).status_post()
+        self.assertEqual(res['info_msg'], 'The files have been removed!')
+
+        # Commit
         request.POST = MultiDict([('filenames', 'file1.xml'),
                                  ('filenames', 'file3.xml'),
                                  ('submit', 'Commit')])
-        res = self.ClassView(request).full_diff()
+        res = self.ClassView(request).status_post()
         self.assertTrue('Choose the files you want to commit' in res['modal'])
+
+        # Diff
+        request.POST = MultiDict([('filenames', 'file1.xml'),
+                                 ('filenames', 'file3.xml'),
+                                 ('submit', 'Generate diff')])
+        res = self.ClassView(request).status_post()
+        self.assertTrue('<form data-action="/versioning_update_texts_json"'
+                        in res['content'])
+
+        # Unsupported method
+        request.POST = MultiDict([('filenames', 'file1.xml'),
+                                 ('filenames', 'file3.xml'),
+                                 ('submit', 'Unsupported')])
+        try:
+            res = self.ClassView(request).status_post()
+            assert(False)
+        except Exception, e:
+            self.assertEqual(str(e), 'Unsupported method')
 
     @login_user('Bob')
     def test_commit(self):
@@ -436,36 +477,34 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                 assert(False)
             except Exception, e:
                 self.assertEqual(str(e),
-                                 'Invalid path /home/test/folder1/myfile.xml')
+                                 'You are not a contributor')
 
-            with patch('os.path.exists', return_value=True):
-                with patch('os.path.isfile', return_value=True):
-                    try:
-                        res = view.can_commit('/home/test/folder1/myfile.xml')
-                        assert(False)
-                    except AssertionError, e:
-                        self.assertEqual(str(e), 'You are not a contributor')
+            try:
+                res = view.can_commit('/home/test/folder1/myfile.xml')
+                assert(False)
+            except AssertionError, e:
+                self.assertEqual(str(e), 'You are not a contributor')
 
-                    # By default a contributor can't commit
-                    user.roles = [self.role_contributor]
-                    res = view.can_commit('/home/test/folder1/myfile.xml')
-                    self.assertEqual(res, False)
+            # By default a contributor can't commit
+            user.roles = [self.role_contributor]
+            res = view.can_commit('/home/test/folder1/myfile.xml')
+            self.assertEqual(res, False)
 
-                    user.versioning_paths += [VersioningPath(
-                        status=VERSIONING_PATH_STATUS_ALLOWED,
-                        path='/home/test/')]
-                    res = view.can_commit('/home/test/folder1/myfile.xml')
-                    self.assertEqual(res, True)
+            user.versioning_paths += [VersioningPath(
+                status=VERSIONING_PATH_STATUS_ALLOWED,
+                path='/home/test/')]
+            res = view.can_commit('/home/test/folder1/myfile.xml')
+            self.assertEqual(res, True)
 
-                    user.versioning_paths += [VersioningPath(
-                        status=VERSIONING_PATH_STATUS_FORBIDDEN,
-                        path='/home/test/folder1')]
-                    res = view.can_commit('/home/test/folder1/myfile.xml')
-                    self.assertEqual(res, False)
-                    res = view.can_commit('/home/test/myfile.xml')
-                    self.assertEqual(res, True)
-                    res = view.can_commit('/home/test/folder1.xml')
-                    self.assertEqual(res, True)
+            user.versioning_paths += [VersioningPath(
+                status=VERSIONING_PATH_STATUS_FORBIDDEN,
+                path='/home/test/folder1')]
+            res = view.can_commit('/home/test/folder1/myfile.xml')
+            self.assertEqual(res, False)
+            res = view.can_commit('/home/test/myfile.xml')
+            self.assertEqual(res, True)
+            res = view.can_commit('/home/test/folder1.xml')
+            self.assertEqual(res, True)
 
     @login_user('Bob')
     def test_prepare_commit(self):
