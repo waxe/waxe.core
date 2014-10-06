@@ -71,11 +71,15 @@ def get_files(abspath, root_path, root_only=True, relative=False):
 
     folders = []
     files = []
-    for index, (dirpath, dirnames, filenames) in enumerate(os.walk(abspath)):
+    # We need to encode in utf-8 abspath to make sure we don't have any unicode
+    # decode problem
+    for index, (dirpath, dirnames, filenames) in enumerate(os.walk(
+                                                           abspath.encode('utf-8'))):
         filenames.sort()
         dirnames.sort()
 
         for d in dirnames:
+            d = d.decode('utf-8')
             if d.startswith('.'):
                 continue
             p = os.path.join(dirpath, d)
@@ -84,6 +88,7 @@ def get_files(abspath, root_path, root_only=True, relative=False):
             folders += [p]
 
         for f in filenames:
+            f = f.decode('utf-8')
             _, ext = os.path.splitext(f)
             if ext != '.xml':
                 continue
