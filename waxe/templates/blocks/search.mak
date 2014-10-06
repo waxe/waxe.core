@@ -1,7 +1,7 @@
 <div class="row">
 <div class="col-md-4">
 
-<form data-action="${request.custom_route_path('search_json')}">
+<form data-action="${request.custom_route_path('search_json')}" data-msg="Searching..." data-donemsg="Done!">
   <div class="form-group">
     <input type="text" class="form-control" id="search" name="search" placeholder="Search" value="${search}">
   </div>

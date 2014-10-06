@@ -41,7 +41,7 @@
             </li>
           % endif
           % if search:
-            <form class="navbar-form navbar-left" role="search" action="${request.custom_route_path('search')}" data-action="${request.custom_route_path('search_json')}" method="POST">
+            <form class="navbar-form navbar-left" role="search" action="${request.custom_route_path('search')}" data-action="${request.custom_route_path('search_json')}" method="POST" data-msg="Searching..." data-donemsg="Done!">
               <div class="form-group">
                 <input type="text" name="search" class="form-control" placeholder="Search">
               </div>

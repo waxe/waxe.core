@@ -172,11 +172,12 @@ var waxe = waxe || {};
                 }
             });
         },
-        submit: function(url, params, msg, modal) {
+        submit: function(url, params, msg, doneMsg, modal) {
             msg = typeof msg === 'undefined'? 'Updating...': msg;
+            doneMsg = typeof doneMsg === 'undefined'? 'Updated!': doneMsg;
             $(document).message('info', msg, {'autohide': false});
             waxe.ajax.POST(url, params, function(data, textStatus, jqXHR) {
-                waxe.dom.update(data, 'Updated!');
+                waxe.dom.update(data, doneMsg);
                 if (! data.error_msg && typeof(modal) !== 'undefined') {
                     modal.modal('hide');
                 }
@@ -232,6 +233,7 @@ var waxe = waxe || {};
             waxe.dom.submit($form.data('action'),
                             params,
                             $form.data('msg'),
+                            $form.data('donemsg'),
                             modal);
         });
 
