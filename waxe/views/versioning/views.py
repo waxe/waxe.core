@@ -179,14 +179,15 @@ class VersioningView(BaseUserView):
                 ) % self.request.custom_route_path(
                     'versioning_prepare_commit_json',
                     _query=[('path', relpath)])
-            content += (
-                '<a data-confirm="Are you sure you want to revert '
-                'the modification applied to this file?" '
-                'class="btn btn-danger" '
-                'data-href="%s">Revert</a>'
-            ) % self.request.custom_route_path(
-                'versioning_revert_json',
-                _query=[('path', relpath)])
+            if vobj.status(relpath)[0].status == helper.STATUS_MODIFED:
+                content += (
+                    '<a data-confirm="Are you sure you want to revert '
+                    'the modification applied to this file?" '
+                    'class="btn btn-danger" '
+                    'data-href="%s">Revert</a>'
+                ) % self.request.custom_route_path(
+                    'versioning_revert_json',
+                    _query=[('path', relpath)])
         return self._response({
             'content': content,
             'nav_editor': self._get_nav_editor(relpath, kind=NAV_DIFF)
