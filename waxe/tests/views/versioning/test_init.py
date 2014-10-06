@@ -1390,6 +1390,46 @@ class TestHelper(CreateRepo):
         s = o.empty_status(new_file)
         self.assertEqual(s.status, helper.STATUS_UNVERSIONED)
 
+    def test_remove(self):
+        o = helper.PysvnVersioning(None, None, self.client_dir)
+        self.assertEqual(o.get_commitable_files(), [])
+        file1 = os.path.join(self.client_dir, 'file1.xml')
+        open(file1, 'w').write('Hello')
+        self.client.add(file1)
+        s = o.empty_status(file1)
+        self.assertEqual(s.status, helper.STATUS_ADDED)
+
+        o.remove('file1.xml')
+        self.assertFalse(os.path.exists(file1))
+        s = o.empty_status(file1)
+        self.assertEqual(s.status, helper.STATUS_NORMAL)
+
+        open(file1, 'w').write('Hello')
+        self.client.add(file1)
+        self.client.checkin([file1], 'Initial commit')
+        open(file1, 'w').write('Hello Fred')
+        s = o.empty_status(file1)
+        self.assertEqual(s.status, helper.STATUS_MODIFED)
+        o.remove('file1.xml')
+        s = o.empty_status(file1)
+        self.assertEqual(s.status, helper.STATUS_DELETED)
+
+        # Remove not modified file
+        o.remove('file1.xml')
+        s = o.empty_status(file1)
+        self.assertFalse(os.path.exists(file1))
+        self.assertEqual(s.status, helper.STATUS_DELETED)
+
+        # Remove not versionned file
+        new_file = os.path.join(self.client_dir, 'new-file.xml')
+        open(new_file, 'w').write('Hello')
+        s = o.empty_status(new_file)
+        self.assertEqual(s.status, helper.STATUS_UNVERSIONED)
+        o.remove('new-file.xml')
+        s = o.empty_status(new_file)
+        self.assertFalse(os.path.exists(file1))
+        self.assertEqual(s.status, helper.STATUS_NORMAL)
+
     def test_has_conflict(self):
         o = helper.PysvnVersioning(None, None, self.client_dir)
         self.assertEqual(o.get_commitable_files(), [])
