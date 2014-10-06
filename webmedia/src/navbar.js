@@ -64,11 +64,17 @@ var waxe = waxe || {};
 
         this.save = function(e, $element) {
             e.preventDefault();
-            if (waxe.form.filename){
-                waxe.form.$element.submit();
-            } else {
-                // Not really nice but working :)
-                $('.saveas').trigger('click');
+            if (waxe.form.$element) {
+                // We have special form with xmltool
+                if (waxe.form.filename){
+                    waxe.form.$element.submit();
+                } else {
+                    // Not really nice but working :)
+                    $('.saveas').trigger('click');
+                }
+            }
+            else {
+                $('.form-save').trigger('submit');
             }
         };
 

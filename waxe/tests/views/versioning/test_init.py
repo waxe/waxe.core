@@ -299,8 +299,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
         res = self.ClassView(request).full_diff()
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 1)
-        self.assertTrue('submit' in res['content'])
-        self.assertTrue('name="commit" ' in res['content'])
+        self.assertTrue('name="submit" ' in res['content'])
 
         request = self.DummyRequest(root_path=self.client_dir,
                                     params={'filenames': 'file3.xml'})
@@ -308,8 +307,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
         res = self.ClassView(request).full_diff()
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 1)
-        self.assertTrue('submit' in res['content'])
-        self.assertTrue('name="commit" ' in res['content'])
+        self.assertTrue('name="submit" ' in res['content'])
 
         request = self.DummyRequest(root_path=self.client_dir,
                                     params={'filenames': 'file3.xml'})
@@ -318,16 +316,14 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
         res = self.ClassView(request).full_diff()
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 1)
-        self.assertTrue('submit' in res['content'])
-        self.assertTrue('name="commit" ' not in res['content'])
+        self.assertTrue('name="submit" ' not in res['content'])
 
         request.POST = MultiDict([('filenames', 'file1.xml'),
                                  ('filenames', 'file3.xml')])
         res = self.ClassView(request).full_diff()
         self.assertTrue('class="diff"' in res['content'])
         self.assertEqual(res['content'].count('diff_from'), 2)
-        self.assertTrue('submit' in res['content'])
-        self.assertTrue('name="commit" ' not in res['content'])
+        self.assertTrue('name="submit" ' not in res['content'])
 
     @login_user('Bob')
     def test_status_post(self):
@@ -564,9 +560,9 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
         with patch('xmltool.elements.Element.write', return_value=None):
             res = self.ClassView(request).update_texts()
             expected = 'Files updated'
-            self.assertEqual(res['content'],  expected)
+            self.assertEqual(res['info_msg'],  expected)
 
-            request.params['commit'] = True
+            request.params['submit'] = 'Commit'
             res = self.ClassView(request).update_texts()
             self.assertTrue('breadcrumb' in res)
             self.assertEqual(res['versioning'], True)

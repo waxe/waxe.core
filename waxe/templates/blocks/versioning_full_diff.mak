@@ -1,9 +1,6 @@
-<form data-action="${request.custom_route_path('versioning_update_texts_json')}" action="${request.custom_route_path('versioning_update_texts')}" method="POST" class="editable-diff">
+<form data-action="${request.custom_route_path('versioning_update_texts_json')}" action="${request.custom_route_path('versioning_update_texts')}" method="POST" class="editable-diff form-save">
   % for index, (filename, diff) in enumerate(files):
 
-    % if can_commit:
-      <input type="hidden" name="commit" value="1" />
-    % endif
         <input type="hidden" name="data:${index}:filename" value="${filename}" />
       <a href="${request.custom_route_path('edit', _query=[('path', filename)])}" data-href="${request.custom_route_path('edit_json', _query=[('path', filename)])}">Edit ${filename}</a>
     <br />
@@ -14,5 +11,7 @@
       <br />
 
   % endfor
-  <input type="submit" value="Save${' and commit' if can_commit else ''}" />
+    % if can_commit:
+      <input type="submit" value="Commit" name="submit" />
+    % endif
   </form>

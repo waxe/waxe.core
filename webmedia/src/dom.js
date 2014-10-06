@@ -111,6 +111,7 @@ var waxe = waxe || {};
 
             waxe.layout.hideReadonly();
             $(document).scrollTop(0);
+            $('.ui-layout-center').scrollTop(0);
 
             if (data.error_msg){
                 $(document).message('error', data.error_msg);
@@ -128,6 +129,10 @@ var waxe = waxe || {};
                 var $content = $('.content');
                 $content.html(data.content);
                 waxe.form.load(data.jstree_data);
+                var $form = $('.form-save');
+                if ($form.length) {
+                    $('.save').removeClass('event-disabled').parent('li').removeClass('disabled');
+                }
                 waxe.versioning.init();
                 $(document).message('info', msg);
             }
@@ -226,10 +231,17 @@ var waxe = waxe || {};
 
             // Since jQuery doesn't include the submit button in the form, we
             // include it manually
-            var btn = $form.data('clicked');
-            var params = $form.serialize() +
-                         '&' + encodeURI(btn.attr('name')) +
-                         '=' + encodeURI(btn.attr('value'));
+            var params = $form.serialize();
+
+            var $btn = $form.data('clicked');
+            if ($btn) {
+                // If we submit the form in javascript, we don't have btn. It's
+                // usefull when we make full diff to only save updates without
+                // commiting.
+                params = params +
+                         '&' + encodeURI($btn.attr('name')) +
+                         '=' + encodeURI($btn.attr('value'));
+            }
             waxe.dom.submit($form.data('action'),
                             params,
                             $form.data('msg'),

@@ -337,12 +337,12 @@ class VersioningView(BaseUserView):
                 'error_msg': '<br />'.join(error_msgs)
             })
 
-        if self.request.POST.get('commit'):
+        if self.request.POST.get('submit') == 'Commit':
             return self.prepare_commit(files)
 
         self.add_indexation_task(absfilenames)
         return self._response({
-            'content': 'Files updated'
+            'info_msg': 'Files updated'
         })
 
     @view_config(route_name='versioning_edit_conflict', renderer='index.mak',
