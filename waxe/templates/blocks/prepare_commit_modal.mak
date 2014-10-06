@@ -1,6 +1,6 @@
 <div class="modal fade">
   <div class="modal-dialog" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-  <form data-action="${request.custom_route_path('versioning_commit_json')}">
+  <form data-action="${request.custom_route_path('versioning_commit_json')}" data-msg="Commiting..." data-donemsg="Commited!">
     <div class="modal-content">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
