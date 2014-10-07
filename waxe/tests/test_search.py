@@ -70,8 +70,41 @@ class TestSearch(unittest.TestCase):
             self.assertEqual(newdic[newfile], content + ' updated')
             newdic.pop(newfile)
             self.assertEqual(dic, newdic)
-        finally:
+
+            # Don't index newfile, it should not be deleted
+            search.incremental_index(indexpath, paths)
+            with ix.searcher() as searcher:
+                fields = list(searcher.all_stored_fields())
+                self.assertEqual(len(fields), 6)
+
+            # Delete the file
             os.remove(newfile)
+            search.incremental_index(indexpath, paths)
+            with ix.searcher() as searcher:
+                fields = list(searcher.all_stored_fields())
+                self.assertEqual(len(fields), 5)
+
+            open(newfile, 'w').write(content)
+            search.incremental_index(indexpath, paths + [newfile])
+            with ix.searcher() as searcher:
+                fields = list(searcher.all_stored_fields())
+                self.assertEqual(len(fields), 6)
+
+            search.incremental_index(indexpath, [newfile])
+            with ix.searcher() as searcher:
+                fields = list(searcher.all_stored_fields())
+                self.assertEqual(len(fields), 6)
+
+            search.incremental_index(indexpath, paths[:1])
+            with ix.searcher() as searcher:
+                fields = list(searcher.all_stored_fields())
+                self.assertEqual(len(fields), 6)
+
+        finally:
+            try:
+                os.remove(newfile)
+            except:
+                pass
 
         # file is deleted
         search.incremental_index(indexpath, paths)
@@ -86,9 +119,9 @@ class TestSearch(unittest.TestCase):
 
     def test_do_index(self):
         paths = browser.get_all_files(filepath, filepath)[1]
-        search.do_index(indexpath, paths)
-        search.do_index(indexpath, paths)
+        self.assertEqual(len(paths), 5)
 
+        search.do_index(indexpath, paths)
         ix = index.open_dir(indexpath)
         with ix.searcher() as searcher:
             fields = list(searcher.all_stored_fields())
