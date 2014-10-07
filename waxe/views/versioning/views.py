@@ -235,13 +235,23 @@ class VersioningView(BaseUserView):
 
         try:
             # TODO: we should raise custom exception to handle it correctly
-            vobj.update(relpath)
+            filenames = vobj.update(relpath)
         except Exception, e:
             return self._response({
                 'error_msg': str(e).replace(self.root_path + '/', ''),
             })
-        self.add_indexation_task()
-        return self.status(info_msg='The repository has been updated!')
+
+        absfilenames = [f for (status, f) in filenames]
+        files = [(status, browser.relative_path(f, self.root_path))
+                 for status, f in filenames]
+
+        self.add_indexation_task(absfilenames)
+        content = render('blocks/versioning_update.mak', {
+            'files': files,
+            'STATUS_ADDED': helper.STATUS_ADDED,
+            'STATUS_MODIFED': helper.STATUS_MODIFED,
+        }, self.request)
+        return self._response({'content': content})
 
     @view_config(route_name='versioning_prepare_commit_json', renderer='json',
                  permission='edit')

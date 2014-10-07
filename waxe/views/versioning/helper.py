@@ -233,8 +233,25 @@ class PysvnVersioning(object):
         abspath = self.root_path
         if path:
             abspath = browser.absolute_path(path, self.root_path)
+
+        filenames = []
+
+        def notify(event_dict, filenames):
+
+            if event_dict['kind'] == pysvn.node_kind.file:
+                status = STATUS_OTHER
+                if event_dict['action'] == pysvn.wc_notify_action.update_delete:
+                    status = STATUS_DELETED
+                elif event_dict['action'] == pysvn.wc_notify_action.update_update:
+                    status = STATUS_MODIFED
+                elif event_dict['action'] == pysvn.wc_notify_action.update_add:
+                    status = STATUS_ADDED
+                filenames += [(status, event_dict['path'])]
+        self.client.callback_notify = lambda dic: notify(dic, filenames)
+
         # NOTE: use pysvn.depth.unknown to follow the client repo depths
         self.client.update(abspath, depth=pysvn.depth.unknown)
+        return filenames
 
     def diff(self, path=None):
         diffs = []

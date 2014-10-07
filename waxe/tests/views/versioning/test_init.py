@@ -692,8 +692,7 @@ class TestVersioningViewFakeRepo(BaseTestCase, CreateRepo):
         request.matched_route.name = 'route'
 
         res = VersioningView(request).update()
-        self.assertEqual(res['info_msg'], 'The repository has been updated!')
-        self.assertTrue('List of updated files:' in res['content'])
+        self.assertTrue('The repository was already updated' in res['content'])
 
         # Create a conflict
         self.client.checkout('file://%s' % self.repo, 'svn_waxe_client1')
@@ -708,6 +707,31 @@ class TestVersioningViewFakeRepo(BaseTestCase, CreateRepo):
         self.assertEqual(res['error_msg'], expected_error_msg)
         expected_content = 'List of conflicted files that should be resolved:'
         self.assertTrue(expected_content in res['content'])
+
+        self.client.revert(os.path.join(self.client_dir, 'file1.xml'))
+
+        # Update add
+        client1file = os.path.join('svn_waxe_client1', 'client1file.xml')
+        open(client1file, 'w').write('Hello Bob')
+        self.client.add(client1file)
+        self.client.checkin([client1file], 'New file')
+        res = VersioningView(request).update()
+        self.assertTrue('label-added' in res['content'])
+        self.assertTrue('client1file.xml' in res['content'])
+
+        # Update modify
+        open(client1file, 'w').write('Hello Bob content')
+        self.client.checkin([client1file], 'Update file')
+        res = VersioningView(request).update()
+        self.assertTrue('label-modified' in res['content'])
+        self.assertTrue('client1file.xml' in res['content'])
+
+        # Update delete
+        self.client.remove(client1file)
+        self.client.checkin([client1file], 'Delete file')
+        res = VersioningView(request).update()
+        self.assertTrue('label-deleted' in res['content'])
+        self.assertTrue('client1file.xml' in res['content'])
 
 
 class FunctionalTestViewsNoVersioning(WaxeTestCase):
@@ -822,14 +846,14 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
         self.user_bob.config = UserConfig(root_path=self.client_dir,
                                           versioning_password='secret_bob')
         res = self.testapp.get('/account/Bob/versioning/update', status=200)
-        self.assertTrue('The repository has been updated!' in res.body)
+        self.assertTrue('The repository was already updated!' in res.body)
 
     @login_user('Bob')
     def test_update_json(self):
         self.user_bob.config = UserConfig(root_path=self.client_dir,
                                           versioning_password='secret_bob')
         res = self.testapp.get('/account/Bob/versioning/update.json', status=200)
-        self.assertTrue('The repository has been updated!' in res.body)
+        self.assertTrue('The repository was already updated!' in res.body)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
 
