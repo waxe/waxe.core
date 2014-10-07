@@ -283,15 +283,14 @@ class BaseUserView(NavigationView):
         self.logged_user.add_opened_file(path, iduser_owner=iduser_owner)
 
     def add_indexation_task(self, paths=None):
-        # TODO: Use paths: the only files we want to udpate
-        # It's not done for now since search didn't handle this case.
         dirname = self.get_search_dirname()
         if not dirname:
             return None
         uc = self.current_user.config
         if not uc or not uc.root_path:
             return None
-        paths = browser.get_all_files(uc.root_path, uc.root_path)[1]
+        if not paths:
+            paths = browser.get_all_files(uc.root_path, uc.root_path)[1]
         Task.create(search.do_index, [dirname, paths],
                     owner=str(self.current_user.iduser))
 
