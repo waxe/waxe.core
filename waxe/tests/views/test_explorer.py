@@ -13,36 +13,39 @@ class TestExplorerView(LoggedBobTestCase):
         request = testing.DummyRequest()
         request.custom_route_path = lambda *args, **kw: '/%s/filepath' % args[0]
         res = ExplorerView(request)._get_navigation_data(relpath='')
+        res['tags'] = [(l, r) for l, r in res['tags']]
         expected = {
             'previous_tag': None,
-            'folder_tags': [
-                ('<a data-href="/explore_json/filepath" '
-                 'href="/explore/filepath" '
-                 'data-relpath="folder1" class="folder">folder1</a>')
-            ],
-            'filename_tags': [
-                ('<a data-href="/edit_json/filepath" '
-                 'href="/edit/filepath" data-relpath="file1.xml" '
-                 'class="file">file1.xml</a>')
-            ]
+            'tags': [(
+                ('folder',
+                 ('<a data-href="/explore_json/filepath" '
+                  'href="/explore/filepath" '
+                  'data-relpath="folder1" class="folder">folder1</a>')),
+                ('file-excel',
+                 ('<a data-href="/edit_json/filepath" '
+                  'href="/edit/filepath" data-relpath="file1.xml" '
+                  'class="file">file1.xml</a>'))
+            )]
         }
         self.assertEqual(res, expected)
 
         request = testing.DummyRequest()
         request.custom_route_path = lambda *args, **kw: '/%s/filepath' % args[0]
         res = ExplorerView(request)._get_navigation_data(relpath='folder1')
+        res['tags'] = [(l, r) for l, r in res['tags']]
         expected = {
             'previous_tag': (
                 '<a data-href="/explore_json/filepath" '
                 'href="/explore/filepath">..</a>'
             ),
-            'folder_tags': [],
-            'filename_tags': [
-                ('<a data-href="/edit_json/filepath" '
-                 'href="/edit/filepath" '
-                 'data-relpath="folder1/file2.xml" class="file">'
-                 'file2.xml</a>')
-            ]
+            'tags': [(
+                ('file-excel',
+                 ('<a data-href="/edit_json/filepath" '
+                  'href="/edit/filepath" '
+                  'data-relpath="folder1/file2.xml" class="file">'
+                  'file2.xml</a>')),
+                None
+            )]
         }
         self.assertEqual(res, expected)
 
@@ -50,19 +53,21 @@ class TestExplorerView(LoggedBobTestCase):
             relpath='folder1',
             folder_route='folder_route',
             file_route='file_route')
+        res['tags'] = [(l, r) for l, r in res['tags']]
 
         expected = {
             'previous_tag': (
                 '<a data-href="/folder_route_json/filepath" '
                 'href="/folder_route/filepath">..</a>'
             ),
-            'folder_tags': [],
-            'filename_tags': [
-                ('<a data-href="/file_route_json/filepath" '
-                 'href="/file_route/filepath" '
-                 'data-relpath="folder1/file2.xml" class="file">'
-                 'file2.xml</a>')
-            ]
+            'tags': [(
+                ('file-excel',
+                 ('<a data-href="/file_route_json/filepath" '
+                  'href="/file_route/filepath" '
+                  'data-relpath="folder1/file2.xml" class="file">'
+                  'file2.xml</a>')),
+                None
+            )]
         }
         self.assertEqual(res, expected)
 
@@ -72,17 +77,19 @@ class TestExplorerView(LoggedBobTestCase):
             folder_route='folder_route',
             file_route=None,
             relpath='folder1')
+        res['tags'] = [(l, r) for l, r in res['tags']]
 
         expected = {
             'previous_tag': (
                 '<a data-href="/folder_route_json/filepath" '
                 'href="/folder_route/filepath">..</a>'
             ),
-            'folder_tags': [],
-            'filename_tags': [
-                ('<a href="#" data-relpath="folder1/file2.xml" '
-                 'class="file">file2.xml</a>')
-            ]
+            'tags': [(
+                ('file-excel',
+                 ('<a href="#" data-relpath="folder1/file2.xml" '
+                  'class="file">file2.xml</a>')),
+                None
+            )]
         }
         self.assertEqual(res, expected)
 
@@ -90,17 +97,18 @@ class TestExplorerView(LoggedBobTestCase):
             folder_route=None,
             file_route=None,
             relpath='')
+        res['tags'] = [(l, r) for l, r in res['tags']]
 
         expected = {
             'previous_tag': None,
-            'folder_tags': [
-                ('<a href="#" data-relpath="folder1" '
-                 'class="folder">folder1</a>')
-            ],
-            'filename_tags': [
-                ('<a href="#" data-relpath="file1.xml" '
-                 'class="file">file1.xml</a>')
-            ]
+            'tags': [(
+                ('folder',
+                 ('<a href="#" data-relpath="folder1" '
+                  'class="folder">folder1</a>')),
+                ('file-excel',
+                 ('<a href="#" data-relpath="file1.xml" '
+                  'class="file">file1.xml</a>'))
+            )]
         }
         self.assertEqual(res, expected)
 
@@ -110,14 +118,16 @@ class TestExplorerView(LoggedBobTestCase):
             relpath='',
             folder_only=True,
         )
+        res['tags'] = [(l, r) for l, r in res['tags']]
 
         expected = {
             'previous_tag': None,
-            'folder_tags': [
-                ('<a href="#" data-relpath="folder1" '
-                 'class="folder">folder1</a>')
-            ],
-            'filename_tags': []
+            'tags': [(
+                ('folder',
+                 ('<a href="#" data-relpath="folder1" '
+                  'class="folder">folder1</a>')),
+                None
+            )],
         }
         self.assertEqual(res, expected)
 
@@ -127,19 +137,21 @@ class TestExplorerView(LoggedBobTestCase):
             relpath='folder1',
             file_data_href_name='data-file-href',
             folder_data_href_name='data-folder-href')
+        res['tags'] = [(l, r) for l, r in res['tags']]
 
         expected = {
             'previous_tag': (
                 '<a data-folder-href="/folder_route_json/filepath" '
                 'href="/folder_route/filepath">..</a>'
             ),
-            'folder_tags': [],
-            'filename_tags': [
-                ('<a data-file-href="/file_route_json/filepath" '
-                 'href="/file_route/filepath" '
-                 'data-relpath="folder1/file2.xml" '
-                 'class="file">file2.xml</a>')
-            ]
+            'tags': [(
+                ('file-excel',
+                 ('<a data-file-href="/file_route_json/filepath" '
+                  'href="/file_route/filepath" '
+                  'data-relpath="folder1/file2.xml" '
+                  'class="file">file2.xml</a>')),
+                None
+            )]
         }
         self.assertEqual(res, expected)
 

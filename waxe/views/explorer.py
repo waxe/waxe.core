@@ -1,4 +1,6 @@
 import os
+import math
+from itertools import izip_longest
 from pyramid.view import view_config
 from pyramid.renderers import render
 from pyramid.httpexceptions import HTTPFound
@@ -48,8 +50,7 @@ class ExplorerView(BaseUserView):
                                                relative=True)
         data = {
             'previous_tag': None,
-            'folder_tags': [],
-            'filename_tags': [],
+            'tags': [],
         }
         if root_path != abspath:
             data['previous_tag'] = self._generate_link_tag(
@@ -59,33 +60,37 @@ class ExplorerView(BaseUserView):
                 data_href_name=folder_data_href_name,
             )
 
+        tags = []
         for folder in folders:
-            data['folder_tags'] += [
-                self._generate_link_tag(
-                    name=os.path.basename(folder),
-                    relpath=folder,
-                    route_name=folder_route,
-                    data_href_name=folder_data_href_name,
-                    extra_attrs=[
-                        ('data-relpath', folder),
-                        ('class', 'folder'),
-                    ]
-                )
-            ]
+            tag = self._generate_link_tag(
+                name=os.path.basename(folder),
+                relpath=folder,
+                route_name=folder_route,
+                data_href_name=folder_data_href_name,
+                extra_attrs=[
+                    ('data-relpath', folder),
+                    ('class', 'folder'),
+                ]
+            )
+            tags += [('folder', tag)]
 
         if not folder_only:
             for filename in filenames:
-                data['filename_tags'] += [
-                    self._generate_link_tag(
-                        name=os.path.basename(filename),
-                        relpath=filename,
-                        route_name=file_route,
-                        data_href_name=file_data_href_name,
-                        extra_attrs=[
-                            ('data-relpath', filename),
-                            ('class', 'file')
-                        ])
-                ]
+                tag = self._generate_link_tag(
+                    name=os.path.basename(filename),
+                    relpath=filename,
+                    route_name=file_route,
+                    data_href_name=file_data_href_name,
+                    extra_attrs=[
+                        ('data-relpath', filename),
+                        ('class', 'file')
+                    ])
+                tags += [('file-excel', tag)]
+
+        # Create 2 list: left and right columns
+        n = int(math.ceil(len(tags) / 2.0))
+        z = izip_longest(tags[:n], tags[n:])
+        data['tags'] = z
         return data
 
     def _get_navigation(self):

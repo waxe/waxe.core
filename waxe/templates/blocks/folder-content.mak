@@ -3,16 +3,16 @@
   ${previous_tag|n}
 % endif
 <div class="row">
-  % for tag in folder_tags:
+  % for l, r in tags:
     <div class="col-md-6">
-      <i class="fa fa-folder-o"></i>
-      ${tag|n}
+      <i class="fa fa-${l[0]}-o"></i>
+      ${l[1]|n}
     </div>
-  % endfor
-  % for tag in filename_tags:
+    % if r:
     <div class="col-md-6">
-      <i class="fa fa-file-excel-o"></i>
-      ${tag|n}
+      <i class="fa fa-${r[0]}-o"></i>
+      ${r[1]|n}
     </div>
+    % endif
   % endfor
 </div>
