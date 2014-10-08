@@ -55,7 +55,7 @@
               ${editor_login}
               <b class="caret"></b>
             </a>
-            <ul class="dropdown-menu">
+            <ul class="dropdown-menu dropdown-menu-icons">
               % if logins:
                 % for login in logins:
                   <li>
@@ -63,7 +63,7 @@
                   </li>
                 % endfor
               % endif
-              <li><i class="fa fa-sign-out"></i><a title="Logout" href="${request.route_path('logout')}">Logout</a></li>
+              <li><a title="Logout" href="${request.route_path('logout')}"><i class="fa fa-sign-out"></i>Logout</a></li>
             </ul>
           </li>
         </ul>
