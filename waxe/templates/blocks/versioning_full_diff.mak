@@ -12,6 +12,6 @@
 
   % endfor
     % if can_commit:
-      <input type="submit" value="Commit" name="submit" />
+      <input class="btn btn-success" type="submit" value="Commit" name="submit" />
     % endif
   </form>

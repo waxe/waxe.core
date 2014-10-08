@@ -171,14 +171,6 @@ class VersioningView(BaseUserView):
         for l in lis:
             l = escape_entities(l)
             content += '<pre>%s</pre>' % l
-            if self.can_commit(absfilename):
-                content += (
-                    '<a  class="btn btn-default" '
-                    'style="margin-right: 10px;" '
-                    'data-href="%s">Commit</a>'
-                ) % self.request.custom_route_path(
-                    'versioning_prepare_commit_json',
-                    _query=[('path', relpath)])
             if vobj.status(relpath)[0].status == helper.STATUS_MODIFED:
                 content += (
                     '<a data-confirm="Are you sure you want to revert '
@@ -187,6 +179,14 @@ class VersioningView(BaseUserView):
                     'data-href="%s">Revert</a>'
                 ) % self.request.custom_route_path(
                     'versioning_revert_json',
+                    _query=[('path', relpath)])
+            if self.can_commit(absfilename):
+                content += (
+                    '<a  class="btn btn-success" '
+                    'style="margin-right: 10px;" '
+                    'data-href="%s">Commit</a>'
+                ) % self.request.custom_route_path(
+                    'versioning_prepare_commit_json',
                     _query=[('path', relpath)])
         return self._response({
             'content': content,
