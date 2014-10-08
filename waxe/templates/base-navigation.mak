@@ -13,15 +13,15 @@
               File
               <b class="caret"></b>
             </a>
-            <ul class="dropdown-menu">
-              <li><i class="fa fa-file-o"></i><a title="New" data-href="${request.custom_route_path('new_json')}" href="#">New</a></li>
+            <ul class="dropdown-menu dropdown-menu-icons">
+              <li><a title="New" data-href="${request.custom_route_path('new_json')}" href="#"><i class="fa fa-file-o"></i>New</a></li>
               % if root_template_path:
-                <li><i class="fa fa-file-excel-o"></i><a title="New from template" data-href="${request.custom_route_path('open_template_json')}" href="#">New (template)</a></li>
+                <li><a title="New from template" data-href="${request.custom_route_path('open_template_json')}" href="#"><i class="fa fa-file-excel-o"></i>New (template)</a></li>
               % endif
-              <li><i class="fa fa-folder-open-o"></i><a title="Open" data-href="${request.custom_route_path('open_json')}" href="#">Open</a></li>
-              <li class="disabled"><i class="fa fa-save"></i><a title="Save" class="save" data-call="navbar.save" href="#">Save</a></li>
-              <li><i class="fa fa-save"></i><a class="saveas" title="Save as" data-href="${request.custom_route_path('saveas_json')}" href="#">Save as</a></li>
-              <li><i class="fa fa-minus"></i><a class="split" title="Split view" data-call="navbar.split" data-href="${request.custom_route_path('edit')}" href="#">Split view</a></li>
+              <li><a title="Open" data-href="${request.custom_route_path('open_json')}" href="#"><i class="fa fa-folder-open-o"></i>Open</a></li>
+              <li class="disabled"><a title="Save" class="save" data-call="navbar.save" href="#"><i class="fa fa-save"></i>Save</a></li>
+              <li><a class="saveas" title="Save as" data-href="${request.custom_route_path('saveas_json')}" href="#"><i class="fa fa-save"></i>Save as</a></li>
+              <li><a class="split" title="Split view" data-call="navbar.split" data-href="${request.custom_route_path('edit')}" href="#"><i class="fa fa-minus"></i>Split view</a></li>
             </ul>
           </li>
           % if versioning:
