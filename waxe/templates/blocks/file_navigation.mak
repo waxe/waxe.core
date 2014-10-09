@@ -1,6 +1,6 @@
 <div class="row" style="margin-right: 0; margin-left: 0;">
 <div class="col-md-8">
-  <div id="file-navigation"${' data-versioning-path="%s"' % versioning_status_url if versioning_status_url else ''|n}>
+  <div class="file-navigation"${' data-versioning-path="%s"' % versioning_status_url if versioning_status_url else ''|n}>
     ${content|n}
   </div>
 </div>

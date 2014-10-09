@@ -7,7 +7,7 @@ var waxe = waxe || {};
         init: function(){
 
             // Set the versioning status on the files
-            var navfile = $('#file-navigation').each(function() {
+            var navfile = $('.file-navigation').each(function() {
                 var that = this;
                 var url = $(that).data('versioning-path');
                 if (typeof(url) === 'undefined') {

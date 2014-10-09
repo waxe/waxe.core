@@ -63,13 +63,15 @@ class ExplorerView(BaseUserView):
         tags = []
         for folder in folders:
             tag = self._generate_link_tag(
-                name=os.path.basename(folder),
+                name='<i class="fa fa-folder-o"></i>%s' % os.path.basename(
+                    folder),
                 relpath=folder,
                 route_name=folder_route,
                 data_href_name=folder_data_href_name,
                 extra_attrs=[
                     ('data-relpath', folder),
                     ('class', 'folder'),
+                    ('title', os.path.basename(folder)),
                 ]
             )
             tags += [('folder', tag)]
@@ -77,13 +79,15 @@ class ExplorerView(BaseUserView):
         if not folder_only:
             for filename in filenames:
                 tag = self._generate_link_tag(
-                    name=os.path.basename(filename),
+                    name=('<i class="fa fa-file-excel-o"></i>%s' %
+                          os.path.basename(filename)),
                     relpath=filename,
                     route_name=file_route,
                     data_href_name=file_data_href_name,
                     extra_attrs=[
                         ('data-relpath', filename),
-                        ('class', 'file')
+                        ('class', 'file'),
+                        ('title', os.path.basename(filename)),
                     ])
                 tags += [('file-excel', tag)]
 

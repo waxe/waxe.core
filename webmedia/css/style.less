@@ -41,8 +41,11 @@
 
 .dropdown-menu-icons > li {
   i {
-    margin-right: 5px;
   }
+}
+
+a i.fa {
+  margin-right: 5px;
 }
 
 .nav-editor .nav-tabs {
@@ -55,17 +58,20 @@
   }
 }
 
-#file-navigation,
+.file-navigation,
 .navfile{
-
-  li {
-    cursor: pointer;
-  }
 
   a, span{
     color: #333;
-    margin-left: 5px;
   }
+
+  a {
+    text-overflow: ellipsis;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
 }
 
 .alert .close {

@@ -20,11 +20,13 @@ class TestExplorerView(LoggedBobTestCase):
                 ('folder',
                  ('<a data-href="/explore_json/filepath" '
                   'href="/explore/filepath" '
-                  'data-relpath="folder1" class="folder">folder1</a>')),
+                  'data-relpath="folder1" class="folder" title="folder1">'
+                  '<i class="fa fa-folder-o"></i>folder1</a>')),
                 ('file-excel',
                  ('<a data-href="/edit_json/filepath" '
                   'href="/edit/filepath" data-relpath="file1.xml" '
-                  'class="file">file1.xml</a>'))
+                  'class="file" title="file1.xml">'
+                  '<i class="fa fa-file-excel-o"></i>file1.xml</a>'))
             )]
         }
         self.assertEqual(res, expected)
@@ -42,8 +44,9 @@ class TestExplorerView(LoggedBobTestCase):
                 ('file-excel',
                  ('<a data-href="/edit_json/filepath" '
                   'href="/edit/filepath" '
-                  'data-relpath="folder1/file2.xml" class="file">'
-                  'file2.xml</a>')),
+                  'data-relpath="folder1/file2.xml" class="file" '
+                  'title="file2.xml">'
+                  '<i class="fa fa-file-excel-o"></i>file2.xml</a>')),
                 None
             )]
         }
@@ -64,8 +67,9 @@ class TestExplorerView(LoggedBobTestCase):
                 ('file-excel',
                  ('<a data-href="/file_route_json/filepath" '
                   'href="/file_route/filepath" '
-                  'data-relpath="folder1/file2.xml" class="file">'
-                  'file2.xml</a>')),
+                  'data-relpath="folder1/file2.xml" class="file" '
+                  'title="file2.xml">'
+                  '<i class="fa fa-file-excel-o"></i>file2.xml</a>')),
                 None
             )]
         }
@@ -87,7 +91,8 @@ class TestExplorerView(LoggedBobTestCase):
             'tags': [(
                 ('file-excel',
                  ('<a href="#" data-relpath="folder1/file2.xml" '
-                  'class="file">file2.xml</a>')),
+                  'class="file" title="file2.xml">'
+                  '<i class="fa fa-file-excel-o"></i>file2.xml</a>')),
                 None
             )]
         }
@@ -104,10 +109,12 @@ class TestExplorerView(LoggedBobTestCase):
             'tags': [(
                 ('folder',
                  ('<a href="#" data-relpath="folder1" '
-                  'class="folder">folder1</a>')),
+                  'class="folder" title="folder1">'
+                  '<i class="fa fa-folder-o"></i>folder1</a>')),
                 ('file-excel',
                  ('<a href="#" data-relpath="file1.xml" '
-                  'class="file">file1.xml</a>'))
+                  'class="file" title="file1.xml">'
+                  '<i class="fa fa-file-excel-o"></i>file1.xml</a>'))
             )]
         }
         self.assertEqual(res, expected)
@@ -125,7 +132,8 @@ class TestExplorerView(LoggedBobTestCase):
             'tags': [(
                 ('folder',
                  ('<a href="#" data-relpath="folder1" '
-                  'class="folder">folder1</a>')),
+                  'class="folder" title="folder1">'
+                  '<i class="fa fa-folder-o"></i>folder1</a>')),
                 None
             )],
         }
@@ -149,7 +157,8 @@ class TestExplorerView(LoggedBobTestCase):
                  ('<a data-file-href="/file_route_json/filepath" '
                   'href="/file_route/filepath" '
                   'data-relpath="folder1/file2.xml" '
-                  'class="file">file2.xml</a>')),
+                  'class="file" title="file2.xml">'
+                  '<i class="fa fa-file-excel-o"></i>file2.xml</a>')),
                 None
             )]
         }
@@ -161,16 +170,16 @@ class TestExplorerView(LoggedBobTestCase):
         res = ExplorerView(request)._get_navigation()
         expected = (
             '<a data-href="/filepath" href="/filepath" '
-            'data-relpath="folder1" class="folder">'
-            'folder1'
+            'data-relpath="folder1" class="folder" title="folder1">'
+            '<i class="fa fa-folder-o"></i>folder1'
             '</a>'
         )
         self.assertTrue(expected in res)
 
         expected = (
             '<a data-href="/filepath" href="/filepath" '
-            'data-relpath="file1.xml" class="file">'
-            'file1.xml'
+            'data-relpath="file1.xml" class="file" title="file1.xml">'
+            '<i class="fa fa-file-excel-o"></i>file1.xml'
             '</a>'
         )
         self.assertTrue(expected in res)
@@ -183,8 +192,8 @@ class TestExplorerView(LoggedBobTestCase):
 
         expected = (
             '<a data-href="/filepath" href="/filepath" '
-            'data-relpath="folder1/file2.xml" class="file">'
-            'file2.xml'
+            'data-relpath="folder1/file2.xml" class="file" title="file2.xml">'
+            '<i class="fa fa-file-excel-o"></i>file2.xml'
             '</a>'
         )
         self.assertTrue(expected in res)
@@ -242,13 +251,15 @@ class TestExplorerView(LoggedBobTestCase):
         expected = (
             '<a data-href="/explore_json/filepath" '
             'href="/explore/filepath" data-relpath="folder1" '
-            'class="folder">folder1</a>'
+            'class="folder" title="folder1">'
+            '<i class="fa fa-folder-o"></i>folder1</a>'
         )
         self.assertTrue(expected in res['content'])
         expected = (
             '<a data-href="/edit_json/filepath" '
             'href="/edit/filepath" data-relpath="file1.xml" '
-            'class="file">file1.xml</a>'
+            'class="file" title="file1.xml">'
+            '<i class="fa fa-file-excel-o"></i>file1.xml</a>'
         )
         self.assertTrue(expected in res['content'])
 
@@ -294,13 +305,15 @@ class TestExplorerView(LoggedBobTestCase):
         res = ExplorerView(request).open()
         expected = (
             '<a data-modal-href="/filepath" href="/filepath" '
-            'data-relpath="folder1" class="folder">folder1</a>'
+            'data-relpath="folder1" class="folder" title="folder1">'
+            '<i class="fa fa-folder-o"></i>folder1</a>'
         )
         self.assertTrue(expected in res['modal'])
 
         expected = (
             '<a data-href="/filepath" href="/filepath" '
-            'data-relpath="file1.xml" class="file">file1.xml</a>'
+            'data-relpath="file1.xml" class="file" title="file1.xml">'
+            '<i class="fa fa-file-excel-o"></i>file1.xml</a>'
         )
         self.assertTrue(expected in res['modal'])
 
@@ -318,21 +331,24 @@ class TestExplorerView(LoggedBobTestCase):
         res = ExplorerView(request).open_template_content()
         expected = (
             '<a data-href="/filepath/new_json" href="/filepath/new" '
-            'data-relpath="file1.xml" class="file">file1.xml</a>'
+            'data-relpath="file1.xml" class="file" title="file1.xml">'
+            '<i class="fa fa-file-excel-o"></i>file1.xml</a>'
         )
         self.assertTrue(expected in res['content'])
 
         expected = (
             '<a data-modal-href="/filepath/open_template_content_json" '
             'href="/filepath/open_template_content" data-relpath="folder1" '
-            'class="folder">folder1</a>'
+            'class="folder" title="folder1">'
+            '<i class="fa fa-folder-o"></i>folder1</a>'
         )
         self.assertTrue(expected in res['content'])
 
         res = ExplorerView(request).open_template_content('folder1')
         expected = (
             '<a data-href="/filepath/new_json" href="/filepath/new" '
-            'data-relpath="folder1/file2.xml" class="file">file2.xml</a>'
+            'data-relpath="folder1/file2.xml" class="file" title="file2.xml">'
+            '<i class="fa fa-file-excel-o"></i>file2.xml</a>'
         )
         self.assertTrue(expected in res['content'])
         expected = '<li class="active">root</li>'
@@ -352,7 +368,8 @@ class TestExplorerView(LoggedBobTestCase):
         res = ExplorerView(request).open_template()
         expected = (
             '<a data-href="/filepath/new_json" href="/filepath/new" '
-            'data-relpath="folder1/file2.xml" class="file">file2.xml</a>'
+            'data-relpath="folder1/file2.xml" class="file" title="file2.xml">'
+            '<i class="fa fa-file-excel-o"></i>file2.xml</a>'
         )
         self.assertTrue(expected in res['modal'])
 
@@ -432,7 +449,8 @@ class TestExplorerView(LoggedBobTestCase):
         expected = (
             '<a data-modal-href="/filepath/search_folder_content_json" '
             'href="/filepath/search_folder_content" data-relpath="folder1" '
-            'class="folder">folder1</a>'
+            'class="folder" title="folder1">'
+            '<i class="fa fa-folder-o"></i>folder1</a>'
         )
         self.assertTrue(expected in res['content'])
 
@@ -457,7 +475,8 @@ class TestExplorerView(LoggedBobTestCase):
         res = ExplorerView(request).search_folder()
         expected = (
             '<a data-modal-href="/filepath" href="/filepath" '
-            'data-relpath="folder1" class="folder">folder1</a>'
+            'data-relpath="folder1" class="folder" title="folder1">'
+            '<i class="fa fa-folder-o"></i>folder1</a>'
         )
         self.assertTrue(expected in res['modal'])
         # No file
