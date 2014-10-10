@@ -170,7 +170,7 @@ class ExplorerView(BaseUserView):
                 data_href_name='data-modal-href'
             ),
             'cache': {
-                'open': relpath
+                'opensaveas': relpath
             }
         })
 
@@ -253,7 +253,7 @@ class ExplorerView(BaseUserView):
             relpath
         )
         dic['cache'] = {
-            'saveas': relpath
+            'opensaveas': relpath
         }
         return self._response(dic)
 

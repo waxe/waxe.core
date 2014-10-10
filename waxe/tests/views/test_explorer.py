@@ -623,7 +623,7 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
         self.assertTrue('breadcrumb' in dic)
         self.assertTrue('>folder1<' in dic['content'])
         self.assertTrue('>file1.xml<' in dic['content'])
-        self.assertEqual(dic['cache'],  {'open': ''})
+        self.assertEqual(dic['cache'],  {'opensaveas': ''})
 
         res = self.testapp.get('/account/Bob/folder-content.json',
                                params={'path': 'folder1'}, status=200)
@@ -634,7 +634,7 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
         self.assertTrue('content' in dic)
         self.assertTrue('breadcrumb' in dic)
         self.assertTrue('>file2.xml<' in dic['content'])
-        self.assertEqual(dic['cache'],  {'open': 'folder1'})
+        self.assertEqual(dic['cache'],  {'opensaveas': 'folder1'})
 
     def test_open_forbidden(self):
         res = self.testapp.get('/account/Bob/open.json', status=302)
@@ -678,7 +678,7 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
                         res._headerlist)
         dic = json.loads(res.body)
         self.assertEqual(len(dic), 3)
-        self.assertEqual(dic['cache'],  {'saveas': ''})
+        self.assertEqual(dic['cache'],  {'opensaveas': ''})
         self.assertTrue('>folder1<' in dic['content'])
         self.assertTrue('>file1.xml<' in dic['content'])
 
@@ -736,7 +736,7 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
             self.assertTrue('<li class=\"active\">new_folder</li>' in
                             dic['breadcrumb'])
             self.assertTrue(os.path.isdir(os.path.join(path, 'new_folder')))
-            self.assertEqual(dic['cache'], {'saveas': 'new_folder'})
+            self.assertEqual(dic['cache'], {'opensaveas': 'new_folder'})
 
             res = self.testapp.post(
                 '/account/Bob/create-folder.json',
