@@ -618,11 +618,23 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
         dic = json.loads(res.body)
-        self.assertEqual(len(dic), 2)
+        self.assertEqual(len(dic), 3)
         self.assertTrue('content' in dic)
         self.assertTrue('breadcrumb' in dic)
         self.assertTrue('>folder1<' in dic['content'])
         self.assertTrue('>file1.xml<' in dic['content'])
+        self.assertEqual(dic['cache'],  {'open': ''})
+
+        res = self.testapp.get('/account/Bob/folder-content.json',
+                               params={'path': 'folder1'}, status=200)
+        self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
+                        res._headerlist)
+        dic = json.loads(res.body)
+        self.assertEqual(len(dic), 3)
+        self.assertTrue('content' in dic)
+        self.assertTrue('breadcrumb' in dic)
+        self.assertTrue('>file2.xml<' in dic['content'])
+        self.assertEqual(dic['cache'],  {'open': 'folder1'})
 
     def test_open_forbidden(self):
         res = self.testapp.get('/account/Bob/open.json', status=302)
@@ -665,7 +677,8 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
         dic = json.loads(res.body)
-        self.assertEqual(len(dic), 2)
+        self.assertEqual(len(dic), 3)
+        self.assertEqual(dic['cache'],  {'saveas': ''})
         self.assertTrue('>folder1<' in dic['content'])
         self.assertTrue('>file1.xml<' in dic['content'])
 
@@ -718,11 +731,12 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
                 status=200,
                 params={'name': 'new_folder'})
             dic = json.loads(res.body)
-            self.assertEqual(len(dic), 2)
+            self.assertEqual(len(dic), 3)
             self.assertTrue('data-modal-action' in dic['content'])
             self.assertTrue('<li class=\"active\">new_folder</li>' in
                             dic['breadcrumb'])
             self.assertTrue(os.path.isdir(os.path.join(path, 'new_folder')))
+            self.assertEqual(dic['cache'], {'saveas': 'new_folder'})
 
             res = self.testapp.post(
                 '/account/Bob/create-folder.json',

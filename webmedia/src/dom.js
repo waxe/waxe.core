@@ -1,5 +1,10 @@
 var waxe = waxe || {};
 
+waxe.cache = {
+    open: null,
+    saveas: null,
+};
+
 (function($, ns){
     "use strict";
 
@@ -16,6 +21,17 @@ var waxe = waxe || {};
         var fun = waxe;
         call.split('.').map(function(s){ fun=fun[s];});
         fun(e, $(this));
+    });
+
+
+    $(document).on('click', '[data-cache]', function(e) {
+        var $this = $(this);
+        var call = $(this).data('cache');
+        var fun = waxe;
+        call.split('.').map(function(s){ fun=fun[s];});
+        if (fun) {
+            $this.attr('data-params', 'path=' + fun);
+        }
     });
 
     var updateModal = function($modal, data) {
@@ -36,6 +52,11 @@ var waxe = waxe || {};
         if (data.relpath) {
             // Need for the search.
             $modal.find('.relpath').val(data.relpath);
+        }
+        if (data.cache) {
+            for(var k in data.cache) {
+                ns.cache[k] = data.cache[k];
+            }
         }
     };
 
@@ -90,7 +111,12 @@ var waxe = waxe || {};
             waxe.dom.pushState($this.attr('href'), $this.data('href'), $this.text());
         }
         var modal = $this.parents('.modal');
-        waxe.dom.load($this.data('href'), modal);
+        var href = $this.data('href');
+        var params = $this.attr('data-params');
+        if(params) {
+            href += '?' + params;
+        }
+        waxe.dom.load(href, modal, $this);
     };
 
     $(document).on('click', 'a[data-href]', onclick);

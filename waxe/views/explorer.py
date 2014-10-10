@@ -168,7 +168,10 @@ class ExplorerView(BaseUserView):
                 rootpath=rootpath,
                 route_name=folder_route,
                 data_href_name='data-modal-href'
-            )
+            ),
+            'cache': {
+                'open': relpath
+            }
         })
 
     @view_config(route_name='open_json', renderer='json', permission='edit')
@@ -249,6 +252,9 @@ class ExplorerView(BaseUserView):
             self.request.custom_route_path('create_folder_json'),
             relpath
         )
+        dic['cache'] = {
+            'saveas': relpath
+        }
         return self._response(dic)
 
     @view_config(route_name='saveas_json', renderer='json', permission='edit')
