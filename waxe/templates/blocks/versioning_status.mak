@@ -40,7 +40,7 @@
             % endfor
         </ul>
         <input class="btn btn-danger" type="submit" value="Revert" name="submit" data-confirm="Are you sure you want to revert the selected files? All your modifications will be deleted!" />
-        <input class="btn btn-danger" type="submit" value="Delete" name="submit" data-confirm="Are you sure you want to delete the selected files?" />
+        <input class="btn btn-danger" type="submit" value="Remove" name="submit" data-confirm="Are you sure you want to delete the selected files?" />
         <input class="btn btn-primary" type="submit" value="Generate diff" name="submit" />
       </form>
     </div>
@@ -66,7 +66,7 @@
           % endfor
         </ul>
         <input class="btn btn-danger" type="submit" value="Revert" name="submit" data-confirm="Are you sure you want to revert the selected files? All your modifications will be deleted!" />
-        <input class="btn btn-danger" type="submit" value="Delete" name="submit" data-confirm="Are you sure you want to delete the selected files?" />
+        <input class="btn btn-danger" type="submit" value="Remove" name="submit" data-confirm="Are you sure you want to delete the selected files?" />
         <input class="btn btn-primary" type="submit" value="Generate diff" name="submit" />
         <input class="btn btn-success" type="submit" value="Commit" name="submit" />
       </form>
