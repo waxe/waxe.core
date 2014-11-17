@@ -65,6 +65,11 @@ def incremental_index(dirname, paths):
         # Loop over the stored fields in the index
         for fields in searcher.all_stored_fields():
             indexed_path = fields['path']
+            if indexed_path not in paths:
+                # The files to index should be passed.
+                # For performance reason we often make partial indexation.
+                continue
+
             indexed_paths.add(indexed_path)
 
             if not os.path.exists(indexed_path):
