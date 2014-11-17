@@ -442,6 +442,7 @@ class VersioningView(BaseUserView):
 
         vobj = self.get_versioning_obj()
         vobj.revert(filename)
+        self.add_indexation_task([filename])
         url = self.request.custom_route_path(
             'edit_json',
             _query=[('path', filename)])
