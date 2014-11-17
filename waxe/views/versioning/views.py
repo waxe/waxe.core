@@ -121,20 +121,26 @@ class VersioningView(BaseUserView):
 
         if self.request.POST.get('submit') == 'Revert':
             vobj = self.get_versioning_obj()
+            absfilenames = []
             for filename in filenames:
                 absfilename = browser.absolute_path(filename, self.root_path)
                 if not os.path.isfile(absfilename):
                     continue
+                absfilenames += [absfilename]
                 vobj.revert(filename)
+            self.add_indexation_task(absfilenames)
             return self.status(info_msg='The files have been reverted!')
 
         if self.request.POST.get('submit') == 'Remove':
             vobj = self.get_versioning_obj()
+            absfilenames = []
             for filename in filenames:
                 absfilename = browser.absolute_path(filename, self.root_path)
                 if not os.path.isfile(absfilename):
                     continue
+                absfilenames += [absfilename]
                 vobj.remove(filename)
+            self.add_indexation_task(absfilenames)
             return self.status(info_msg='The files have been removed!')
 
         if self.request.POST.get('submit') == 'Commit':
