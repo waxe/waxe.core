@@ -15,12 +15,4 @@
 
     $.fn.filebrowser.defaults.template.nav_file = '<li><i class="glyphicon glyphicon-file"></i></li>';
     $.fn.filebrowser.defaults.template.nav_folder = '<li><i class="glyphicon glyphicon-folder-close"></i></li>';
-
-    $("script").each(function () {
-        if(this.src.toString().match(/waxe/)) {
-            console.log(this.src.toString());
-            $.jstree._themes = this.src.toString().replace(/waxe[^\/]*?\.js$/, "") + 'themes/';
-            return false;
-        }
-    });
 })(jQuery);
