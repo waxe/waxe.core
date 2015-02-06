@@ -65,6 +65,7 @@ var waxe = waxe || {};
             if(this.treePosition) {
                 pluginOptions[this.treePosition] = {
                     initHidden: true,
+                    size: '33%',
                     onresize_end: function(size){
                         var tree = $('#tree');
                         tree.height(tree.parent().parent().height());
