@@ -49,8 +49,7 @@ var waxe = waxe || {};
 
         waxe.form.setFilename(relpath);
         $(this).parents('.modal').modal('hide');
-        // TODO: we should call window.history.pushState
-        waxe.form.$element.submit();
+        waxe.form.submit();
     });
 
     $(document).on('click', '.waxe-modal-content-saveas .file', function(e) {
@@ -67,7 +66,7 @@ var waxe = waxe || {};
             if (waxe.form.$element) {
                 // We have special form with xmltool
                 if (waxe.form.filename){
-                    waxe.form.$element.submit();
+                    waxe.form.submit();
                 } else {
                     // Not really nice but working :)
                     $('.saveas').trigger('click');

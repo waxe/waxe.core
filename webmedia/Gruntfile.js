@@ -37,18 +37,18 @@ module.exports = function(grunt) {
             'libs/bootstrap-3.0.2/js/tab.js',
             'libs/bootstrap-3.0.2/js/affix.js',
             'libs/js/jquery.layout-latest.min.js',
-            'libs/js/jquery.jstree.js',
+            'bower_components/jstree/dist/jstree.js',
             'libs/js/jquery.message.js',
             'libs/js/jquery.autosize.js',
             'libs/codemirror/codemirror.js',
             'libs/codemirror/xml.js',
             'bower_components/jquery.contenteditablesync/src/*.js',
-            'bower_components/xmltool/webmedia/src/*.js',
+            'bower_components/xmltool/webmedia/js/*.js',
             'src/jquery.filebrowser.js',
             'src/ajax.js',
             'src/event.js',
-            'src/form.js',
             'src/layout.js',
+            'src/form.js',
             'src/utils.js',
             'src/dom.js',
             'src/jquery.filebrowser.js',
@@ -99,7 +99,12 @@ module.exports = function(grunt) {
                 paths: ['libs/bootstrap-3.0.2/less/']
             },
             files: {
-                "../waxe/static/css/<%= pkg.name %>.css": ["bower_components/xmltool/webmedia/css/xmltool.less", "css/*.less", "libs/codemirror/codemirror.css"]
+                "../waxe/static/css/<%= pkg.name %>.css": [
+                    "bower_components/xmltool/webmedia/css/xmltool.less",
+                    "bower_components/jstree/dist/themes/default/style.css",
+                    "css/*.less",
+                    "libs/codemirror/codemirror.css"
+                ]
             }
         },
         production: {
@@ -108,7 +113,12 @@ module.exports = function(grunt) {
                 cleancss: true
             },
             files: {
-                "../waxe/static/css/<%= pkg.name %>.min.css": ["bower_components/xmltool/webmedia/css/xmltool.less", "css/*.less", "libs/codemirror/codemirror.css"]
+                "../waxe/static/css/<%= pkg.name %>.min.css": [
+                    "bower_components/xmltool/webmedia/css/xmltool.less",
+                    "bower_components/jstree/dist/themes/default/style.css",
+                    "css/*.less",
+                    "libs/codemirror/codemirror.css"
+                ]
             }
         }
     },

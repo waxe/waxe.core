@@ -129,15 +129,18 @@ waxe.cache = {
                 url
             );
         },
-        update: function(data, msg){
+        update: function(data, msg, scrolltop){
             msg = typeof msg === 'undefined'? 'Loaded!': msg;
+            scrolltop = typeof scrolltop === 'undefined'? true: scrolltop;
 
             // TODO: improve message to not do this
             $(document).message('close');
 
             waxe.layout.hideReadonly();
-            $(document).scrollTop(0);
-            $('.ui-layout-center').scrollTop(0);
+            if (scrolltop) {
+                $(document).scrollTop(0);
+                $('.ui-layout-center').scrollTop(0);
+            }
 
             if (data.error_msg){
                 $(document).message('error', data.error_msg);
@@ -187,8 +190,11 @@ waxe.cache = {
                 $nav_editor.html('');
             }
 
-            if(!('jstree_data' in data)){
+            if ($('#xmltool-form').length === 0){
                 waxe.layout.hideTree();
+            }
+            else {
+                waxe.layout.showTree();
             }
 
 
@@ -208,7 +214,7 @@ waxe.cache = {
             doneMsg = typeof doneMsg === 'undefined'? 'Updated!': doneMsg;
             $(document).message('info', msg, {'autohide': false});
             waxe.ajax.POST(url, params, function(data, textStatus, jqXHR) {
-                waxe.dom.update(data, doneMsg);
+                waxe.dom.update(data, doneMsg, false);
                 if (! data.error_msg && typeof(modal) !== 'undefined') {
                     modal.modal('hide');
                 }
@@ -247,23 +253,20 @@ waxe.cache = {
     $(document).ready(function(){
         waxe.dom.loadCodemirror();
 
-        $(document).on('click', 'form[data-action]', function(e){
-            $(this).data('clicked', $(e.target));
+        $(document).on('click', 'form[data-action] [type=submit]', function(e){
+            $(this).parents('form').data('clicked', $(e.target));
         });
         $(document).on('submit', 'form[data-action]', function(e){
             e.preventDefault();
-            var $form = $(this);
-            var modal = $form.parents('.modal');
-
-            // Since jQuery doesn't include the submit button in the form, we
-            // include it manually
-            var params = $form.serialize();
-
-            var $btn = $form.data('clicked');
+            var $form = $(this),
+                modal = $form.parents('.modal'),
+                params = $form.serialize(),
+                $btn = $form.data('clicked');
             if ($btn) {
-                // If we submit the form in javascript, we don't have btn. It's
-                // usefull when we make full diff to only save updates without
-                // commiting.
+                // Since jQuery doesn't include the submit button in the form,
+                // we include it manually if a submit button has been clicked.
+                // It's usefull when we make full diff to only save updates
+                // without commiting.
                 params = params +
                          '&' + encodeURI($btn.attr('name')) +
                          '=' + encodeURI($btn.attr('value'));

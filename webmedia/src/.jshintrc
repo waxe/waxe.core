@@ -12,5 +12,5 @@
   "eqnull": true,
   "browser": true,
   "multistr": true,
-  "predef": ["jQuery"]
+  "predef": ["jQuery", "xmltool"]
 }

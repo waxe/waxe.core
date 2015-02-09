@@ -51,12 +51,12 @@ class TestEditorView(LoggedBobTestCase):
             self.assertEqual(res['breadcrumb'],  expected_breadcrumb)
             self.assertTrue(
                 '<form method="POST" '
+                'data-action="/filepath" '
                 'data-paste-href="/filepath" '
                 'data-add-href="/filepath" '
                 'data-comment-href="/filepath" '
                 'data-copy-href="/filepath" '
-                'id="xmltool-form" '
-                'data-href="/filepath">' in res['content'])
+                'id="xmltool-form">' in res['content'])
             self.assertTrue('readonly="readonly"' not in res['content'])
             self.assertTrue(isinstance(res['jstree_data'], dict))
 
@@ -65,12 +65,12 @@ class TestEditorView(LoggedBobTestCase):
             self.assertEqual(res['breadcrumb'],  expected_breadcrumb)
             self.assertTrue(
                 '<form method="POST" '
+                'data-action="/filepath" '
                 'data-paste-href="/filepath" '
                 'data-add-href="/filepath" '
                 'data-comment-href="/filepath" '
                 'data-copy-href="/filepath" '
-                'id="xmltool-form" '
-                'data-href="/filepath">' in res['content'])
+                'id="xmltool-form">' in res['content'])
             self.assertTrue(
                 'class="nav nav-tabs"' in res['nav_editor'])
             self.assertTrue(isinstance(res['jstree_data'], str))
@@ -202,12 +202,12 @@ class TestEditorView(LoggedBobTestCase):
         self.assertEqual(len(res), 3)
         self.assertTrue(
             '<form method="POST" '
+            'data-action="/filepath" '
             'data-paste-href="/filepath" '
             'data-add-href="/filepath" '
             'data-comment-href="/filepath" '
             'data-copy-href="/filepath" '
-            'id="xmltool-form" '
-            'data-href="/filepath">' in res['content'])
+            'id="xmltool-form">' in res['content'])
         self.assertTrue('<a data-href="/filepath" href="/filepath">root</a>'
                         in res['breadcrumb'])
         self.assertTrue(isinstance(res['jstree_data'], dict))
@@ -217,12 +217,12 @@ class TestEditorView(LoggedBobTestCase):
         self.assertEqual(len(res), 3)
         self.assertTrue(
             '<form method="POST" '
+            'data-action="/filepath" '
             'data-paste-href="/filepath" '
             'data-add-href="/filepath" '
             'data-comment-href="/filepath" '
             'data-copy-href="/filepath" '
-            'id="xmltool-form" '
-            'data-href="/filepath">' in res['content'])
+            'id="xmltool-form">' in res['content'])
         self.assertTrue('<a data-href="/filepath" href="/filepath">root</a>'
                         in res['breadcrumb'])
         self.assertTrue(isinstance(res['jstree_data'], str))
@@ -238,12 +238,12 @@ class TestEditorView(LoggedBobTestCase):
         self.assertEqual(len(res), 3)
         self.assertTrue(
             '<form method="POST" '
+            'data-action="/filepath" '
             'data-paste-href="/filepath" '
             'data-add-href="/filepath" '
             'data-comment-href="/filepath" '
             'data-copy-href="/filepath" '
-            'id="xmltool-form" '
-            'data-href="/filepath">' in res['content'])
+            'id="xmltool-form">' in res['content'])
         self.assertTrue('<a data-href="/filepath" href="/filepath">root</a>'
                         in res['breadcrumb'])
         self.assertTrue(
@@ -398,7 +398,7 @@ class TestEditorView(LoggedBobTestCase):
 
         path = os.path.join(os.getcwd(), 'waxe/tests/files')
         dtd_url = os.path.join(path, 'exercise.dtd')
-        request = testing.DummyRequest(params={'dtd_url': dtd_url,
+        request = testing.DummyRequest(params={'_xml_dtd_url': dtd_url,
                                                'elt_id': 'Exercise'})
         request.matched_route = C()
         request.matched_route.name = 'route_json'
@@ -407,14 +407,12 @@ class TestEditorView(LoggedBobTestCase):
         expected = {'error_msg': 'Empty clipboard'}
         self.assertEqual(res, expected)
 
-        request = testing.DummyRequest(params={'dtd_url': dtd_url,
+        request = testing.DummyRequest(params={'_xml_dtd_url': dtd_url,
                                                'elt_id': 'Exercise'})
         request.matched_route = C()
         request.matched_route.name = 'route_json'
         data = {
-            'Exercise': {
-                'number': {'_value': 'Hello world'}
-            }
+            'number': {'_value': 'Hello world'}
         }
         filename = tempfile.mktemp()
         open(filename, 'w').write(json.dumps(data))
@@ -423,10 +421,10 @@ class TestEditorView(LoggedBobTestCase):
             'elt_id': 'Exercise:number'
         }
         res = EditorView(request).paste_json()
-        self.assertEqual(len(res), 5)
+        self.assertEqual(len(res), 4)
         self.assertEqual(res['elt_id'], 'Exercise:number')
 
-        request = testing.DummyRequest(params={'dtd_url': dtd_url,
+        request = testing.DummyRequest(params={'_xml_dtd_url': dtd_url,
                                                'elt_id': 'Exercise'})
         request.matched_route = C()
         request.matched_route.name = 'route_json'
@@ -482,12 +480,12 @@ class FunctionalTestEditorView(WaxeTestCase):
         self.assertEqual(len(dic), 4)
         expected = (
             '<form method="POST" '
+            'data-action="/account/Bob/update.json" '
             'data-paste-href="/account/Bob/paste.json" '
             'data-add-href="/account/Bob/add-element.json" '
             'data-comment-href="/account/Bob/get-comment-modal.json" '
             'data-copy-href="/account/Bob/copy.json" '
-            'id="xmltool-form" '
-            'data-href="/account/Bob/update.json">')
+            'id="xmltool-form">')
         self.assertTrue(expected in dic['content'])
         self.assertTrue(isinstance(dic['jstree_data'], dict))
 
@@ -553,12 +551,12 @@ class FunctionalTestEditorView(WaxeTestCase):
         self.assertEqual(len(dic), 3)
         expected = (
             '<form method="POST" '
+            'data-action="/account/Bob/update.json" '
             'data-paste-href="/account/Bob/paste.json" '
             'data-add-href="/account/Bob/add-element.json" '
             'data-comment-href="/account/Bob/get-comment-modal.json" '
             'data-copy-href="/account/Bob/copy.json" '
-            'id="xmltool-form" '
-            'data-href="/account/Bob/update.json">')
+            'id="xmltool-form">')
         self.assertTrue(expected in dic['content'])
         self.assertTrue(dic['breadcrumb'])
         self.assertTrue('data-href="/account/Bob/explore.json?path="' in dic['breadcrumb'])

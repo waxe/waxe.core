@@ -51,12 +51,12 @@ class EditorView(BaseUserView):
                     form_attrs={
                         'data-add-href': self.request.custom_route_path('add_element_json'),
                         'data-comment-href': self.request.custom_route_path('get_comment_modal_json'),
-                        'data-href': self.request.custom_route_path('update_json'),
+                        'data-action': self.request.custom_route_path('update_json'),
                         'data-copy-href': self.request.custom_route_path('copy_json'),
                         'data-paste-href': self.request.custom_route_path('paste_json'),
                     }
                 )
-            jstree_data = obj.to_jstree_dict([])
+            jstree_data = obj.to_jstree_dict()
             if not self._is_json():
                 jstree_data = json.dumps(jstree_data)
         except (HTTPError, URLError), e:
@@ -176,12 +176,12 @@ class EditorView(BaseUserView):
                 form_attrs={
                     'data-add-href': self.request.custom_route_path('add_element_json'),
                     'data-comment-href': self.request.custom_route_path('get_comment_modal_json'),
-                    'data-href': self.request.custom_route_path('update_json'),
+                    'data-action': self.request.custom_route_path('update_json'),
                     'data-copy-href': self.request.custom_route_path('copy_json'),
                     'data-paste-href': self.request.custom_route_path('paste_json'),
                 }
             )
-            jstree_data = obj.to_jstree_dict([])
+            jstree_data = obj.to_jstree_dict()
             if not self._is_json():
                 jstree_data = json.dumps(jstree_data)
             return {
@@ -262,8 +262,9 @@ class EditorView(BaseUserView):
         dtd_url = self.request.GET.get('dtd_url')
         if not elt_id or not dtd_url:
             return {'status': False, 'error_msg': 'Bad parameter'}
-        dic = xmltool.elements.get_jstree_json_from_str_id(elt_id,
-                                                           dtd_url=dtd_url)
+        dic = xmltool.factory.get_data_from_str_id_for_html_display(
+            elt_id,
+            dtd_url=dtd_url)
         dic['status'] = True
         return dic
 
@@ -271,7 +272,8 @@ class EditorView(BaseUserView):
     def copy_json(self):
         if 'elt_id' not in self.request.POST:
             return self._response({'error_msg': 'Bad parameter'})
-        data = xmltool.utils.unflatten_params(self.request.POST)
+        data = xmltool.factory.getElementData(self.request.POST['elt_id'],
+                                              self.request.POST)
         # Write the content to paste in a temporary file
         filename = tempfile.mktemp()
         open(filename, 'w').write(json.dumps(data))
@@ -283,9 +285,9 @@ class EditorView(BaseUserView):
 
     @view_config(route_name='paste_json', renderer='json', permission='edit')
     def paste_json(self):
-        # TODO: Perhaps we should validate it's the same dtd
+        # TODO: Validate it's the same dtd
         elt_id = self.request.POST.pop('elt_id', None)
-        dtd_url = self.request.POST.pop('dtd_url', None)
+        dtd_url = self.request.POST.pop('_xml_dtd_url', None)
         data = xmltool.utils.unflatten_params(self.request.POST)
 
         if not elt_id or not dtd_url:
@@ -297,20 +299,18 @@ class EditorView(BaseUserView):
                 'error_msg': 'Empty clipboard'
             })
         filename = clipboard['filename']
-        source_id = clipboard['elt_id']
         clipboard_data = json.loads(open(filename, 'r').read())
 
-        obj = xmltool.elements.add_new_element_from_id(
-            elt_id, source_id, data,
+        dic = xmltool.factory.get_new_element_data_for_html_display(
+            elt_id, data,
             clipboard_data, dtd_url,
             # Don't keep the attributes nor the comments
             skip_extra=True)
-        if not obj:
+        if not dic:
             return self._response({
                 'error_msg': 'The element can\'t be pasted here'
             })
 
-        dic = xmltool.elements.get_display_data_from_obj(obj)
         return self._response(dic)
 
     @view_config(route_name='get_comment_modal_json', renderer='json',

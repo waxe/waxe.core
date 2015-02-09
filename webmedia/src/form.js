@@ -46,8 +46,6 @@ var waxe = waxe || {};
                 d.message.apply(d, arguments);
             },
             treeContainerSelector: waxe.layout.SELECTORS.center
-        }).submit($.proxy(this.save, this)).on('loadedJstree', function(){
-            waxe.layout.showTree();
         });
         this.$element.on('change.contenteditablesync', 'textarea', function() {
             that.status = that.STATUS_UPDATED;
@@ -89,12 +87,17 @@ var waxe = waxe || {};
         });
     };
 
+    Form.prototype.submit = function() {
+        this.$element.submit();
+        // TODO: we should reset the status only if the form is submit correctlty
+        this.status = null;
+    };
+
     Form.prototype.auto_save = function(){
         var that = this;
         var save = function(){
             if (that.status === that.STATUS_UPDATED){
-                that.$element.submit();
-                that.status = null;
+                that.submit();
             }
         };
         // TODO: improve this logic for the new files!
@@ -107,6 +110,7 @@ var waxe = waxe || {};
         var data = null;
         if (typeof jstree_data !== 'undefined') {
             data = jstree_data;
+            waxe.layout.showTree();
         }
         waxe.form = new Form(data);
     });
