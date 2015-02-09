@@ -72,14 +72,14 @@ class TestSearch(unittest.TestCase):
             self.assertEqual(dic, newdic)
 
             # Don't index newfile, it should not be deleted
-            search.incremental_index(indexpath, paths)
+            search.incremental_index(indexpath, paths + [newfile])
             with ix.searcher() as searcher:
                 fields = list(searcher.all_stored_fields())
                 self.assertEqual(len(fields), 6)
 
             # Delete the file
             os.remove(newfile)
-            search.incremental_index(indexpath, paths)
+            search.incremental_index(indexpath, paths + [newfile])
             with ix.searcher() as searcher:
                 fields = list(searcher.all_stored_fields())
                 self.assertEqual(len(fields), 5)
@@ -107,7 +107,7 @@ class TestSearch(unittest.TestCase):
                 pass
 
         # file is deleted
-        search.incremental_index(indexpath, paths)
+        search.incremental_index(indexpath, paths + [newfile])
         newdic = {}
         ix = index.open_dir(indexpath)
         with ix.searcher() as searcher:
