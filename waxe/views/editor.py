@@ -8,7 +8,7 @@ import json
 from urllib2 import HTTPError, URLError
 from pyramid.view import view_config
 from pyramid.renderers import render, Response
-from .. import browser, utils
+from .. import browser, utils, xml_plugins
 from base import BaseUserView, NAV_EDIT, NAV_EDIT_TEXT
 import pyramid_logging
 
@@ -262,6 +262,11 @@ class EditorView(BaseUserView):
         dtd_url = self.request.GET.get('dtd_url')
         if not elt_id or not dtd_url:
             return {'status': False, 'error_msg': 'Bad parameter'}
+
+        res = xml_plugins.add_element(self.request, elt_id, dtd_url)
+        if res:
+            return res
+
         dic = xmltool.factory.get_data_from_str_id_for_html_display(
             elt_id,
             dtd_url=dtd_url)

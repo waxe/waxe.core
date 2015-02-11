@@ -1,5 +1,6 @@
 import os
 import locale
+import importlib
 
 from pyramid.config import Configurator
 from sqlalchemy import engine_from_config
@@ -33,6 +34,18 @@ def get_dtd_urls(request):
     return filter(bool, request.registry.settings['dtd_urls'].split('\n'))
 
 
+def get_xml_plugins(request):
+    if 'waxe.xml.plugins' not in request.registry.settings:
+        return []
+    lis = filter(bool,
+                 request.registry.settings['waxe.xml.plugins'].split('\n'))
+
+    mods = []
+    for s in lis:
+        mods.append(importlib.import_module(s))
+    return mods
+
+
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
     """
@@ -59,6 +72,8 @@ def main(global_config, **settings):
     config.add_static_view('static', 'static', cache_max_age=3600)
     # TODO: not sure we need to define dtd_urls here.
     config.set_request_property(get_dtd_urls, 'dtd_urls', reify=True)
+
+    config.set_request_property(get_xml_plugins, 'xml_plugins', reify=True)
 
     for module, prefix, extra_prefix in get_views_modules(settings):
         route_prefix = None
