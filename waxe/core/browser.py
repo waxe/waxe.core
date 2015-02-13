@@ -46,7 +46,7 @@ def absolute_path(relpath, root_path):
     return abspath
 
 
-def get_files(abspath, root_path, root_only=True, relative=False):
+def get_files(extensions, abspath, root_path, root_only=True, relative=False):
     """Get the files and folder containing in abspath
 
     :param abspath: the absolute path we want to get the containing files and
@@ -90,7 +90,7 @@ def get_files(abspath, root_path, root_only=True, relative=False):
         for f in filenames:
             f = f.decode('utf-8')
             _, ext = os.path.splitext(f)
-            if ext != '.xml':
+            if ext not in extensions:
                 continue
             if f.startswith('.'):
                 continue
@@ -105,7 +105,7 @@ def get_files(abspath, root_path, root_only=True, relative=False):
     return folders, files
 
 
-def get_all_files(abspath, root_path, relative=False):
+def get_all_files(extensions, abspath, root_path, relative=False):
     """Get the files and folder containing in abspath
 
     :param abspath: the absolute path we want to get the containing files and
@@ -122,5 +122,5 @@ def get_all_files(abspath, root_path, relative=False):
     ..note:: we don't get the hidden files/folders and for the files, we only
              get the xml ones.
     """
-    return get_files(abspath, root_path=root_path, root_only=False,
+    return get_files(extensions, abspath, root_path=root_path, root_only=False,
                      relative=relative)

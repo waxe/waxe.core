@@ -20,17 +20,26 @@ views_modules = [
 ]
 
 
-def _get_extra_modules(settings):
+def parse_waxe_editors(settings):
     modules = filter(bool, settings.get('waxe.editors', '').split('\n'))
     lis = []
     for mod in modules:
-        lis += [('%s.views.editor' % mod, True, '')]
+        if '#' in mod:
+            mod, ext = mod.split('#')
+            exts = ext.split(',')
+        else:
+            exts = importlib.import_module(mod).EXTENSIONS
+
+        lis += [(mod, exts)]
+
+    # TODO: check conflict between extensions
     return lis
 
 
-def get_views_modules(settings):
+def get_views_modules(settings, waxe_editors):
     lis = list(views_modules)
-    lis += _get_extra_modules(settings)
+    for mod, exts in waxe_editors:
+        lis += [('%s.views.editor' % mod, True, '')]
     if 'versioning' in settings:
         lis += [('waxe.core.views.versioning.views', True, 'versioning')]
     return lis
@@ -72,6 +81,12 @@ def main(global_config, **settings):
     Base.metadata.bind = engine
     taskqm.DBSession.configure(bind=engine)
     taskqm.Base.metadata.bind = engine
+
+    # Get the editors and the extensions supported
+    waxe_editors = parse_waxe_editors(settings)
+    extensions = sum([exts for mod, exts in waxe_editors], [])
+    settings['waxe.extensions'] = extensions
+
     session_key = settings['session.key']
     session_factory = UnencryptedCookieSessionFactoryConfig(session_key)
     config = Configurator(settings=settings,
@@ -83,7 +98,8 @@ def main(global_config, **settings):
 
     config.set_request_property(get_xml_plugins, 'xml_plugins', reify=True)
 
-    for module, prefix, extra_prefix in get_views_modules(settings):
+    for module, prefix, extra_prefix in get_views_modules(settings,
+                                                          waxe_editors):
         route_prefix = None
         if prefix:
             route_prefix = '/account/{login}'

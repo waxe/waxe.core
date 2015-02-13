@@ -22,7 +22,7 @@ class TestSearch(unittest.TestCase):
         super(TestSearch, self).tearDown()
 
     def test_clean_index(self):
-        paths = browser.get_all_files(filepath, filepath)[1]
+        paths = browser.get_all_files(['.xml'], filepath, filepath)[1]
         search.clean_index(indexpath, paths)
 
         ix = index.open_dir(indexpath)
@@ -32,7 +32,7 @@ class TestSearch(unittest.TestCase):
 
     def test_incremental_index(self):
         # Create the index
-        paths = browser.get_all_files(filepath, filepath)[1]
+        paths = browser.get_all_files(['.xml'], filepath, filepath)[1]
         search.clean_index(indexpath, paths)
 
         dic = {}
@@ -118,7 +118,7 @@ class TestSearch(unittest.TestCase):
         self.assertEqual(newdic, dic)
 
     def test_do_index(self):
-        paths = browser.get_all_files(filepath, filepath)[1]
+        paths = browser.get_all_files(['.xml'], filepath, filepath)[1]
         self.assertEqual(len(paths), 5)
 
         search.do_index(indexpath, paths)
@@ -128,7 +128,7 @@ class TestSearch(unittest.TestCase):
             self.assertEqual(len(fields), 5)
 
     def test_do_search(self):
-        paths = browser.get_all_files(filepath, filepath)[1]
+        paths = browser.get_all_files(['.xml'], filepath, filepath)[1]
         search.do_index(indexpath, paths)
 
         res = search.do_search(indexpath, 'file')

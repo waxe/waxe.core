@@ -26,6 +26,7 @@ class BaseView(object):
         self.logged_user = security.get_user(self.logged_user_login)
         self.current_user = self.logged_user
         self.root_path = None
+        self.extensions = self.request.registry.settings['waxe.extensions']
 
         def custom_route_path(request):
             def func(name, *args, **kw):
@@ -258,8 +259,8 @@ class BaseUserView(NavigationView):
         """
         if self.has_versioning():
             from waxe.core.views.versioning import helper
-            return helper.PysvnVersioning(self.request, self.current_user,
-                                          self.root_path)
+            return helper.PysvnVersioning(self.request, self.extensions,
+                                          self.current_user, self.root_path)
         return None
 
     def get_search_dirname(self):
@@ -290,7 +291,7 @@ class BaseUserView(NavigationView):
         if not uc or not uc.root_path:
             return None
         if not paths:
-            paths = browser.get_all_files(uc.root_path, uc.root_path)[1]
+            paths = browser.get_all_files(self.extensions, uc.root_path, uc.root_path)[1]
         Task.create(search.do_index, [dirname, paths],
                     owner=str(self.current_user.iduser))
 

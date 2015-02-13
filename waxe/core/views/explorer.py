@@ -46,8 +46,8 @@ class ExplorerView(BaseUserView):
 
         root_path = self.root_path
         abspath = browser.absolute_path(relpath, root_path)
-        folders, filenames = browser.get_files(abspath, root_path,
-                                               relative=True)
+        folders, filenames = browser.get_files(self.extensions, abspath,
+                                               root_path, relative=True)
         data = {
             'previous_tag': None,
             'tags': [],

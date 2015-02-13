@@ -45,7 +45,9 @@ def main(argv=sys.argv):
         if not uc.root_path:
             continue
         dirname = uc.user.get_search_dirname(whoosh_path)
-        paths = browser.get_all_files(uc.root_path, uc.root_path)[1]
+        # TODO: support another extensions for the search
+        extensions = ['.xml']
+        paths = browser.get_all_files(extensions, uc.root_path, uc.root_path)[1]
         search.do_index(dirname, paths)
 
 if __name__ == '__main__':

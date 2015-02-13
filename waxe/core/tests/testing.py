@@ -114,6 +114,7 @@ class BaseTestCase(DBTestCase):
         self.config = testing.setUp()
         self.config.registry.settings.update({
             'mako.directories': 'waxe.core:templates',
+            'waxe.extensions': ['.xml'],
         })
         self.config.include('pyramid_mako')
 

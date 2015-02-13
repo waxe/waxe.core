@@ -64,16 +64,16 @@ class TestBrowser(unittest.TestCase):
     def test_get_files(self):
         root_path = os.path.join(os.getcwd(), 'waxe', 'core', 'tests', 'files')
         abspath = root_path
-        folders, filenames = browser.get_files(abspath, root_path=root_path)
+        folders, filenames = browser.get_files(['.xml'], abspath, root_path=root_path)
         self.assertEqual(folders, [os.path.join(root_path, 'folder1')])
         self.assertEqual(filenames, [os.path.join(root_path, 'file1.xml')])
 
-        folders, filenames = browser.get_files(abspath, root_path=root_path)
+        folders, filenames = browser.get_files(['.xml'], abspath, root_path=root_path)
         self.assertEqual(folders, [os.path.join(root_path, 'folder1')])
         self.assertEqual(filenames, [os.path.join(root_path, 'file1.xml')])
 
         abspath = os.path.join(root_path, 'folder1')
-        folders, filenames = browser.get_files(abspath, root_path=root_path)
+        folders, filenames = browser.get_files(['.xml'], abspath, root_path=root_path)
         self.assertEqual(folders, [])
         self.assertEqual(filenames, [os.path.join(root_path,
                                                   'folder1',
@@ -82,20 +82,20 @@ class TestBrowser(unittest.TestCase):
         abspath = os.path.join(os.getcwd(), 'waxe', 'core', 'tests', 'files',
                                'nonexisting')
         try:
-            folders, filenames = browser.get_files(abspath, root_path=root_path)
+            folders, filenames = browser.get_files(['.xml'], abspath, root_path=root_path)
             assert(False)
         except IOError, e:
             self.assertEqual(str(e), 'Directory nonexisting doesn\'t exist')
 
         abspath = root_path
-        folders, filenames = browser.get_files(abspath, root_path=root_path,
+        folders, filenames = browser.get_files(['.xml'], abspath, root_path=root_path,
                                                root_only=False, relative=False)
         self.assertEqual(folders, [os.path.join(root_path, 'folder1')])
         self.assertEqual(filenames, [os.path.join(root_path, 'file1.xml'),
                                      os.path.join(root_path,
                                                   'folder1',
                                                   'file2.xml')])
-        folders, filenames = browser.get_files(abspath, root_path=root_path,
+        folders, filenames = browser.get_files(['.xml'], abspath, root_path=root_path,
                                                root_only=False, relative=True)
 
         self.assertEqual(folders, ['folder1'])
@@ -105,6 +105,7 @@ class TestBrowser(unittest.TestCase):
         root_path = os.path.join(os.getcwd(), 'waxe', 'core', 'tests', 'files')
         abspath = root_path
         folders, filenames = browser.get_all_files(
+            ['.xml'],
             abspath,
             root_path=root_path,
             relative=True,

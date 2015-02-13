@@ -119,7 +119,8 @@ class StatusObject(object):
 
 class PysvnVersioning(object):
 
-    def __init__(self, request, user, root_path):
+    def __init__(self, request, extensions, user, root_path):
+        self.extensions = extensions
         self.client = get_svn_client(request, user)
         self.root_path = root_path
 
@@ -135,7 +136,7 @@ class PysvnVersioning(object):
                 if status == STATUS_UNVERSIONED:
                     # The root path is unversioned so all children are
                     # unversioned
-                    for sf in sum(browser.get_files(f.path,
+                    for sf in sum(browser.get_files(self.extensions, f.path,
                                                     abspath,
                                                     relative=False), []):
                         relpath = browser.relative_path(sf, self.root_path)
@@ -156,9 +157,9 @@ class PysvnVersioning(object):
                 # unversioned folder
                 # NOTE: we don't get the folders here since we don't care of
                 # the empty ones
-                for sf in browser.get_all_files(f.path,
-                                                    abspath,
-                                                    relative=False)[1]:
+                for sf in browser.get_all_files(self.extensions, f.path,
+                                                abspath,
+                                                relative=False)[1]:
                     relpath = browser.relative_path(sf, self.root_path)
                     lis += [StatusObject(sf, relpath, STATUS_UNVERSIONED)]
                 continue
