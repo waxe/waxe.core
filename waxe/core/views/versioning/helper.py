@@ -1,8 +1,8 @@
 import os
 import locale
 import pysvn
-from waxe import browser
-from waxe import diff
+from waxe.core import browser
+from waxe.core import diff
 import tempfile
 
 

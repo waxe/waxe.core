@@ -3,9 +3,9 @@ import pyramid_logging
 import xmltool
 from pyramid.renderers import render
 from pyramid.view import view_config
-from waxe import browser
-from waxe import models
-from waxe.utils import escape_entities
+from waxe.core import browser
+from waxe.core import models
+from waxe.core.utils import escape_entities
 from ..base import BaseUserView, NAV_DIFF
 from . import helper
 

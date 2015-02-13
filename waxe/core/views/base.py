@@ -257,7 +257,7 @@ class BaseUserView(NavigationView):
         """Get the versioning object. For now only svn is supported.
         """
         if self.has_versioning():
-            from waxe.views.versioning import helper
+            from waxe.core.views.versioning import helper
             return helper.PysvnVersioning(self.request, self.current_user,
                                           self.root_path)
         return None

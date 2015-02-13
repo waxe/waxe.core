@@ -1,5 +1,3 @@
-__import__('pkg_resources').declare_namespace(__name__)
-
 import os
 import locale
 import importlib
@@ -17,16 +15,16 @@ from .security import RootFactory
 
 # Add the modules you want to be include in the config
 views_modules = [
-    ('waxe.views.index', False, ''),
-    ('waxe.views.editor', True, ''),
-    ('waxe.views.explorer', True, ''),
+    ('waxe.core.views.index', False, ''),
+    ('waxe.core.views.editor', True, ''),
+    ('waxe.core.views.explorer', True, ''),
 ]
 
 
 def get_views_modules(settings):
     lis = list(views_modules)
     if 'versioning' in settings:
-        lis += [('waxe.views.versioning.views', True, 'versioning')]
+        lis += [('waxe.core.views.versioning.views', True, 'versioning')]
     return lis
 
 
