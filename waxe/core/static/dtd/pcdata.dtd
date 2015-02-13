@@ -1,0 +1,3 @@
+<!ELEMENT texts (text?, text-required)>
+<!ELEMENT text (#PCDATA)>
+<!ELEMENT text-required (#PCDATA)>

@@ -1,0 +1,5 @@
+<!ELEMENT texts (block?, blocks)>
+<!ELEMENT blocks (block+)>
+<!ELEMENT block (b1|b2)>
+<!ELEMENT b1 (#PCDATA)>
+<!ELEMENT b2 (#PCDATA)>

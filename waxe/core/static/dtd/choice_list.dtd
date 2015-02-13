@@ -1,0 +1,3 @@
+<!ELEMENT texts ((text1|text2)+)>
+<!ELEMENT text1 (#PCDATA)>
+<!ELEMENT text2 (#PCDATA)>

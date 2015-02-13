@@ -1,0 +1,908 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--DTD 08/07/20-->
+
+
+<!-- Translation -->
+<!-- optionaly translated text with a source language (english only for the moment)
+     and translated versions.  Used in activity-title-rms and infobulle. 
+
+     Good doc on using entities as grammar building blocks (in french): 
+        http://fr.selfhtml.org/xml/dtd/entites.htm#parametre_entites  -->
+<!ENTITY % i18n-text "source-en, text-es?, text-pl?, text-fr?, text-en?, text-de?, text-vi?, text-pt?, text-he?, text-ar?"> 
+<!ENTITY % i18n-text-infobulle "source-en?, text-es?, text-pl?, text-fr, text-en?, text-de?, text-vi?, text-pt?, text-he?, text-ar?"> 
+<!ENTITY % i18n-text-nosource "text-es?, text-pl?, text-fr, text-en?, text-de?, text-vi?, text-pt?, text-he?, text-ar?"> 
+
+<!ENTITY % i18n-language "lang-es?, lang-pl?, lang-fr?, lang-en?, lang-de?, lang-vi?, lang-pt?, lang-he?, lang-ar?">
+
+<!ELEMENT lang-es EMPTY>
+<!ELEMENT lang-pl EMPTY>
+<!ELEMENT lang-fr EMPTY>
+<!ELEMENT lang-en EMPTY>
+<!ELEMENT lang-de EMPTY>
+<!ELEMENT lang-vi EMPTY>
+<!ELEMENT lang-pt EMPTY>
+<!ELEMENT lang-he EMPTY>
+<!ELEMENT lang-ar EMPTY>
+
+<!-- GRAMMAR MODULE -->
+<!ELEMENT OLD-A-grammar (learning-order?, title, family?, also-trigger-on-error?, verb-template-covers?, comment, kc+)>
+<!ATTLIST OLD-A-grammar idgmodule ID #IMPLIED>
+
+<!ELEMENT verb-template-covers (#PCDATA)>
+
+<!-- gfgs-module-type to be able to mark module type of GFGS modules -->
+<!ELEMENT gfgs-module-type (cecr-level, cecr-name, VOCABULARY?, GRAMMAR?, COMMUNICATION?, COMMUNICATION-SAVOIR-FAIRE?, COMMUNICATION-SOCIOCULTUREL?, COMMUNICATION-ACTES-DE-PAROLE?)>
+<!ELEMENT cecr-level (#PCDATA)>
+<!ELEMENT cecr-name (#PCDATA)>
+<!ELEMENT VOCABULARY EMPTY>
+<!ELEMENT GRAMMAR EMPTY>
+<!ELEMENT COMMUNICATION EMPTY>
+<!ELEMENT COMMUNICATION-SAVOIR-FAIRE EMPTY>
+<!ELEMENT COMMUNICATION-SOCIOCULTUREL EMPTY>
+<!ELEMENT COMMUNICATION-ACTES-DE-PAROLE EMPTY>
+
+<!ELEMENT learning-order (#PCDATA)>
+
+<!ELEMENT title (titlees?, titlepl?, titlefr, titleen, titlede?, titlevi?, titlept?, titleru?, titlehe?, titlear?)>
+<!ELEMENT titlepl (#PCDATA)>
+<!ELEMENT titlefr (#PCDATA)>
+<!ELEMENT titlees (#PCDATA)>
+<!ELEMENT titlede (#PCDATA)>
+<!ELEMENT titlevi (#PCDATA)>
+<!ELEMENT titleen (#PCDATA)>
+<!ELEMENT titlept (#PCDATA)>
+<!ELEMENT titleru (#PCDATA)>
+<!ELEMENT titlehe (#PCDATA)>
+<!ELEMENT titlear (#PCDATA)>
+
+<!ELEMENT family (#PCDATA)>
+<!ELEMENT comment (#PCDATA)>
+
+<!ELEMENT kc (kcorder, kcall?, kces?, kcpl?, kcfr, kcen?, kcde?, kcvi?, kcpt?, kcru?, kche?, kcar?, starter, bench+)>
+<!ATTLIST kc idkc ID #IMPLIED>
+<!ELEMENT kcorder (#PCDATA)>
+<!ELEMENT kcall (#PCDATA)>
+<!ELEMENT kcfr (#PCDATA)>
+<!ELEMENT kcpl (#PCDATA)>
+<!ELEMENT kces (#PCDATA)>
+<!ELEMENT kcde (#PCDATA)>
+<!ELEMENT kcvi (#PCDATA)>
+<!ELEMENT kcen (#PCDATA)>
+<!ELEMENT kcpt (#PCDATA)>
+<!ELEMENT kcru (#PCDATA)>
+<!ELEMENT kche (#PCDATA)>
+<!ELEMENT kcar (#PCDATA)>
+
+<!ELEMENT starter (kcexample+, metagrammar*)>
+<!ATTLIST starter idkcexampleset ID #IMPLIED>
+<!ELEMENT bench   (kcexample+, metagrammar*)>
+<!ATTLIST bench idkcexampleset ID #IMPLIED>
+
+<!ELEMENT metagrammar (#PCDATA)>
+
+<!ELEMENT kcexample ( exampleenes?, exampleenpl?, exampleenfr, exampleenen?, exampleende?, exampleenvi?, exampleenpt?, exampleenru?, exampleenhe?, exampleenar?)>
+<!ATTLIST kcexample idsexyexample ID #IMPLIED>
+<!ELEMENT exampleenpl (#PCDATA)>
+<!ELEMENT exampleenfr (#PCDATA)>
+<!ELEMENT exampleenes (#PCDATA)>
+<!ELEMENT exampleende (#PCDATA)>
+<!ELEMENT exampleenvi (#PCDATA)>
+<!ELEMENT exampleenen (#PCDATA)>
+<!ELEMENT exampleenpt (#PCDATA)>
+<!ELEMENT exampleenru (#PCDATA)>
+<!ELEMENT exampleenhe (#PCDATA)>
+<!ELEMENT exampleenar (#PCDATA)>
+
+
+<!-- BUNCH OF TESTS (BOT) -->
+<!ELEMENT B-bot (instructions, test*)>
+
+
+<!-- PLACEMENT TEST -->
+<!ELEMENT C-placement (comment, placementtest*)>
+<!ATTLIST C-placement idplacementfile  ID #IMPLIED>
+<!ELEMENT placementtest (testorder, not-after-module?, only-after-module?, counts-as-conjugation?, test-instruction?, level, left-media?, test-media?, test-help?, (qcm | mqm | fic | mod | fock | dictation | conjugation | cgfock ))> 
+<!ELEMENT testorder (#PCDATA)>
+
+
+<!-- SEXYTEXT -->
+<!ELEMENT D-sexytext (displaytitle, scene_summary, principal_author, treated_by, majorprovides, minorprovides, treatment_comment, replaces-episode?, requires?, followupof?, minimumlessoncount?, specialday-YYYY-MM-DD?, speciallogoforlesson?, storyonly?, dontshowtextuntilcorrection?, tutoriallesson?, tutorialofanswer?, action_jackson_ready?, epi18n?, episodesummary, orderinepisode, excludeasoftoday?, flow?, templatename, image, usebiggerimage?, lesson-video?, display_script_below_image?, toolbox, script+, commontests)>
+<!ATTLIST D-sexytext idsexytext ID #IMPLIED>
+<!ELEMENT displaytitle (#PCDATA)>
+<!ELEMENT scene_summary (#PCDATA)>
+<!ELEMENT principal_author (#PCDATA)>
+<!ELEMENT treated_by (#PCDATA)>
+<!ELEMENT majorprovides (#PCDATA)>
+<!-- Morphon refuses two IDs in the same tag -->
+<!ATTLIST majorprovides idepisode  ID #IMPLIED>
+<!ELEMENT minorprovides (#PCDATA)>
+<!ELEMENT treatment_comment (#PCDATA)>
+<!ELEMENT replaces-episode (#PCDATA)>
+<!-- requires and followupof: comma separated list of episode names -->
+<!ELEMENT requires (#PCDATA)>
+<!ELEMENT followupof (#PCDATA)>
+<!-- minimumlessoncount : integer, minimum nr of lessons required to see the episode -->
+<!ELEMENT minimumlessoncount (#PCDATA)>
+<!-- specialday-YYYY-MM-DD : string formated as YYYY-MM-DD. Note: only for orderinepisode=1 -->
+<!ELEMENT specialday-YYYY-MM-DD (#PCDATA)>
+<!-- tutoriallesson : will be shown before the story in the lesson mail -->
+<!-- tutorialofanswer : will be shown before the story in the answer mail -->
+<!-- tutorialofanswer is not called tutorialanswer so that it is AFTER tutoriallesson in alphabetical order -->
+<!-- if the tutorialimage is present, it will be shown just before the tutorial text -->
+<!-- speciallogoforlesson: the image of this field will replace the usual GG logo if present for all scenes -->
+<!ELEMENT speciallogoforlesson (#PCDATA)>
+<!-- if storyonly is present, no grammar and/or vocab will be present in the lesson -->
+<!ELEMENT storyonly (#PCDATA)>
+<!-- if dontshowtextuntilcorrection is present, the text and self requests are not shown until the correction mail -->
+<!ELEMENT dontshowtextuntilcorrection (#PCDATA)>
+<!ELEMENT tutoriallesson (G-tutorial)>
+<!ELEMENT tutorialofanswer (G-tutorial)>
+<!ELEMENT action_jackson_ready (#PCDATA)>
+<!-- i18n : only for orderinepisode = 1 -->
+<!ELEMENT epi18n ( readyes?, readypl?, translationorder, readyen?, readyde?, readyvi?, readypt?, readyhe?, readyar?)>
+<!-- readyxx is true as soon as the field is present -->
+<!ELEMENT readyen (#PCDATA)>
+<!ELEMENT readypl (#PCDATA)>
+<!ELEMENT readyes (#PCDATA)>
+<!ELEMENT readyde (#PCDATA)>
+<!ELEMENT readyvi (#PCDATA)>
+<!ELEMENT readypt (#PCDATA)>
+<!ELEMENT readyhe (#PCDATA)>
+<!ELEMENT readyar (#PCDATA)>
+<!-- translationorder : int -->
+<!ELEMENT translationorder (#PCDATA)>
+<!-- excludeasoftoday : bool -->
+<!ELEMENT excludeasoftoday (#PCDATA)>
+
+<!-- Summary of this episode to be used for Funky Friday and in RMS as next show teaser plus show description. -->
+<!ELEMENT episodesummary (#PCDATA)>
+
+<!-- orderinepisode 1 for the first ss/st of episode -->
+<!ELEMENT orderinepisode (#PCDATA)>
+<!ELEMENT flow (#PCDATA)>
+
+<!ELEMENT templatename (free-text)>
+<!ELEMENT free-text (#PCDATA)>
+
+<!ELEMENT image (#PCDATA)>
+<!-- Optional only needed for sexy speeches audios, just create it to have the same image layout as a sexytext -->
+<!ELEMENT usebiggerimage (#PCDATA)>
+
+<!-- If text as special formatting, sometimes we must make sure we don't try to float it around an image -->
+<!ELEMENT display_script_below_image (#PCDATA)>
+<!ELEMENT toolbox (#PCDATA)>
+
+<!ELEMENT script (scene_introduction, level, scripttext, script-translation?, student_mission, introtoquestions?, texttest*)>
+<!ATTLIST script idscript ID #IMPLIED>
+<!ELEMENT scene_introduction (#PCDATA)>
+<!ELEMENT scripttext (#PCDATA)>
+<!ELEMENT script-translation (%i18n-text-nosource;)>
+<!ELEMENT student_mission (#PCDATA)>
+<!-- Optional only needed for sexy speeches audios -->
+<!ATTLIST scripttext audiotelcode ID #IMPLIED>
+<!-- Optional, replace randomized introductions of questions -->
+<!ELEMENT introtoquestions (#PCDATA)>
+
+<!ELEMENT commontests (texttest*)>
+
+
+<!-- SEXYSPEECH -->
+<!-- no idsexyspeech nor idepisode required because a sexyspeech 
+     is basicaly a sexytext with comments -->
+<!ELEMENT E-sexyspeech (hybrid?, actors, instructions, recordingnotes, D-sexytext)>
+<!-- hybrid : YES (level dependent) or ALWAYS -->
+<!ELEMENT hybrid (#PCDATA)>
+<!ELEMENT actors (#PCDATA)>
+<!ELEMENT recordingnotes (#PCDATA)>
+
+<!-- QCM and MQM -->
+<!ELEMENT qcm (question, showallcorrections?, correct-qcm, bad-qcm+, dontknow-qcm?, testexample)>
+<!-- showallcorrections just need to exist, we do not check the contents -->
+<!ELEMENT showallcorrections (#PCDATA)>
+<!ATTLIST qcm idtest ID #IMPLIED>
+<!ELEMENT mqm (question, correct-qcm+, bad-qcm*, dontknow-qcm?, testexample)>
+<!ATTLIST mqm idtest ID #IMPLIED>
+
+<!ELEMENT correct-qcm (choice, covers, correction, infobulle?, choiceorder?)>
+<!ATTLIST correct-qcm idchoice ID #IMPLIED>
+
+<!ELEMENT bad-qcm (choice, covers, correction, infobulle?, choiceorder?)>
+<!ATTLIST bad-qcm idchoice ID #IMPLIED>
+
+<!ELEMENT dontknow-qcm (choice, covers, correction)>
+<!ATTLIST dontknow-qcm idchoice ID #IMPLIED>
+
+<!-- VOCABULARY  -->
+<!ELEMENT F-vocabulary (learning-order?, title?, voctitle, forms, excludedforms, keywords, also-trigger-on-error?, verb-template-covers?, ignore_for_es?, ignore_for_pl?, ignore_for_fr?, ignore_for_en?, ignore_for_de?, ignore_for_vi?, ignore_for_pt?, ignore_for_he?, ignore_for_ar?, comment, deny_pronunciation?, pronunciationscript, wordkc+, vocabtest)>
+<!-- ignore_for_xx, ... : if present, this means that -->
+<!-- we should NOT show the toolbox for users of the language concerned -->
+<!ELEMENT ignore_for_es (#PCDATA)>
+<!ELEMENT ignore_for_pl (#PCDATA)>
+<!ELEMENT ignore_for_fr (#PCDATA)>
+<!ELEMENT ignore_for_de (#PCDATA)>
+<!ELEMENT ignore_for_vi (#PCDATA)>
+<!ELEMENT ignore_for_en (#PCDATA)>
+<!ELEMENT ignore_for_pt (#PCDATA)>
+<!ELEMENT ignore_for_he (#PCDATA)>
+<!ELEMENT ignore_for_ar (#PCDATA)>
+
+<!ATTLIST F-vocabulary idvocabmodule ID #IMPLIED>
+<!ELEMENT voctitle (#PCDATA)>
+<!ELEMENT forms (#PCDATA)>
+<!ELEMENT excludedforms (#PCDATA)>
+<!ELEMENT keywords (#PCDATA)>
+<!-- pronunciation tags -->
+<!ELEMENT deny_pronunciation (#PCDATA)>
+<!ELEMENT pronunciationscript (pronunciationus, pronunciationuk)>
+<!ATTLIST pronunciationscript audiotelcode ID #IMPLIED>
+<!ELEMENT pronunciationus    (#PCDATA)>
+<!ELEMENT pronunciationuk    (#PCDATA)>
+<!-- comment shared with OLD-A-grammar -->
+<!-- wordkc is the "form" of the word in some context -->
+<!ELEMENT wordkc (wordkc-label?, wordsource-en, wordes?, wordpl?, wordfr, worden?, wordde?, wordvi?, wordpt?, wordhe?, wordar?, usage, partofspeech, show-wordkc-in-toolbox?, wordkc-tags?, wordkc-media?, antonym*, synonym*, region?, no-genderautotest?, genderautotest-priority?, verbsimplepast, verbpastparticiple, wordkc-extra?, kc+ )>
+<!ATTLIST wordkc idwordkc ID #IMPLIED>
+<!ELEMENT wordkc-label (#PCDATA)>
+<!ELEMENT wordkc-tags (#PCDATA)>
+<!ELEMENT wordsource-en (#PCDATA)>
+<!ELEMENT wordpl (#PCDATA)>
+<!ELEMENT wordfr (#PCDATA)>
+<!ELEMENT worden (#PCDATA)>
+<!ELEMENT wordes (#PCDATA)>
+<!ELEMENT wordde (#PCDATA)>
+<!ELEMENT wordvi (#PCDATA)>
+<!ELEMENT wordpt (#PCDATA)>
+<!ELEMENT wordhe (#PCDATA)>
+<!ELEMENT wordar (#PCDATA)>
+<!ELEMENT usage (#PCDATA)>
+<!ELEMENT show-wordkc-in-toolbox (#PCDATA)>
+<!ELEMENT partofspeech (#PCDATA)>
+<!ELEMENT antonym (#PCDATA)>
+<!ELEMENT synonym (#PCDATA)>
+<!ELEMENT region (#PCDATA)>
+<!ELEMENT no-genderautotest (#PCDATA)>
+<!ELEMENT genderautotest-priority (#PCDATA)>
+<!ELEMENT verbsimplepast (#PCDATA)>
+<!ELEMENT verbpastparticiple (#PCDATA)>
+<!ELEMENT conjugation-tooltip-cover (#PCDATA)>
+<!ELEMENT wordkc-extra (#PCDATA)>
+<!-- kc shared with OLD-A-grammar -->
+<!-- kc for voc is a set of examples and a possible small explanation (always plural...) in kcfr -->
+<!ELEMENT vocabtest (notest*)>
+<!-- test shared with bot -->
+
+<!-- NO MORE VOCAB TESTS -->
+<!ELEMENT notest (#PCDATA)>
+
+<!ELEMENT only-for-language (%i18n-language;)>
+<!ELEMENT not-for-language (%i18n-language;)>
+
+<!-- F-GG-plain-module is the new grammar module which are stored in the table vocabmodule -->
+<!ELEMENT F-GG-plain-module (referenced-idgmodule?, learning-order?, title, family?, also-trigger-on-error?, verb-template-covers?, only-for-language?, not-for-language?, comment, plainkc+)>
+<!ATTLIST F-GG-plain-module idvocabmodule ID #IMPLIED>
+<!ELEMENT referenced-idgmodule (#PCDATA)>
+
+<!ELEMENT plainkc (wordkc-label?, wordsource-en?, wordes?, wordpl?, wordfr?, worden?, wordde?, wordvi?, wordpt?, wordhe?, wordar?, usage?, partofspeech?, wordkc-tags?, wordkc-media?, antonym*, synonym*, region?, verbsimplepast?, verbpastparticiple?, wordkc-extra?, kc+)>
+<!ATTLIST plainkc idwordkc ID #IMPLIED>
+
+
+<!-- Tutorials: rich text. If tutorialimage is present, it will be shown before the tutorial text -->
+<!ELEMENT G-tutorial (tutorialimage?, tutorialpl?, tutorialfr, tutorialen, tutoriales?, tutorialde?, tutorialvi?, tutorialpt?, tutorialru?, tutorialhe?, tutorialar?, mobile-tutorial?)>
+<!ATTLIST G-tutorial idtutorial ID #IMPLIED>
+<!ELEMENT tutorialimage (#PCDATA)>
+<!ELEMENT tutorialpl (#PCDATA)>
+<!ELEMENT tutorialfr (#PCDATA)>
+<!ELEMENT tutorialen (#PCDATA)>
+<!ELEMENT tutoriales (#PCDATA)>
+<!ELEMENT tutorialde (#PCDATA)>
+<!ELEMENT tutorialvi (#PCDATA)>
+<!ELEMENT tutorialpt (#PCDATA)>
+<!ELEMENT tutorialru (#PCDATA)>
+<!ELEMENT tutorialhe (#PCDATA)>
+<!ELEMENT tutorialar (#PCDATA)>
+<!ELEMENT mobile-tutorial (text-pl?, text-fr, text-en, text-es?, text-de?, text-vi?, text-pt?, text-ru?, text-he?, text-ar?)>
+
+
+<!-- Enonces for introduction of sections -->
+<!ELEMENT H-enonce (sections+)>
+<!ELEMENT sections (sectitle, conditionbloc+, sections* )>
+<!ELEMENT conditionbloc (conditions, enonces+)>
+<!ELEMENT enonces (enoncestext, enonceweight)>
+<!ELEMENT sectitle (#PCDATA)>
+<!ELEMENT conditions (#PCDATA)>
+<!ELEMENT enoncestext (#PCDATA)>
+<!ELEMENT enonceweight (#PCDATA)>
+
+
+<!-- provide themes -->
+<!ELEMENT I-providesthemes (providesthemes+ )>
+<!ELEMENT providesthemes (themename, ispro?, providescategory+ )>
+<!ELEMENT themename (#PCDATA) >
+<!ELEMENT ispro (#PCDATA) >
+<!ELEMENT providescategory (categorycodename, categorytitle, categorysubtitlesen, categorysubtitleses?, categorysubtitlespl?, categorysubtitlesfr, categorysubtitlesde?, categorysubtitlesvi?, categorysubtitlespt?, categorysubtitleshe?, categorysubtitlesar?, provides+ )>
+<!ELEMENT categorycodename (#PCDATA)>
+<!ELEMENT categorytitle (#PCDATA)>
+<!ELEMENT categorysubtitlespl (#PCDATA)>
+<!ELEMENT categorysubtitlesfr (#PCDATA)>
+<!ELEMENT categorysubtitleses (#PCDATA)>
+<!ELEMENT categorysubtitlesde (#PCDATA)>
+<!ELEMENT categorysubtitlesen (#PCDATA)>
+<!ELEMENT categorysubtitlesvi (#PCDATA)>
+<!ELEMENT categorysubtitlespt (#PCDATA)>
+<!ELEMENT categorysubtitleshe (#PCDATA)>
+<!ELEMENT categorysubtitlesar (#PCDATA)>
+
+
+<!-- faq elements -->
+<!ELEMENT J-FAQ (theme+)>
+<!ELEMENT theme (themees?, themepl?, themefr, themeen, themede?, themevi?, themept?, faqitem+)>
+<!ELEMENT themepl (#PCDATA)>
+<!ELEMENT themefr (#PCDATA)>
+<!ELEMENT themees (#PCDATA)>
+<!ELEMENT themeen (#PCDATA)>
+<!ELEMENT themede (#PCDATA)>
+<!ELEMENT themevi (#PCDATA)>
+<!ELEMENT themept (#PCDATA)>
+<!ELEMENT faqitem (faqitemes?, faqitempl?, faqitemfr, faqitemen, faqitemde?, faqitemvi?, faqitempt?)>
+<!ELEMENT faqitempl (faqquestionpl, faqanswerpl)>
+<!ELEMENT faqitemfr (faqquestionfr, faqanswerfr)> 
+<!ELEMENT faqitemes (faqquestiones, faqansweres)> 
+<!ELEMENT faqitemen (faqquestionen, faqansweren)> 
+<!ELEMENT faqitemde (faqquestionde, faqanswerde)> 
+<!ELEMENT faqitemvi (faqquestionvi, faqanswervi)> 
+<!ELEMENT faqitempt (faqquestionpt, faqanswerpt)> 
+<!ELEMENT faqquestionfr (#PCDATA)>
+<!ELEMENT faqquestionpl (#PCDATA)>
+<!ELEMENT faqquestiones (#PCDATA)>
+<!ELEMENT faqquestionen (#PCDATA)>
+<!ELEMENT faqquestionde (#PCDATA)>
+<!ELEMENT faqquestionvi (#PCDATA)>
+<!ELEMENT faqquestionpt (#PCDATA)>
+<!ELEMENT faqanswerfr (#PCDATA)>
+<!ELEMENT faqanswerpl (#PCDATA)>
+<!ELEMENT faqansweres (#PCDATA)>
+<!ELEMENT faqansweren (#PCDATA)>
+<!ELEMENT faqanswerde (#PCDATA)>
+<!ELEMENT faqanswervi (#PCDATA)>
+<!ELEMENT faqanswerpt (#PCDATA)>
+
+
+
+<!-- FILL-IN-THE-CHOICE -->
+<!ELEMENT fic (question, bracket+)>
+<!ATTLIST fic idtest ID #IMPLIED>
+
+<!ELEMENT bracket (number, testexample, correct-fic+, bad-fic+, dontknow-fic?)>
+<!ATTLIST bracket idbracket ID #IMPLIED>
+
+<!ELEMENT correct-fic (defaultifambiguous?,choice, covers, correction, infobulle?, choiceorder?)>
+<!ATTLIST correct-fic idchoice ID #IMPLIED>
+
+<!ELEMENT bad-fic (choice, covers, correction, infobulle?, choiceorder?)>
+<!ATTLIST bad-fic idchoice ID #IMPLIED>
+
+<!ELEMENT dontknow-fic (choice, covers, correction)>
+<!ATTLIST dontknow-fic idchoice ID #IMPLIED>
+
+<!-- If the bracket has multiple good answers, the one with YES in this field is the default answer -->
+<!ELEMENT defaultifambiguous (#PCDATA)>
+
+<!ELEMENT strictcorrection (#PCDATA)>
+
+<!-- DICTATION -->
+<!ELEMENT dictation (question, strictcorrection?, bunch-of-mod-brackets+)>
+<!ATTLIST dictation idtest ID #IMPLIED>
+
+<!ELEMENT bunch-of-mod-brackets (bunchnumber, mod-bracket+)>
+<!ATTLIST bunch-of-mod-brackets idbunchofmodbrackets ID #IMPLIED>
+<!ELEMENT bunchnumber (#PCDATA)>
+
+<!-- CONJUGATION -->
+<!ELEMENT conjugation (question, quote-of-the-test?, conjugationgrid+)>
+<!ATTLIST conjugation idtest ID #IMPLIED>
+
+<!ELEMENT quote-of-the-test (#PCDATA)>
+
+<!ELEMENT conjugationgrid (quote-of-the-grid?, conj-formatting?, lineofgrid+)>
+<!ATTLIST conjugationgrid idconjugationgrid ID #IMPLIED>
+
+<!ELEMENT quote-of-the-grid (#PCDATA)>
+<!ELEMENT conj-formatting (#PCDATA)>
+
+<!ELEMENT lineofgrid (conjugationgridcover, covers)> <!-- Cover which is tested -->
+<!ATTLIST lineofgrid idlineofgrid ID #IMPLIED>
+
+<!ELEMENT conjugationgridcover (#PCDATA)>
+
+<!-- MODIFICATION/FILL-IN-THE-BLANK -->
+<!-- Note: For FILL-IN-THE-BLANK raw field is empty --> 
+<!ELEMENT mod (question, strictcorrection?, mod-bracket+)>
+<!ATTLIST mod idtest ID #IMPLIED>
+
+<!ELEMENT mod-bracket (number, raw, (wheel-of-fortune | drag-and-drop)?, testexample, infobulle?, correct-mod+, almostgood-mod*, possible-mistake*)>
+<!ATTLIST mod-bracket idbracket ID #IMPLIED>
+
+<!-- If the mod-bracket has the wheel-of-fortune tag (regardless of content), 
+     this is a wheel of fortune bracket. -->
+<!ELEMENT wheel-of-fortune (#PCDATA)> 
+<!ELEMENT drag-and-drop (#PCDATA)> 
+
+<!ELEMENT correct-mod (defaultifambiguous?,choice, covers, correction, infobulle?)>
+<!ATTLIST correct-mod idchoice ID #IMPLIED>
+
+<!ELEMENT almostgood-mod (choice, covers, correction, infobulle?)>
+<!ATTLIST almostgood-mod idchoice ID #IMPLIED>
+
+<!ELEMENT possible-mistake (choice, covers, correction, infobulle?, testexample)>
+<!ATTLIST possible-mistake idchoice ID #IMPLIED>
+
+<!ELEMENT raw (#PCDATA)>
+
+<!-- QCM BRACKET -->
+<!ELEMENT qcm-bracket (number, showallcorrections?, layout?, correct-qcm, bad-qcm+, dontknow-qcm?, testexample)>
+<!ATTLIST qcm-bracket idbracket ID #IMPLIED>
+
+<!-- autotest-bracket to be used in Frantastique for "sensibilisation", and behaves a little like a vocab autotest  -->
+<!ELEMENT autotest-bracket (number, correction?, infobulle?, autotest-choice-knew-it, autotest-choice-different-translation, autotest-choice-did-not-know, testexample, wordkc+)>
+<!ATTLIST autotest-bracket idbracket ID #IMPLIED>
+
+<!-- Displays a choice (radio) with the label: I know / Je sais -->
+<!ELEMENT autotest-choice-knew-it (covers, correction, infobulle?)>
+<!ATTLIST autotest-choice-knew-it idchoice ID #IMPLIED>
+
+<!-- Displays a choice (radio) with the label: I have a different translation / J'ai une autre traduction -->
+<!ELEMENT autotest-choice-different-translation (covers?, correction, infobulle?)>
+<!ATTLIST autotest-choice-different-translation idchoice ID #IMPLIED>
+
+<!-- Displays a choice (radio) with the label: I don't know / Je ne sais pas -->
+<!ELEMENT autotest-choice-did-not-know (covers?, correction, infobulle?)>
+<!ATTLIST autotest-choice-did-not-know idchoice ID #IMPLIED>
+
+<!-- FOCK -->
+<!ELEMENT fock (switchcard?, question, (bracket | mod-bracket | qcm-bracket | autotest-bracket)+)>
+<!ATTLIST fock idtest ID #IMPLIED>
+<!ELEMENT switchcard (#PCDATA)>
+
+<!ELEMENT only-as-fic (#PCDATA)>
+<!ELEMENT only-as-mod (#PCDATA)>
+<!-- CGFOCK - Computed Generated FOCK test -->
+<!ELEMENT cgfock (question, only-as-fic?, only-as-mod?, mod-bracket+)>
+<!ATTLIST cgfock idtest ID #IMPLIED>
+
+<!-- VOTEQCM -->
+<!ELEMENT voteqcm (question, resultsintroimage?, resultsintro, vote-choice+)>
+<!ATTLIST voteqcm idtest ID #IMPLIED>
+<!ELEMENT resultsintroimage (#PCDATA)>
+<!ELEMENT resultsintro (#PCDATA)>
+<!ELEMENT winnermessage (#PCDATA)>
+<!ELEMENT vote-choice (choice, correction, winnermessage, choiceorder?)>
+<!ATTLIST vote-choice idchoice ID #IMPLIED>
+
+
+<!--          COMMON ELEMENTS        -->
+<!ELEMENT instructions (#PCDATA)>
+
+
+<!-- TEST -->
+<!ENTITY % media "file-name, extract-text?, file-name-slow?, copyright-information?, infobulle?, video-play-by-default?, video-medium-size-instead-of-mini?, video-standby-image?, video-standby-image-end?, video-try-to-show-subtitles?" >
+<!ELEMENT copyright-information (#PCDATA)>
+<!ELEMENT video-play-by-default (#PCDATA)>
+<!ELEMENT video-medium-size-instead-of-mini (#PCDATA)>
+<!ELEMENT video-standby-image (#PCDATA)>
+<!ELEMENT video-standby-image-end (#PCDATA)>
+<!ELEMENT video-try-to-show-subtitles (#PCDATA)>
+
+<!ELEMENT media-01 (%media;)> 
+<!ELEMENT media-02 (%media;)> 
+<!ELEMENT media-03 (%media;)> 
+<!ELEMENT media-04 (%media;)> 
+<!ELEMENT media-05 (%media;)> 
+<!ELEMENT media-06 (%media;)> 
+<!ELEMENT media-07 (%media;)> 
+<!ELEMENT media-08 (%media;)> 
+<!ELEMENT media-09 (%media;)> 
+<!ELEMENT media-10 (%media;)> 
+<!ELEMENT media-11 (%media;)> 
+<!ELEMENT media-12 (%media;)> 
+<!ELEMENT media-13 (%media;)> 
+<!ELEMENT media-14 (%media;)> 
+<!ELEMENT media-15 (%media;)> 
+<!ELEMENT media-16 (%media;)> 
+<!ELEMENT media-17 (%media;)> 
+<!ELEMENT media-18 (%media;)> 
+<!ELEMENT media-19 (%media;)> 
+<!ELEMENT media-20 (%media;)> 
+
+<!ELEMENT media-above-text    (%media;)>
+<!ELEMENT media-below-text    (%media;)>
+<!ELEMENT media-left-of-text  (%media;)>
+<!ELEMENT media-right-of-text (%media;)>
+
+<!ATTLIST media-01 id-content-media ID #IMPLIED>
+<!ATTLIST media-02 id-content-media ID #IMPLIED> 
+<!ATTLIST media-03 id-content-media ID #IMPLIED> 
+<!ATTLIST media-04 id-content-media ID #IMPLIED> 
+<!ATTLIST media-05 id-content-media ID #IMPLIED> 
+<!ATTLIST media-06 id-content-media ID #IMPLIED> 
+<!ATTLIST media-07 id-content-media ID #IMPLIED> 
+<!ATTLIST media-08 id-content-media ID #IMPLIED> 
+<!ATTLIST media-09 id-content-media ID #IMPLIED> 
+<!ATTLIST media-10 id-content-media ID #IMPLIED> 
+<!ATTLIST media-11 id-content-media ID #IMPLIED> 
+<!ATTLIST media-12 id-content-media ID #IMPLIED> 
+<!ATTLIST media-13 id-content-media ID #IMPLIED> 
+<!ATTLIST media-14 id-content-media ID #IMPLIED> 
+<!ATTLIST media-15 id-content-media ID #IMPLIED> 
+<!ATTLIST media-16 id-content-media ID #IMPLIED> 
+<!ATTLIST media-17 id-content-media ID #IMPLIED> 
+<!ATTLIST media-18 id-content-media ID #IMPLIED> 
+<!ATTLIST media-19 id-content-media ID #IMPLIED> 
+<!ATTLIST media-20 id-content-media ID #IMPLIED> 
+
+<!ATTLIST media-above-text    id-content-media ID #IMPLIED>
+<!ATTLIST media-below-text    id-content-media ID #IMPLIED>
+<!ATTLIST media-left-of-text  id-content-media ID #IMPLIED>
+<!ATTLIST media-right-of-text id-content-media ID #IMPLIED>
+
+<!ELEMENT test-media (media-01,
+                      media-02?,
+                      media-03?,
+                      media-04?,
+                      media-05?,
+                      media-06?,
+                      media-07?,
+                      media-08?,
+                      media-09?,
+                      media-10?,
+                      media-11?,
+                      media-12?,
+                      media-13?,
+                      media-14?,
+                      media-15?,
+                      media-16?,
+                      media-17?,
+                      media-18?,
+                      media-19?,
+                      media-20?)>
+
+<!-- For qcm & mqm, an image at the left of whole test. -->
+<!ELEMENT left-media (%media;)>
+<!-- Share the same id than test-media -->
+<!ATTLIST left-media id-content-media ID #IMPLIED>
+
+<!ELEMENT wordkc-media (wordkc-media-status?, audio-fr_FR?, audio-fr_CA?)>
+<!ELEMENT audio-fr_FR (%media;)>
+<!ATTLIST audio-fr_FR id-content-media ID #IMPLIED>
+<!ELEMENT audio-fr_CA (%media;)>
+<!ATTLIST audio-fr_CA id-content-media ID #IMPLIED>
+<!ELEMENT wordkc-media-status (not-wanted?, to-rerecord-fr_FR?, to-rerecord-fr_CA?)>
+<!ELEMENT not-wanted EMPTY>
+<!ELEMENT to-rerecord-fr_FR EMPTY>
+<!ELEMENT to-rerecord-fr_CA EMPTY>
+
+<!-- Used in test to know if this test can't be shown after a module -->
+<!ELEMENT not-after-module (#PCDATA)>
+<!ELEMENT only-after-module (#PCDATA)>
+
+<!-- This tag tells a9expert that the texttest should be displayed in
+the section with Placement and BOT tests at the end of the lesson, and
+not with the texttests. -->
+<!ELEMENT display-in-extra-tests-section (#PCDATA)>
+
+<!-- Used to consider a test as an pedagogical exercise of conjugation -->
+<!ELEMENT counts-as-conjugation (#PCDATA)>
+
+<!-- media (video or image) file-name. -->
+<!ELEMENT file-name (#PCDATA)>
+<!ELEMENT file-name-slow (#PCDATA)>
+<!ELEMENT extract-text (#PCDATA)>
+
+<!ELEMENT test     (not-after-module?, only-after-module?, counts-as-conjugation?, provides, activity-title-rms?, test-instruction?, level, left-media?, test-media?, test-help?, (qcm | mqm | fic | mod | fock | dictation | conjugation | cgfock ))> 
+<!ELEMENT texttest (testorder, display-in-extra-tests-section?, counts-as-conjugation?, allow-recycling-without-text?, activity-title-rms?, test-instruction?, level, left-media?, test-media?, test-help?, notes-for-CW?, (qcm | mqm | fic | mod | voteqcm | fock | dictation | conjugation | cgfock ))>
+<!ELEMENT allow-recycling-without-text (#PCDATA)>
+<!ELEMENT provides (#PCDATA)>
+<!ELEMENT level (#PCDATA)>
+
+<!-- Notes by content writers, not to be put in DB. -->
+<!ELEMENT notes-for-CW (#PCDATA)>
+
+<!ELEMENT testexample (#PCDATA)>
+<!ATTLIST testexample idsexyexample ID #IMPLIED>
+
+<!-- Titles for tests and others. -->
+<!ELEMENT activity-title-rms       (%i18n-text;, icon, infobulle?)>
+<!ELEMENT test-instruction (instruction-en, infobulle)>
+<!ELEMENT instruction-en (#PCDATA)>
+
+<!-- infobulle everywhere in Rich Morning Show build as a -->
+<!ELEMENT infobulle (%i18n-text-infobulle;)>
+
+
+<!-- Contains a code name that refers to an help topic in a dedicated help file. -->
+<!ELEMENT test-help (#PCDATA)>
+
+<!ELEMENT source-en (#PCDATA)>
+<!ELEMENT source-fr (#PCDATA)>
+<!ELEMENT text-pl   (#PCDATA)>
+<!ELEMENT text-en   (#PCDATA)>
+<!ELEMENT text-es   (#PCDATA)>
+<!ELEMENT text-fr   (#PCDATA)>
+<!ELEMENT text-de   (#PCDATA)>
+<!ELEMENT text-vi   (#PCDATA)>
+<!ELEMENT text-pt   (#PCDATA)>
+<!ELEMENT text-ru   (#PCDATA)>
+<!ELEMENT text-he   (#PCDATA)>
+<!ELEMENT text-ar   (#PCDATA)>
+
+<!ELEMENT icon (file-name)>
+
+<!-- QCM/FIC -->
+<!ELEMENT choice (#PCDATA)>
+<!ELEMENT choiceorder (#PCDATA)>
+
+<!-- QCM/FIC/MOD -->
+<!ELEMENT covers (#PCDATA)>
+<!ELEMENT correction (#PCDATA)>
+<!ELEMENT question (qen, qen-recycling-no-context?)>
+<!-- For Rich Morning Show, contains also the information about the layout of the test in a dedicated mark up language. -->
+<!ELEMENT qen (#PCDATA)>
+<!-- qen-recycling-no-context: 2012-08-06 not yet in DB, to be used for recycling tests, see #1298 -->
+<!ELEMENT qen-recycling-no-context (#PCDATA)>
+
+<!-- MOD/FIC -->
+<!ELEMENT number (#PCDATA)>
+
+
+
+<!-- MAILS -->
+<!ELEMENT K-MAIL (groupsofmails+)>
+<!ELEMENT groupsofmails (sectionname, groupsofmails*, salesemail+)>
+<!ELEMENT sectionname (#PCDATA)>
+<!ELEMENT salesemail (tekostitle, emailtitle, subject, html_template_file?, content, from?, fromes?, frompl?, fromfr?, fromen?, fromde?, fromvi?, fromsv?, fromnl?, fromko?, frompt?, fromru?, fromhe?, fromar?, replyto?, cc*, bcc*, internalGGto*, attachment?)>
+<!ELEMENT tekostitle (#PCDATA)>
+<!ELEMENT emailtitle (#PCDATA)>
+<!ELEMENT from (#PCDATA)>
+<!ELEMENT fromes (#PCDATA)>
+<!ELEMENT frompl (#PCDATA)>
+<!ELEMENT fromfr (#PCDATA)>
+<!ELEMENT fromen (#PCDATA)>
+<!ELEMENT fromde (#PCDATA)>
+<!ELEMENT fromvi (#PCDATA)>
+<!ELEMENT fromsv (#PCDATA)>
+<!ELEMENT fromnl (#PCDATA)>
+<!ELEMENT fromko (#PCDATA)>
+<!ELEMENT frompt (#PCDATA)>
+<!ELEMENT fromru (#PCDATA)>
+<!ELEMENT fromhe (#PCDATA)>
+<!ELEMENT fromar (#PCDATA)>
+<!ELEMENT replyto (#PCDATA)>
+<!ELEMENT cc (#PCDATA)>
+<!ELEMENT bcc (#PCDATA)>
+<!-- If the mail has a fixed destination (not to user), we can set it in internalGGto -->
+<!ELEMENT internalGGto (#PCDATA)>
+<!ELEMENT attachment (attachmentes*, attachmentpl*, attachmentfr*, attachmenten*, attachmentde*, attachmentvi*, attachmentsv*, attachmentnl*, attachmentko*, attachmentpt*, attachmentru*, attachmenthe*, attachmentar*)>
+<!ELEMENT subject (subjectes?, subjectpl?, subjectfr?, subjecten?, subjectde?, subjectvi?, subjectsv?, subjectnl?, subjectko?, subjectpt?, subjectru?, subjecthe?, subjectar?)>
+<!-- Separate templates like this: (gymglish_default_template.html.tmpl | rms_default_template.html.tmpl) -->
+<!ELEMENT html_template_file (gymglish_default_template.html.tmpl | rms_default_template.html.tmpl | gymglish_communique_presse_template_fr.html.tmpl | gymglish_communique_presse_news_update_template_fr.html.tmpl | medeiform_default_template.html.tmpl | biblegym_default_template.html.tmpl | gymglish_supinfo_template.html.tmpl | biblegym_mybiblememo_template.html.tmpl | frantastique_template.html.tmpl | default_template.html.tmpl)>
+<!ELEMENT content (html_content_filees?, richtext_content_es?, richtext_footer_es?, contentes?,
+                   html_content_filepl?, richtext_content_pl?, richtext_footer_pl?, contentpl?,
+                   html_content_filefr?, richtext_content_fr?, richtext_footer_fr?, contentfr?, 
+                   html_content_fileen?, richtext_content_en?, richtext_footer_en?, contenten?, 
+                   html_content_filede?, richtext_content_de?, richtext_footer_de?, contentde?, 
+                   html_content_filevi?, richtext_content_vi?, richtext_footer_vi?, contentvi?, 
+                   html_content_filesv?, richtext_content_sv?, richtext_footer_sv?, contentsv?, 
+                   html_content_filenl?, richtext_content_nl?, richtext_footer_nl?, contentnl?, 
+                   html_content_fileko?, richtext_content_ko?, richtext_footer_ko?, contentko?,
+                   html_content_filept?, richtext_content_pt?, richtext_footer_pt?, contentpt?,
+                   html_content_fileru?, richtext_content_ru?, richtext_footer_ru?, contentru?,
+                   html_content_filehe?, richtext_content_he?, richtext_footer_he?, contenthe?,
+                   html_content_filear?, richtext_content_ar?, richtext_footer_ar?, contentar?)>
+<!ELEMENT attachmentes (#PCDATA)>
+<!ELEMENT attachmentpl (#PCDATA)>
+<!ELEMENT attachmentfr (#PCDATA)>
+<!ELEMENT attachmenten (#PCDATA)>
+<!ELEMENT attachmentde (#PCDATA)>
+<!ELEMENT attachmentvi (#PCDATA)>
+<!ELEMENT attachmentsv (#PCDATA)>
+<!ELEMENT attachmentnl (#PCDATA)>
+<!ELEMENT attachmentko (#PCDATA)>
+<!ELEMENT attachmentpt (#PCDATA)>
+<!ELEMENT attachmentru (#PCDATA)>
+<!ELEMENT attachmenthe (#PCDATA)>
+<!ELEMENT attachmentar (#PCDATA)>
+<!ELEMENT subjectes (#PCDATA)>
+<!ELEMENT subjectpl (#PCDATA)>
+<!ELEMENT subjectfr (#PCDATA)>
+<!ELEMENT subjecten (#PCDATA)>
+<!ELEMENT subjectde (#PCDATA)>
+<!ELEMENT subjectvi (#PCDATA)>
+<!ELEMENT subjectsv (#PCDATA)>
+<!ELEMENT subjectnl (#PCDATA)>
+<!ELEMENT subjectko (#PCDATA)>
+<!ELEMENT subjectpt (#PCDATA)>
+<!ELEMENT subjectru (#PCDATA)>
+<!ELEMENT subjecthe (#PCDATA)>
+<!ELEMENT subjectar (#PCDATA)>
+<!ELEMENT html_content_filees (#PCDATA)>
+<!ELEMENT html_content_filepl (#PCDATA)>
+<!ELEMENT html_content_filefr (#PCDATA)>
+<!ELEMENT html_content_fileen (#PCDATA)>
+<!ELEMENT html_content_filede (#PCDATA)>
+<!ELEMENT html_content_filevi (#PCDATA)>
+<!ELEMENT html_content_filesv (#PCDATA)>
+<!ELEMENT html_content_filenl (#PCDATA)>
+<!ELEMENT html_content_fileko (#PCDATA)>
+<!ELEMENT html_content_filept (#PCDATA)>
+<!ELEMENT html_content_fileru (#PCDATA)>
+<!ELEMENT html_content_filehe (#PCDATA)>
+<!ELEMENT html_content_filear (#PCDATA)>
+<!ELEMENT richtext_content_es (#PCDATA)>
+<!ELEMENT richtext_content_pl (#PCDATA)>
+<!ELEMENT richtext_content_fr (#PCDATA)>
+<!ELEMENT richtext_content_en (#PCDATA)>
+<!ELEMENT richtext_content_de (#PCDATA)>
+<!ELEMENT richtext_content_vi (#PCDATA)>
+<!ELEMENT richtext_content_sv (#PCDATA)>
+<!ELEMENT richtext_content_nl (#PCDATA)>
+<!ELEMENT richtext_content_ko (#PCDATA)>
+<!ELEMENT richtext_content_pt (#PCDATA)>
+<!ELEMENT richtext_content_ru (#PCDATA)>
+<!ELEMENT richtext_content_he (#PCDATA)>
+<!ELEMENT richtext_content_ar (#PCDATA)>
+<!ELEMENT richtext_footer_es (#PCDATA)>
+<!ELEMENT richtext_footer_pl (#PCDATA)>
+<!ELEMENT richtext_footer_fr (#PCDATA)>
+<!ELEMENT richtext_footer_en (#PCDATA)>
+<!ELEMENT richtext_footer_de (#PCDATA)>
+<!ELEMENT richtext_footer_vi (#PCDATA)>
+<!ELEMENT richtext_footer_sv (#PCDATA)>
+<!ELEMENT richtext_footer_nl (#PCDATA)>
+<!ELEMENT richtext_footer_ko (#PCDATA)>
+<!ELEMENT richtext_footer_pt (#PCDATA)>
+<!ELEMENT richtext_footer_ru (#PCDATA)>
+<!ELEMENT richtext_footer_he (#PCDATA)>
+<!ELEMENT richtext_footer_ar (#PCDATA)>
+<!ELEMENT contentes (#PCDATA)>
+<!ELEMENT contentpl (#PCDATA)>
+<!ELEMENT contentfr (#PCDATA)>
+<!ELEMENT contenten (#PCDATA)>
+<!ELEMENT contentde (#PCDATA)>
+<!ELEMENT contentvi (#PCDATA)>
+<!ELEMENT contentsv (#PCDATA)>
+<!ELEMENT contentnl (#PCDATA)>
+<!ELEMENT contentko (#PCDATA)>
+<!ELEMENT contentpt (#PCDATA)>
+<!ELEMENT contentru (#PCDATA)>
+<!ELEMENT contenthe (#PCDATA)>
+<!ELEMENT contentar (#PCDATA)>
+
+<!ELEMENT gymglish_default_template.html.tmpl (#PCDATA)>
+<!ELEMENT rms_default_template.html.tmpl (#PCDATA)>
+<!ELEMENT medeiform_default_template.html.tmpl (#PCDATA)>
+<!ELEMENT biblegym_default_template.html.tmpl (#PCDATA)>
+<!ELEMENT biblegym_mybiblememo_template.html.tmpl (#PCDATA)>
+<!ELEMENT gymglish_supinfo_template.html.tmpl (#PCDATA)>
+<!ELEMENT gymglish_communique_presse_template_fr.html.tmpl (#PCDATA)>
+<!ELEMENT gymglish_communique_presse_news_update_template_fr.html.tmpl (#PCDATA)>
+<!ELEMENT frantastique_template.html.tmpl (#PCDATA)>
+<!ELEMENT default_template.html.tmpl (#PCDATA)>
+
+<!-- Enonces for introduction of sections -->
+<!ELEMENT L-correction-score-message (L-condition+)>
+<!ELEMENT L-condition (range, enoncestext+)>
+<!-- range should be like '85%-99%' or 'xx%' or 'x%' or '100%' (values between 0 and 100!) -->
+<!ELEMENT range (#PCDATA)>
+
+
+<!-- Show RMS -->
+<!ELEMENT M-show-rms (show-number, displaytitle, tutoriallesson?, lesson-video, epi18n?, episodesummary, teaser-video, rms-script)>
+<!ATTLIST M-show-rms idsexytext ID #IMPLIED>
+
+<!-- Script for RMS show -->
+<!ELEMENT rms-script (scripttext, rms-show-test*)>
+<!ATTLIST rms-script idscript ID #IMPLIED>
+
+<!-- The number of the RMS lesson. lesson 2: number => 2    
+     Also contains the idepisode  -->
+<!ELEMENT show-number (#PCDATA)>
+<!ATTLIST show-number idepisode  ID #IMPLIED>
+<!ELEMENT lesson-video  (file-name, notes-for-CW)>
+<!ELEMENT teaser-video (%media;)>
+<!ATTLIST teaser-video id-content-media ID #IMPLIED>
+
+<!-- RMS tests: text test but with some age boundaries. -->
+<!ELEMENT rms-show-test (only-if-age?, only-if-level?, engine-can-remove-test?, texttest)>
+<!ELEMENT rms-bot-test (only-if-age?, only-if-level?, engine-can-remove-test?, test)>
+
+<!-- Age condition. 
+     example: <7, >6 -->
+<!ELEMENT only-if-age   (#PCDATA)>
+
+<!-- Level condition. 
+     example: >1.5, <4 -->
+<!ELEMENT only-if-level (#PCDATA)>
+
+<!-- No required content, it just has to exist. 
+     This means that the test is not mandatory. -->
+<!ELEMENT engine-can-remove-test (#PCDATA)>
+
+<!-- Repeat after rich priority : from 0 to 1000 -->
+<!ELEMENT repeatafterrichpriority (#PCDATA)>
+
+<!-- Rich Morning Show vocabulary modules. -->
+<!ELEMENT N-vocabulary-rms (activity-title-rms,
+                            topic,
+                            forms,
+                            excludedforms,
+                            keywords,
+                            also-trigger-on-error?,
+                            comment,
+                            learn-more-options?,
+                            pronunciationscript?,
+                            left-media?, 
+                            test-media, 
+                            layout,
+                            repeatafterrichpriority?,
+                            wordkc+)>
+
+<!ATTLIST N-vocabulary-rms idvocabmodule ID #IMPLIED>
+
+<!ELEMENT topic                 (#PCDATA)>
+<!ELEMENT also-trigger-on-error (#PCDATA)>
+<!ELEMENT learn-more-options    (#PCDATA)>
+<!ELEMENT layout                (#PCDATA)>
+
+<!-- Rich Morning Show grammar modules. -->
+<!ELEMENT O-grammar-rms (activity-title-rms,
+                         topic,
+                         forms,
+                         excludedforms,
+                         keywords,
+                         also-trigger-on-error?,
+                         comment,
+                         learn-more-options?,
+                         pronunciationscript?,
+                         left-media?,
+                         test-media,
+                         layout,
+                         wordkc+)>
+
+<!-- NOTE: We use idvocabmodule for RichMorning Grammar! -->
+<!ATTLIST O-grammar-rms idvocabmodule ID #IMPLIED>
+
+<!-- Rich Morning Show specific Key Concept. 
+     kc order is 1 by default in the objects/database since there is only one kc-v2 in an O-grammar-rms.  -->
+<!ELEMENT kc-v2 (%i18n-text;, starter)>
+<!ATTLIST kc-v2 idkc ID #IMPLIED>
+
+<!-- BUNCH OF TESTS (BOT) -->
+<!ELEMENT P-bot-rms (instructions, rms-bot-test*)>
+
+<!-- Website quotation -->
+<!ELEMENT Q-quotation (quotation+)>
+<!ELEMENT quotation (quote,signature)>
+<!ELEMENT quote (#PCDATA)>
+<!ELEMENT signature (#PCDATA)>
+
+
+<!-- GFGS informations -->
+<!ELEMENT gfgs (literarywork, author, date-of-literarywork, original-lang-of-literarywork, nationality-of-author, intro-extract, outro-extract, extra-extract?, cafe-gourmand-translated?, full-extract?, activity-title?, activity-icon?, is-quote-of-the-day?)>
+<!ELEMENT literarywork (#PCDATA)>
+<!ELEMENT author (#PCDATA)>
+<!ELEMENT date-of-literarywork (#PCDATA)>
+<!ELEMENT original-lang-of-literarywork (#PCDATA)>
+<!ELEMENT nationality-of-author (#PCDATA)>
+<!ELEMENT intro-extract (#PCDATA)>
+<!ELEMENT outro-extract (#PCDATA)>
+<!ELEMENT extra-extract (#PCDATA)>
+<!ELEMENT cafe-gourmand-translated (%i18n-text;)>
+<!ELEMENT full-extract (#PCDATA)>
+<!ELEMENT activity-title (#PCDATA)>
+<!ELEMENT activity-icon (#PCDATA)>
+<!ELEMENT is-quote-of-the-day (#PCDATA)>
+
+
+<!-- VTFC phrases -->
+<!ELEMENT ZZ-vtfc-verb-phrases (vtfc-item+)>
+<!ELEMENT vtfc-item (vtfc-verb, vtfc-phrase+)>
+<!ELEMENT vtfc-verb (#PCDATA)>
+<!ELEMENT vtfc-phrase (#PCDATA)>
