@@ -16,13 +16,21 @@ from .security import RootFactory
 # Add the modules you want to be include in the config
 views_modules = [
     ('waxe.core.views.index', False, ''),
-    ('waxe.core.views.editor', True, ''),
     ('waxe.core.views.explorer', True, ''),
 ]
 
 
+def _get_extra_modules(settings):
+    modules = filter(bool, settings.get('waxe.editors', '').split('\n'))
+    lis = []
+    for mod in modules:
+        lis += [('%s.views.editor' % mod, True, '')]
+    return lis
+
+
 def get_views_modules(settings):
     lis = list(views_modules)
+    lis += _get_extra_modules(settings)
     if 'versioning' in settings:
         lis += [('waxe.core.views.versioning.views', True, 'versioning')]
     return lis

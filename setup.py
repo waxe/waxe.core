@@ -34,7 +34,7 @@ requires = [
     'webhelpers',
 ]
 
-setup(name='waxe',
+setup(name='waxe.core',
       version='0.1',
       description='waxe',
       long_description=README + '\n\n' + CHANGES,
@@ -54,6 +54,7 @@ setup(name='waxe',
       test_suite='nose.collector',
       setup_requires=['nose'],
       install_requires=requires,
+      namespace_packages=['waxe'],
       tests_require=[
           'nose',
           'nose-cov',
@@ -62,7 +63,7 @@ setup(name='waxe',
       ],
       entry_points="""\
       [paste.app_factory]
-      main = waxe:main
+      main = waxe.core:main
       [console_scripts]
       initialize_waxe_db = waxe.scripts.initializedb:main
       """,

@@ -60,6 +60,9 @@ SETTINGS = {
     'authentication.cookie.validate_function': 'waxe.core.security.validate_password',
     'authentication.cookie.callback': 'waxe.core.security.get_user_permissions',
     'dtd_urls': dtd_url,
+    # HACK: in waiting the package are correctly splitted we need the routes
+    # existing
+    'waxe.editors': 'waxe.xml',
 }
 
 SECRET_ADMIN = bcrypt.hashpw('secret_admin', bcrypt.gensalt())
@@ -68,6 +71,8 @@ SECRET_FRED = bcrypt.hashpw('secret_fred', bcrypt.gensalt())
 
 
 class DBTestCase(unittest.TestCase):
+    BOB_RELPATH = 'waxe/core/tests/files'
+
     def setUp(self):
         super(DBTestCase, self).setUp()
         engine = create_engine('sqlite://')
@@ -87,7 +92,7 @@ class DBTestCase(unittest.TestCase):
         self.user_bob.roles = [self.role_admin]
         DBSession.add(self.user_bob)
         self.user_bob.config = UserConfig(
-            root_path=os.path.join(os.getcwd(), 'waxe/core/tests/files')
+            root_path=os.path.join(os.getcwd(), self.BOB_RELPATH)
         )
 
         self.user_fred = User(login='Fred', password=SECRET_FRED)
@@ -127,7 +132,9 @@ class LoggedBobTestCase(BaseTestCase):
 class WaxeTestCase(DBTestCase):
 
     def setUp(self):
-        self.settings = SETTINGS.copy()
+        if not hasattr(self, 'settings'):
+            self.settings = SETTINGS.copy()
+
         app = main({}, **self.settings)
         app = twc.middleware.TwMiddleware(app)
         self.testapp = TestApp(app)
