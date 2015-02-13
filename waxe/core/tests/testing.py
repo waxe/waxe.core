@@ -42,23 +42,23 @@ def local_login_user(login):
     def deco(func):
         @wraps(func)
         def wrapper(*args, **kw):
-            with patch('waxe.security.unauthenticated_userid',
+            with patch('waxe.core.security.unauthenticated_userid',
                        return_value=login):
                 func(*args, **kw)
         return wrapper
     return deco
 
-path = os.path.join(os.getcwd(), 'waxe/tests/files')
+path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
 dtd_url = os.path.join(path, 'exercise.dtd')
 
 SETTINGS = {
     'sqlalchemy.url': 'sqlite://',
     'authentication.cookie.secret': 'secret',
-    'mako.directories': 'waxe:templates',
+    'mako.directories': 'waxe.core:templates',
     'session.key': 'session_key',
     'pyramid.includes': ['pyramid_auth', 'pyramid_sqladmin', 'pyramid_mako'],
-    'authentication.cookie.validate_function': 'waxe.security.validate_password',
-    'authentication.cookie.callback': 'waxe.security.get_user_permissions',
+    'authentication.cookie.validate_function': 'waxe.core.security.validate_password',
+    'authentication.cookie.callback': 'waxe.core.security.get_user_permissions',
     'dtd_urls': dtd_url,
 }
 
@@ -87,7 +87,7 @@ class DBTestCase(unittest.TestCase):
         self.user_bob.roles = [self.role_admin]
         DBSession.add(self.user_bob)
         self.user_bob.config = UserConfig(
-            root_path=os.path.join(os.getcwd(), 'waxe/tests/files')
+            root_path=os.path.join(os.getcwd(), 'waxe/core/tests/files')
         )
 
         self.user_fred = User(login='Fred', password=SECRET_FRED)
@@ -108,7 +108,7 @@ class BaseTestCase(DBTestCase):
         super(BaseTestCase, self).setUp()
         self.config = testing.setUp()
         self.config.registry.settings.update({
-            'mako.directories': 'waxe:templates',
+            'mako.directories': 'waxe.core:templates',
         })
         self.config.include('pyramid_mako')
 

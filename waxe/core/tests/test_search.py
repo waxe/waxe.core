@@ -9,7 +9,7 @@ from whoosh import index
 from mock import patch
 
 
-path = os.path.join(os.getcwd(), 'waxe/tests')
+path = os.path.join(os.getcwd(), 'waxe/core/tests')
 filepath = os.path.join(path, 'whoosh')
 indexpath = os.path.join(path, 'whoosh_index')
 

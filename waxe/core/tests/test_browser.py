@@ -7,7 +7,7 @@ import os
 class TestBrowser(unittest.TestCase):
 
     def test_relative_path(self):
-        root_path = os.path.join(os.getcwd(), 'waxe', 'tests', 'files')
+        root_path = os.path.join(os.getcwd(), 'waxe', 'core', 'tests', 'files')
         assert os.path.exists(root_path)
         try:
             relpath = browser.relative_path('.', root_path)
@@ -62,7 +62,7 @@ class TestBrowser(unittest.TestCase):
             self.assertEqual(str(e), "../folder1/file.xml doesn't exist")
 
     def test_get_files(self):
-        root_path = os.path.join(os.getcwd(), 'waxe', 'tests', 'files')
+        root_path = os.path.join(os.getcwd(), 'waxe', 'core', 'tests', 'files')
         abspath = root_path
         folders, filenames = browser.get_files(abspath, root_path=root_path)
         self.assertEqual(folders, [os.path.join(root_path, 'folder1')])
@@ -79,7 +79,7 @@ class TestBrowser(unittest.TestCase):
                                                   'folder1',
                                                   'file2.xml')])
 
-        abspath = os.path.join(os.getcwd(), 'waxe', 'tests', 'files',
+        abspath = os.path.join(os.getcwd(), 'waxe', 'core', 'tests', 'files',
                                'nonexisting')
         try:
             folders, filenames = browser.get_files(abspath, root_path=root_path)
@@ -102,11 +102,12 @@ class TestBrowser(unittest.TestCase):
         self.assertEqual(filenames, ['file1.xml', 'folder1/file2.xml'])
 
     def test_get_all_files(self):
-        root_path = os.path.join(os.getcwd(), 'waxe', 'tests', 'files')
+        root_path = os.path.join(os.getcwd(), 'waxe', 'core', 'tests', 'files')
         abspath = root_path
-        folders, filenames = browser.get_all_files(abspath,
-                                                   root_path=root_path,
-                                                   relative=True,
-                                                  )
+        folders, filenames = browser.get_all_files(
+            abspath,
+            root_path=root_path,
+            relative=True,
+        )
         self.assertEqual(folders, ['folder1'])
         self.assertEqual(filenames, ['file1.xml', 'folder1/file2.xml'])

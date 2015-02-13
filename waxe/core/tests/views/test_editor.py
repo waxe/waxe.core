@@ -7,7 +7,7 @@ from urllib2 import HTTPError
 from lxml import etree
 from ..testing import WaxeTestCase, login_user, LoggedBobTestCase
 
-from waxe.views.editor import (
+from waxe.core.views.editor import (
     EditorView,
     _get_tags,
 )
@@ -16,7 +16,7 @@ from waxe.views.editor import (
 class TestEditorView(LoggedBobTestCase):
 
     def test__get_tags(self):
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         dtd_url = os.path.join(path, 'exercise.dtd')
         res = _get_tags(dtd_url)
         expected = ['Exercise', 'comments', 'mqm', 'qcm', 'test']
@@ -24,7 +24,7 @@ class TestEditorView(LoggedBobTestCase):
 
     def test_edit(self):
         class C(object): pass
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         request = testing.DummyRequest()
         request.matched_route = C()
@@ -125,7 +125,7 @@ class TestEditorView(LoggedBobTestCase):
 
     def test_edit_iframe(self):
         class C(object): pass
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         request = testing.DummyRequest(
             params={'path': 'file1.xml', 'iframe': 1})
@@ -139,7 +139,7 @@ class TestEditorView(LoggedBobTestCase):
 
     def test_edit_text(self):
         class C(object): pass
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         request = testing.DummyRequest()
         request.matched_route = C()
@@ -169,7 +169,7 @@ class TestEditorView(LoggedBobTestCase):
         res = EditorView(request).get_tags()
         self.assertEqual(res, {})
 
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         dtd_url = os.path.join(path, 'exercise.dtd')
         request = testing.DummyRequest(params={'dtd-url': dtd_url})
         res = EditorView(request).get_tags()
@@ -178,7 +178,7 @@ class TestEditorView(LoggedBobTestCase):
 
     def test_new(self):
         class C(object): pass
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         dtd_url = os.path.join(path, 'exercise.dtd')
         request = testing.DummyRequest()
         request.custom_route_path = lambda *args, **kw: '/filepath'
@@ -253,7 +253,7 @@ class TestEditorView(LoggedBobTestCase):
         self.assertTrue(isinstance(res['jstree_data'], str))
 
     def test_update(self):
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         request = testing.DummyRequest(params={})
         res = EditorView(request).update()
@@ -311,7 +311,7 @@ class TestEditorView(LoggedBobTestCase):
             self.assertEqual(res, expected)
 
     def test_update_text(self):
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         request = testing.DummyRequest(params={})
         res = EditorView(request).update_text()
@@ -354,7 +354,7 @@ class TestEditorView(LoggedBobTestCase):
             self.assertTrue('Commit message' in res['content'])
 
     def test_add_element_json(self):
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         request = testing.DummyRequest(params={})
         expected = {'status': False, 'error_msg': 'Bad parameter'}
         res = EditorView(request).add_element_json()
@@ -396,7 +396,7 @@ class TestEditorView(LoggedBobTestCase):
         res = EditorView(request).paste_json()
         self.assertEqual(res, expected)
 
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         dtd_url = os.path.join(path, 'exercise.dtd')
         request = testing.DummyRequest(params={'_xml_dtd_url': dtd_url,
                                                'elt_id': 'Exercise'})
@@ -465,7 +465,7 @@ class FunctionalTestEditorView(WaxeTestCase):
 
     @login_user('Bob')
     def test_edit(self):
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         res = self.testapp.get('/account/Bob/edit.json', status=200)
         expected = '{"error_msg": "A filename should be provided"}'
@@ -491,7 +491,7 @@ class FunctionalTestEditorView(WaxeTestCase):
 
     @login_user('Bob')
     def test_edit_text(self):
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         res = self.testapp.get('/account/Bob/edit-text.json', status=200)
         expected = '{"error_msg": "A filename should be provided"}'
@@ -516,7 +516,7 @@ class FunctionalTestEditorView(WaxeTestCase):
 
     @login_user('Bob')
     def test_get_tags(self):
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         dtd_url = os.path.join(path, 'exercise.dtd')
         self.user_bob.config.root_path = path
         res = self.testapp.get('/account/Bob/get-tags.json', status=200)
@@ -530,7 +530,7 @@ class FunctionalTestEditorView(WaxeTestCase):
 
     @login_user('Bob')
     def test_new(self):
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         res = self.testapp.get('/account/Bob/new.json', status=200)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
@@ -564,7 +564,7 @@ class FunctionalTestEditorView(WaxeTestCase):
 
     @login_user('Bob')
     def test_update(self):
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         res = self.testapp.post('/account/Bob/update.json', status=200)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
@@ -596,7 +596,7 @@ class FunctionalTestEditorView(WaxeTestCase):
 
     @login_user('Bob')
     def test_update_text(self):
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         res = self.testapp.post('/account/Bob/update-text.json', status=200)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
@@ -606,7 +606,7 @@ class FunctionalTestEditorView(WaxeTestCase):
 
     @login_user('Bob')
     def test_add_element_json(self):
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         res = self.testapp.get('/account/Bob/add-element.json', status=200)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
@@ -624,7 +624,7 @@ class FunctionalTestEditorView(WaxeTestCase):
 
     @login_user('Bob')
     def test_get_comment_modal_json(self):
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         res = self.testapp.get('/account/Bob/get-comment-modal.json', status=200)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in

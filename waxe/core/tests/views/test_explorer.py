@@ -2,9 +2,9 @@ import os
 import json
 from pyramid import testing
 from mock import patch
-from waxe.tests.testing import LoggedBobTestCase, WaxeTestCase, login_user
-from waxe.views.explorer import ExplorerView
-import waxe.models as models
+from waxe.core.tests.testing import LoggedBobTestCase, WaxeTestCase, login_user
+from waxe.core.views.explorer import ExplorerView
+import waxe.core.models as models
 
 
 class TestExplorerView(LoggedBobTestCase):
@@ -270,7 +270,7 @@ class TestExplorerView(LoggedBobTestCase):
 
     def test_folder_content(self):
         class C(object): pass
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         request = testing.DummyRequest()
         request.custom_route_path = lambda *args, **kw: '%s/path' % args[0]
@@ -296,7 +296,7 @@ class TestExplorerView(LoggedBobTestCase):
 
     def test_open(self):
         class C(object): pass
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         request = testing.DummyRequest()
         request.custom_route_path = lambda *args, **kw: '/filepath'
@@ -319,7 +319,7 @@ class TestExplorerView(LoggedBobTestCase):
 
     def test_open_template_content(self):
         class C(object): pass
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         self.user_bob.config.root_template_path = os.path.join(
             path,
@@ -356,7 +356,7 @@ class TestExplorerView(LoggedBobTestCase):
 
     def test_open_template(self):
         class C(object): pass
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         self.user_bob.config.root_template_path = os.path.join(
             path,
@@ -375,7 +375,7 @@ class TestExplorerView(LoggedBobTestCase):
 
     def test_saveas_content(self):
         class C(object): pass
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         request = testing.DummyRequest()
         request.custom_route_path = lambda *args, **kw: '/%s/path' % args[0]
@@ -391,7 +391,7 @@ class TestExplorerView(LoggedBobTestCase):
 
     def test_saveas(self):
         class C(object): pass
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         request = testing.DummyRequest()
         request.custom_route_path = lambda *args, **kw: '/%s/path' % args[0]
@@ -404,7 +404,7 @@ class TestExplorerView(LoggedBobTestCase):
     def test_create_folder(self):
         class C(object): pass
         try:
-            path = os.path.join(os.getcwd(), 'waxe/tests/files')
+            path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
             request = testing.DummyRequest()
             res = ExplorerView(request).create_folder()
             expected = {'error_msg': 'No name given'}
@@ -434,7 +434,7 @@ class TestExplorerView(LoggedBobTestCase):
 
     def test_search_folder_content(self):
         class C(object): pass
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         self.user_bob.config.root_template_path = os.path.join(
             path,
@@ -466,7 +466,7 @@ class TestExplorerView(LoggedBobTestCase):
 
     def test_search_folder(self):
         class C(object): pass
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         request = testing.DummyRequest()
         request.custom_route_path = lambda *args, **kw: '/filepath'
@@ -484,7 +484,7 @@ class TestExplorerView(LoggedBobTestCase):
 
     def test_search(self):
         class C(object): pass
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
 
         request = testing.DummyRequest(params={'search': 'new_folder'})
@@ -501,14 +501,14 @@ class TestExplorerView(LoggedBobTestCase):
         self.assertEqual(res, expected)
 
         with patch('os.path.exists', return_value=True):
-            with patch('waxe.search.do_search', return_value=(None, 0)):
+            with patch('waxe.core.search.do_search', return_value=(None, 0)):
                 res = ExplorerView(request).search()
                 self.assertTrue('No result!' in res['content'])
 
             return_value = ([
                 (os.path.join(path, 'file1.xml'), 'Excerpt of the file1')
             ], 1)
-            with patch('waxe.search.do_search', return_value=return_value):
+            with patch('waxe.core.search.do_search', return_value=return_value):
                 res = ExplorerView(request).search()
                 expected = (
                     '<a href="/filepath" '
@@ -612,7 +612,7 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
 
     @login_user('Bob')
     def test_folder_content(self):
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         res = self.testapp.get('/account/Bob/folder-content.json', status=200)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
@@ -648,7 +648,7 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
 
     @login_user('Bob')
     def test_open(self):
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         res = self.testapp.get('/account/Bob/open.json', status=200)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
@@ -671,7 +671,7 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
 
     @login_user('Bob')
     def test_saveas_content(self):
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         res = self.testapp.get('/account/Bob/saveas-content.json', status=200)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
@@ -694,7 +694,7 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
 
     @login_user('Bob')
     def test_saveas(self):
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         res = self.testapp.get('/account/Bob/saveas.json', status=200)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
@@ -717,7 +717,7 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
 
     @login_user('Bob')
     def test_create_folder(self):
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         res = self.testapp.post('/account/Bob/create-folder.json', status=200)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
@@ -758,6 +758,6 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
 
     @login_user('Bob')
     def test_search_json(self):
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         self.testapp.get('/account/Bob/search.json', status=200)

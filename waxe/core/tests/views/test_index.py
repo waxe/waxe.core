@@ -1,13 +1,13 @@
 from pyramid import testing
 from ..testing import WaxeTestCase, login_user, BaseTestCase
-from waxe import security
-from waxe.models import (
+from waxe.core import security
+from waxe.core.models import (
     DBSession,
     User,
     UserConfig,
 )
 
-from waxe.views.index import (
+from waxe.core.views.index import (
     IndexView,
     BadRequestView,
     HTTPBadRequest,
@@ -25,7 +25,7 @@ class TestIndexView(BaseTestCase):
         self.config.registry.settings.update({
             'versioning': True,
             'authentication.cookie.secret': 'scrt',
-            'authentication.cookie.callback': ('waxe.security.'
+            'authentication.cookie.callback': ('waxe.core.security.'
                                                'get_user_permissions')
         })
         self.config.include('pyramid_auth')

@@ -10,14 +10,14 @@ from pyramid.exceptions import Forbidden
 from webob.multidict import MultiDict
 from mock import patch, MagicMock
 import pysvn
-from waxe.tests.testing import (
+from waxe.core.tests.testing import (
     WaxeTestCase,
     WaxeTestCaseVersioning,
     login_user,
     BaseTestCase,
 )
-from waxe import security
-from waxe.models import (
+from waxe.core import security
+from waxe.core.models import (
     DBSession,
     User,
     UserConfig,
@@ -26,8 +26,8 @@ from waxe.models import (
     VERSIONING_PATH_STATUS_FORBIDDEN,
 )
 
-from waxe.views.versioning.views import VersioningView
-from waxe.views.versioning import helper
+from waxe.core.views.versioning.views import VersioningView
+from waxe.core.views.versioning import helper
 
 
 class CreateRepo(unittest.TestCase):
@@ -47,11 +47,11 @@ class CreateRepo(unittest.TestCase):
         self.client_dir = 'svn_waxe_client'
         self.client = pysvn.Client()
         self.client.checkout('file://%s' % self.repo, self.client_dir)
-        self.patcher1 = patch('waxe.views.versioning.helper.get_svn_client',
+        self.patcher1 = patch('waxe.core.views.versioning.helper.get_svn_client',
                               return_value=self.client)
         self.patcher1.start()
         self.patcher_versioning = patch(
-            'waxe.views.base.BaseView.has_versioning', return_value=True)
+            'waxe.core.views.base.BaseView.has_versioning', return_value=True)
         self.patcher_versioning.start()
 
     def tearDown(self):
@@ -112,7 +112,7 @@ class CreateRepo2(unittest.TestCase):
         self.client.checkin([file1, file2, folder1], 'Initial commit')
         open(file1, 'w').write('Hello world')
         self.patcher_versioning = patch(
-            'waxe.views.base.BaseView.has_versioning', return_value=True)
+            'waxe.core.views.base.BaseView.has_versioning', return_value=True)
         self.patcher_versioning.start()
 
     def tearDown(self):
@@ -127,7 +127,7 @@ class CreateRepo2(unittest.TestCase):
 class TestVersioningView(BaseTestCase, CreateRepo2):
     ClassView = VersioningView
 
-    get_svn_client_str = ('waxe.views.versioning.'
+    get_svn_client_str = ('waxe.core.views.versioning.'
                           'views.VersioningView.get_svn_client')
 
     def DummyRequest(self, *args, **kw):
@@ -142,7 +142,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
         super(TestVersioningView, self).setUp()
         self.config.registry.settings.update({
             'authentication.cookie.secret': 'scrt',
-            'authentication.cookie.callback': ('waxe.security.'
+            'authentication.cookie.callback': ('waxe.core.security.'
                                                'get_user_permissions')
         })
         self.config.include('pyramid_auth')
@@ -249,7 +249,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
         self.assertTrue('data-href="/versioning_revert_json"'
                         in content)
 
-        with patch('waxe.views.versioning.views.VersioningView.can_commit', return_value=False):
+        with patch('waxe.core.views.versioning.views.VersioningView.can_commit', return_value=False):
             res = self.ClassView(request).diff()
             content = res['content']
             self.assertTrue(expected in content)
@@ -258,7 +258,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
             self.assertTrue('data-href="/versioning_revert_json"'
                             in content)
 
-        with patch('waxe.views.versioning.helper.PysvnVersioning.diff',
+        with patch('waxe.core.views.versioning.helper.PysvnVersioning.diff',
                    return_value=[]):
             res = self.ClassView(request).diff()
             self.assertTrue('The file is not modified!' in res['content'])
@@ -392,7 +392,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                 request.POST = MultiDict(path='test.xml',
                                          msg='my commit message')
 
-                with patch('waxe.views.versioning.helper.PysvnVersioning.commit', return_value=True):
+                with patch('waxe.core.views.versioning.helper.PysvnVersioning.commit', return_value=True):
                     self.assertEqual(len(self.user_bob.commited_files), 0)
                     res = self.ClassView(request).commit()
                     self.assertEqual(res, self.ClassView(request).status())
@@ -400,7 +400,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                     iduser_commit = self.user_bob.commited_files[0].iduser_commit
                     self.assertEqual(iduser_commit, None)
 
-                with patch('waxe.views.versioning.helper.PysvnVersioning.commit', return_value=True):
+                with patch('waxe.core.views.versioning.helper.PysvnVersioning.commit', return_value=True):
                     view = self.ClassView(request)
                     view.current_user = self.user_fred
                     self.assertEqual(len(self.user_fred.commited_files), 0)
@@ -410,12 +410,12 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                     iduser_commit = self.user_fred.commited_files[0].iduser_commit
                     self.assertEqual(iduser_commit, self.user_bob.iduser)
 
-                with patch('waxe.views.versioning.helper.PysvnVersioning.commit', side_effect=Exception('Error')):
+                with patch('waxe.core.views.versioning.helper.PysvnVersioning.commit', side_effect=Exception('Error')):
                     res = self.ClassView(request).commit()
                     expected = 'Error during the commit Error'
                     self.assertEqual(res['error_msg'], expected)
 
-                with patch('waxe.views.versioning.views.VersioningView.can_commit', return_value=False):
+                with patch('waxe.core.views.versioning.views.VersioningView.can_commit', return_value=False):
                     res = self.ClassView(request).commit()
                     expected = (
                         'You don\'t have the permission '
@@ -504,7 +504,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
 
     @login_user('Bob')
     def test_prepare_commit(self):
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         request = self.DummyRequest(params={})
         res = self.ClassView(request).prepare_commit()
@@ -523,7 +523,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
 
     @login_user('Bob')
     def test_update_texts(self):
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         request = self.DummyRequest(params={})
         res = self.ClassView(request).update_texts()
@@ -577,7 +577,7 @@ class TestVersioningViewFakeRepo(BaseTestCase, CreateRepo):
         super(TestVersioningViewFakeRepo, self).setUp()
         self.config.registry.settings.update({
             'authentication.cookie.secret': 'scrt',
-            'authentication.cookie.callback': ('waxe.security.'
+            'authentication.cookie.callback': ('waxe.core.security.'
                                                'get_user_permissions')
         })
         self.config.include('pyramid_auth')
@@ -859,14 +859,14 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
 
     @login_user('Bob')
     def test_update_texts(self):
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         res = self.testapp.post('/account/Bob/versioning/update-texts', status=200)
         self.assertTrue("Missing parameters!" in res.body)
 
     @login_user('Bob')
     def test_update_texts_json(self):
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         res = self.testapp.post('/account/Bob/versioning/update-texts.json', status=200)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
@@ -880,7 +880,7 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
 
     @login_user('Bob')
     def test_edit_conflict(self):
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         res = self.testapp.post('/account/Bob/versioning/edit-conflict',
                                 status=200)
@@ -888,7 +888,7 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
 
     @login_user('Bob')
     def test_edit_conflict_json(self):
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         res = self.testapp.post('/account/Bob/versioning/edit-conflict.json',
                                 status=200)
@@ -901,7 +901,7 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
 
     @login_user('Bob')
     def test_update_conflict(self):
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         res = self.testapp.post('/account/Bob/versioning/update-conflict',
                                 status=200)
@@ -909,7 +909,7 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
 
     @login_user('Bob')
     def test_update_conflict_json(self):
-        path = os.path.join(os.getcwd(), 'waxe/tests/files')
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         res = self.testapp.post('/account/Bob/versioning/update-conflict.json',
                                 status=200)
@@ -1512,7 +1512,7 @@ class TestHelperNoRepo(unittest.TestCase):
 
     def setUp(self):
         self.client = EmptyClass()
-        self.patcher1 = patch('waxe.views.versioning.helper.get_svn_client',
+        self.patcher1 = patch('waxe.core.views.versioning.helper.get_svn_client',
                               return_value=self.client)
         self.patcher1.start()
 

@@ -3,14 +3,14 @@ from pyramid.httpexceptions import HTTPBadRequest
 from mock import patch
 
 from ..testing import BaseTestCase, LoggedBobTestCase, login_user
-from waxe.models import (
+from waxe.core.models import (
     UserConfig,
     DBSession,
     UserOpenedFile,
     UserCommitedFile
 )
-from waxe import security
-from waxe.views.base import (
+from waxe.core import security
+from waxe.core.views.base import (
     BaseView,
     NavigationView,
     BaseUserView,
@@ -31,7 +31,7 @@ class TestBaseView(BaseTestCase):
         super(TestBaseView, self).setUp()
         self.config.registry.settings.update({
             'authentication.cookie.secret': 'scrt',
-            'authentication.cookie.callback': ('waxe.security.'
+            'authentication.cookie.callback': ('waxe.core.security.'
                                                'get_user_permissions')
         })
         self.config.include('pyramid_auth')
@@ -50,7 +50,7 @@ class TestBaseView(BaseTestCase):
         self.assertEqual(obj.current_user, None)
         self.assertEqual(obj.root_path, None)
 
-        with patch('waxe.security.get_userid_from_request',
+        with patch('waxe.core.security.get_userid_from_request',
                    return_value=self.user_bob.login):
             obj = BaseView(request)
             self.assertEqual(obj.request, request)
