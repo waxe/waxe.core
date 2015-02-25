@@ -12,6 +12,8 @@ from .models import (
 )
 import taskq.models as taskqm
 from .security import RootFactory
+from . import config_parser
+
 
 # Add the modules you want to be include in the config
 views_modules = [
@@ -20,26 +22,14 @@ views_modules = [
 ]
 
 
-def parse_waxe_editors(settings):
-    modules = filter(bool, settings.get('waxe.editors', '').split('\n'))
-    lis = []
-    for mod in modules:
-        if '#' in mod:
-            mod, ext = mod.split('#')
-            exts = ext.split(',')
-        else:
-            exts = importlib.import_module(mod).EXTENSIONS
-
-        lis += [(mod, exts)]
-
-    # TODO: check conflict between extensions
-    return lis
-
-
-def get_views_modules(settings, waxe_editors):
+def get_views_modules(settings, waxe_editors, waxe_renderers):
     lis = list(views_modules)
-    for mod, exts in waxe_editors:
-        lis += [('%s.views.editor' % mod, True, '')]
+    for exts, mod in waxe_editors:
+        route_prefix = mod.ROUTE_PREFIX
+        lis += [(mod.__name__, True, route_prefix)]
+    for exts, mod in waxe_renderers:
+        route_prefix = mod.ROUTE_PREFIX
+        lis += [(mod.__name__, True, route_prefix)]
     if 'versioning' in settings:
         lis += [('waxe.core.views.versioning.views', True, 'versioning')]
     return lis
@@ -83,8 +73,10 @@ def main(global_config, **settings):
     taskqm.Base.metadata.bind = engine
 
     # Get the editors and the extensions supported
-    waxe_editors = parse_waxe_editors(settings)
-    extensions = sum([exts for mod, exts in waxe_editors], [])
+    waxe_editors = config_parser.parse_waxe_editors(settings)
+    waxe_renderers = config_parser.parse_waxe_renderers(settings)
+    # TODO: extensions should be split in both: editor and renderer
+    extensions = sum([exts for exts, mod in waxe_editors], [])
     settings['waxe.extensions'] = extensions
 
     session_key = settings['session.key']
@@ -99,7 +91,8 @@ def main(global_config, **settings):
     config.set_request_property(get_xml_plugins, 'xml_plugins', reify=True)
 
     for module, prefix, extra_prefix in get_views_modules(settings,
-                                                          waxe_editors):
+                                                          waxe_editors,
+                                                          waxe_renderers):
         route_prefix = None
         if prefix:
             route_prefix = '/account/{login}'

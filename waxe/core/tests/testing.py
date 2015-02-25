@@ -62,7 +62,7 @@ SETTINGS = {
     'dtd_urls': dtd_url,
     # HACK: in waiting the package are correctly splitted we need the routes
     # existing
-    'waxe.editors': 'waxe.xml',
+    'waxe.editors': 'waxe.xml.views.editor',
 }
 
 SECRET_ADMIN = bcrypt.hashpw('secret_admin', bcrypt.gensalt())
