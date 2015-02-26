@@ -235,9 +235,10 @@ class VersioningView(BaseUserView):
         relpath = self.request.GET.get('path', '')
         vobj = self.get_versioning_obj()
         if vobj.has_conflict():
-            return self.status(
-                error_msg=('You can\'t update the repository, '
-                           'you have to fix the conflicts first'))
+            return self._response({
+                'error_msg': ('You can\'t update the repository, '
+                              'you have to fix the conflicts first')
+            })
 
         try:
             # TODO: we should raise custom exception to handle it correctly

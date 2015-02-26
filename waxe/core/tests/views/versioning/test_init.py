@@ -734,8 +734,6 @@ class TestVersioningViewFakeRepo(BaseTestCase, CreateRepo):
         expected_error_msg = ('You can\'t update the repository, '
                               'you have to fix the conflicts first')
         self.assertEqual(res['error_msg'], expected_error_msg)
-        expected_content = 'List of conflicted files that should be resolved:'
-        self.assertTrue(expected_content in res['content'])
 
         self.client.revert(os.path.join(self.client_dir, 'file1.xml'))
 
