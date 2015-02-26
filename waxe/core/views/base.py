@@ -310,7 +310,8 @@ class BaseUserView(NavigationView):
         if not paths:
             paths = browser.get_all_files(self.extensions, uc.root_path, uc.root_path)[1]
         Task.create(search.do_index, [dirname, paths],
-                    owner=str(self.current_user.iduser))
+                    owner=str(self.current_user.iduser),
+                    unique_key='search_%i' % self.current_user.iduser)
 
         # Since we commit the task we need to re-bound the user to the session
         # to make sure we can reuse self.logged_user

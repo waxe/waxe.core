@@ -17,6 +17,7 @@ from waxe.models import (
     DBSession,
     UserConfig,
 )
+from taskq.models import Task
 
 
 def usage(argv):
@@ -44,11 +45,16 @@ def main(argv=sys.argv):
     for uc in UserConfig.query.all():
         if not uc.root_path:
             continue
+        DBSession.add(uc)
         dirname = uc.user.get_search_dirname(whoosh_path)
         # TODO: support another extensions for the search
         extensions = ['.xml']
         paths = browser.get_all_files(extensions, uc.root_path, uc.root_path)[1]
         search.do_index(dirname, paths)
+        Task.create(search.do_index, [dirname, paths],
+                    owner=str(uc.user.iduser),
+                    unique_key='search_%i' % uc.user.iduser)
+
 
 if __name__ == '__main__':
     main()
