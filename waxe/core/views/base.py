@@ -1,4 +1,5 @@
 import os
+import importlib
 from pyramid.httpexceptions import HTTPBadRequest
 from pyramid.security import has_permission
 from pyramid.renderers import render
@@ -128,6 +129,15 @@ class BaseView(object):
                self.current_user.config.use_versioning):
                 return True
         return False
+
+    def _get_xmltool_transform(self):
+        """Before writing XML, we can call a function to transform it.
+        """
+        if 'waxe.xml.xmltool.transform' not in self.request.registry.settings:
+            return None
+        func = self.request.registry.settings['waxe.xml.xmltool.transform']
+        mod, func = func.rsplit('.', 1)
+        return getattr(importlib.import_module(mod), func)
 
     def _response(self, dic):
         """Update the given dic for non json request with some data needed in

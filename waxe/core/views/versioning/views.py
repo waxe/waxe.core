@@ -342,7 +342,7 @@ class VersioningView(BaseUserView):
             absfilename = browser.absolute_path(filename, root_path)
             try:
                 obj = xmltool.load_string(filecontent)
-                obj.write(absfilename)
+                obj.write(absfilename, transform=self._get_xmltool_transform())
                 files += [filename]
                 absfilenames += [absfilename]
             except Exception, e:
@@ -417,7 +417,7 @@ class VersioningView(BaseUserView):
         absfilename = browser.absolute_path(filename, self.root_path)
         try:
             obj = xmltool.load_string(filecontent)
-            obj.write(absfilename)
+            obj.write(absfilename, transform=self._get_xmltool_transform())
         except Exception, e:
             return self._response({
                 'error_msg': 'The conflict is not resolved: %s' % str(e)})

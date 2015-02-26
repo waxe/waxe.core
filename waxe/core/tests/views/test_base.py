@@ -25,6 +25,10 @@ class EmptyClass(object):
     pass
 
 
+def fake__get_xmltool_transform():
+    return 'Hello world'
+
+
 class TestBaseView(BaseTestCase):
 
     def setUp(self):
@@ -236,6 +240,19 @@ class TestBaseView(BaseTestCase):
         request.registry.settings['versioning'] = 'false'
         res = BaseView(request).has_versioning()
         self.assertEqual(res, False)
+
+    def test__get_xmltool_transform(self):
+        request = self.DummyRequest()
+        res = BaseView(request)._get_xmltool_transform()
+        self.assertEqual(res, None)
+
+        func_str = '%s.fake__get_xmltool_transform' % (
+            fake__get_xmltool_transform.__module__)
+
+        request.registry.settings['waxe.xml.xmltool.transform'] = func_str
+        func = BaseView(request)._get_xmltool_transform()
+        res = func()
+        self.assertEqual(res, 'Hello world')
 
     @login_user('Fred')
     def test__response_editor(self):
