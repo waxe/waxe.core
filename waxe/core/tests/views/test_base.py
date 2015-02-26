@@ -259,6 +259,7 @@ class TestBaseView(BaseTestCase):
             'layout_readonly_position': 'south',
             'layout_tree_position': 'west',
             'root_template_path': None,
+            'xml_renderer': False,
         }
         self.assertEqual(res, expected)
 
@@ -274,6 +275,7 @@ class TestBaseView(BaseTestCase):
             'layout_readonly_position': 'south',
             'layout_tree_position': 'west',
             'root_template_path': None,
+            'xml_renderer': False,
         }
         self.assertEqual(res, expected)
 
@@ -287,6 +289,7 @@ class TestBaseView(BaseTestCase):
             'layout_readonly_position': 'south',
             'layout_tree_position': 'west',
             'root_template_path': None,
+            'xml_renderer': False,
         }
         self.assertEqual(res, expected)
 
@@ -304,6 +307,7 @@ class TestBaseView(BaseTestCase):
             'layout_readonly_position': 'south',
             'layout_tree_position': 'west',
             'root_template_path': None,
+            'xml_renderer': False,
         })
 
         view = BaseView(request)
@@ -317,6 +321,7 @@ class TestBaseView(BaseTestCase):
             'layout_readonly_position': 'south',
             'layout_tree_position': 'west',
             'root_template_path': None,
+            'xml_renderer': False,
         })
 
         request.registry.settings['versioning'] = 'true'
@@ -330,6 +335,7 @@ class TestBaseView(BaseTestCase):
             'layout_readonly_position': 'south',
             'layout_tree_position': 'west',
             'root_template_path': None,
+            'xml_renderer': False,
         })
 
         # The user which we edit support versioning!
@@ -342,6 +348,7 @@ class TestBaseView(BaseTestCase):
             'layout_readonly_position': 'south',
             'layout_tree_position': 'west',
             'root_template_path': None,
+            'xml_renderer': False,
         })
 
         self.user_admin.config = UserConfig()
@@ -355,6 +362,7 @@ class TestBaseView(BaseTestCase):
             'layout_readonly_position': 'readonly_position',
             'layout_tree_position': 'tree_position',
             'root_template_path': None,
+            'xml_renderer': False,
         })
 
     def test__response_unexisting_user(self):
@@ -374,6 +382,7 @@ class TestBaseView(BaseTestCase):
             'layout_readonly_position': 'south',
             'layout_tree_position': 'west',
             'root_template_path': None,
+            'xml_renderer': False,
         }
         self.assertEqual(res, expected)
 
@@ -391,6 +400,7 @@ class TestBaseView(BaseTestCase):
             'layout_readonly_position': 'south',
             'layout_tree_position': 'west',
             'root_template_path': None,
+            'xml_renderer': False,
         })
 
         res = BaseView(request)._response({})
@@ -401,6 +411,7 @@ class TestBaseView(BaseTestCase):
             'layout_readonly_position': 'south',
             'layout_tree_position': 'west',
             'root_template_path': None,
+            'xml_renderer': False,
         })
 
         self.user_fred.roles = [self.role_editor, self.role_contributor]
@@ -413,6 +424,7 @@ class TestBaseView(BaseTestCase):
             'layout_readonly_position': 'south',
             'layout_tree_position': 'west',
             'root_template_path': None,
+            'xml_renderer': False,
         })
 
     @login_user('LeResKP')
@@ -429,6 +441,7 @@ class TestBaseView(BaseTestCase):
             'layout_readonly_position': 'south',
             'layout_tree_position': 'west',
             'root_template_path': None,
+            'xml_renderer': False,
         })
 
     @login_user('Admin')
@@ -445,6 +458,7 @@ class TestBaseView(BaseTestCase):
             'layout_readonly_position': 'south',
             'layout_tree_position': 'west',
             'root_template_path': None,
+            'xml_renderer': False,
         })
 
         request.registry.settings['whoosh.path'] = '/tmp/fake'
@@ -456,6 +470,7 @@ class TestBaseView(BaseTestCase):
             'layout_readonly_position': 'south',
             'layout_tree_position': 'west',
             'root_template_path': None,
+            'xml_renderer': False,
         })
 
     def test__get_last_files_no_current_user(self):

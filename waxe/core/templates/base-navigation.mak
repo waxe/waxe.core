@@ -48,6 +48,9 @@
               <button type="submit" class="btn btn-default">Submit</button>
             </form>
           % endif
+          % if xml_renderer:
+          <li><a href="#" data-call="navbar.renderer" data-route="${request.custom_route_path('xml_renderer')}" title="View the rendering" target="rendering">Rendering</a></li>
+          % endif
         </ul>
         <ul class="nav navbar-nav navbar-right">
           <li class="dropdown">

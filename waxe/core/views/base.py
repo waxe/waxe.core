@@ -165,6 +165,9 @@ class BaseView(object):
 
         dic['versioning'] = self.has_versioning()
         dic['search'] = ('whoosh.path' in self.request.registry.settings)
+        # Assume we have an XML renderer if we have renderer defined
+        dic['xml_renderer'] = ('waxe.renderers' in
+                               self.request.registry.settings)
         return dic
 
 

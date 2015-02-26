@@ -87,6 +87,20 @@ var waxe = waxe || {};
                 waxe.layout.showReadonly();
             }
         };
+
+        this.renderer = function(e, $element) {
+            var prefix = $element.data('route');
+            if (waxe.form.filename){
+                $element.attr('href', prefix + '?path=' + waxe.form.filename);
+            } else {
+                var input = $('input.diff-submit');
+                if (input.length){
+                    filename = input.data('filename');
+                    $element.attr('href', prefix + '?path=' + filename);
+                }
+            }
+        };
+
     }).apply(waxe.navbar);
 
 
