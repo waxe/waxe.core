@@ -55,6 +55,7 @@ var waxe = waxe || {};
 
             var pluginOptions = {
                 applyDemoStyles: true,
+                enableCursorHotkey: false
             };
 
             if(this.readonlyPosition) {
