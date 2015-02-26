@@ -257,13 +257,17 @@ class BaseUserView(NavigationView):
                 raise JSONHTTPBadRequest('root path not defined')
             raise HTTPBadRequest('root path not defined')
 
-    def get_versioning_obj(self):
+    def get_versioning_obj(self, commit=False):
         """Get the versioning object. For now only svn is supported.
         """
         if self.has_versioning():
             from waxe.core.views.versioning import helper
-            return helper.PysvnVersioning(self.request, self.extensions,
-                                          self.current_user, self.root_path)
+            return helper.PysvnVersioning(self.request,
+                                          self.extensions,
+                                          self.current_user,
+                                          self.logged_user,
+                                          self.root_path,
+                                          commit)
         return None
 
     def get_search_dirname(self):

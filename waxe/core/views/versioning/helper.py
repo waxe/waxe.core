@@ -4,6 +4,7 @@ import pysvn
 from waxe.core import browser
 from waxe.core import diff
 import tempfile
+import importlib
 
 
 STATUS_NORMAL = 'normal'
@@ -68,12 +69,21 @@ def svn_ssl_server_trust_prompt(trust_dict):
     return True, trust_dict['failures'], False
 
 
-def get_svn_login(request, current_user):
+def get_svn_username(request, current_user, logged_user, commit):
+    if 'versioning.get_svn_username' in request.registry.settings:
+        func = request.registry.settings['versioning.get_svn_username']
+        mod, func = func.rsplit('.', 1)
+        func = getattr(importlib.import_module(mod), func)
+        return func(request, current_user, logged_user, commit)
+    return current_user.login
+
+
+def get_svn_login(request, current_user, logged_user, commit):
     auth = False
     if 'versioning.auth.active' in request.registry.settings:
         auth = True
 
-    editor_login = current_user.login
+    editor_login = get_svn_username(request, current_user, logged_user, commit)
     if not auth:
         # No auth, no need to find a password
         return False, str(editor_login), None, False
@@ -89,12 +99,14 @@ def get_svn_login(request, current_user):
     return auth, str(editor_login), pwd, False
 
 
-def get_svn_client(request, user):
+def get_svn_client(request, current_user, logged_user, commit):
     client = pysvn.Client()
     # Set the username in case there is no authentication
-    client.set_default_username(str(user.login))
+    client.set_default_username(str(current_user.login))
     client.callback_get_login = lambda *args, **kw: get_svn_login(request,
-                                                                  user)
+                                                                  current_user,
+                                                                  logged_user,
+                                                                  commit)
     if request.registry.settings.get('versioning.auth.https'):
         client.callback_ssl_server_trust_prompt = svn_ssl_server_trust_prompt
     return client
@@ -119,9 +131,11 @@ class StatusObject(object):
 
 class PysvnVersioning(object):
 
-    def __init__(self, request, extensions, user, root_path):
+    def __init__(self, request, extensions, current_user, logged_user,
+                 root_path, commit):
         self.extensions = extensions
-        self.client = get_svn_client(request, user)
+        self.client = get_svn_client(request, current_user, logged_user,
+                                     commit)
         self.root_path = root_path
 
     def _status(self, abspath, changes, short=True):

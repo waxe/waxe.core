@@ -303,7 +303,7 @@ class VersioningView(BaseUserView):
                 'error_msg': '<br />'.join(error_msg)
             })
 
-        vobj = self.get_versioning_obj()
+        vobj = self.get_versioning_obj(commit=True)
         try:
             vobj.commit(filenames, msg)
         except Exception, e:

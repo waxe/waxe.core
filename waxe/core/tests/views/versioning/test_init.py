@@ -30,6 +30,10 @@ from waxe.core.views.versioning.views import VersioningView
 from waxe.core.views.versioning import helper
 
 
+def fake_get_svn_username(*args, **kw):
+    return 'my username'
+
+
 class CreateRepo(unittest.TestCase):
 
     def setUp(self):
@@ -148,47 +152,71 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
         self.config.include('pyramid_auth')
 
     @login_user('Bob')
+    def test_get_svn_username(self):
+        request = self.DummyRequest()
+        self.user_bob.config = UserConfig(
+            root_path='/root_path',
+            use_versioning=True,
+        )
+        res = helper.get_svn_username(request, self.user_bob, self.user_bob,
+                                      False)
+        self.assertEqual(res, self.user_bob.login)
+
+        func_str = '%s.fake_get_svn_username' % (
+            fake_get_svn_username.__module__)
+
+        request.registry.settings['versioning.get_svn_username'] = func_str
+        res = helper.get_svn_username(request, self.user_bob, self.user_bob,
+                                      False)
+        self.assertEqual(res, fake_get_svn_username())
+
     def test_get_svn_login(self):
         request = self.DummyRequest()
         self.user_bob.config = UserConfig(
             root_path='/root_path',
             use_versioning=True,
         )
-        view = self.ClassView(request)
-
-        res = helper.get_svn_login(request, self.user_bob)
+        res = helper.get_svn_login(request, self.user_bob, self.user_bob,
+                                   False)
         expected = (False, 'Bob', None, False)
         self.assertEqual(res, expected)
 
         request.registry.settings['versioning.auth.active'] = True
         try:
-            helper.get_svn_login(request, self.user_bob)
+            helper.get_svn_login(request, self.user_bob, self.user_bob, False)
             assert(False)
         except Exception, e:
             self.assertEqual(str(e), 'No versioning password set for Bob')
 
         self.user_bob.config.versioning_password = 'secret_bob'
-        res = helper.get_svn_login(request, self.user_bob)
+        res = helper.get_svn_login(request, self.user_bob, self.user_bob,
+                                   False)
         expected = (True, 'Bob', 'secret_bob', False)
         self.assertEqual(res, expected)
 
-        view = self.ClassView(request)
-        view.current_user = self.user_fred
-        res = helper.get_svn_login(request, self.user_fred)
+        res = helper.get_svn_login(request, self.user_fred, self.user_fred,
+                                   False)
         expected = (True, 'Fred', 'secret_fred', False)
         self.assertEqual(res, expected)
 
-        view = self.ClassView(request)
-        view.current_user = self.user_fred
-        res = helper.get_svn_login(request, self.user_fred)
+        res = helper.get_svn_login(request, self.user_fred, self.user_fred,
+                                   False)
         expected = (True, 'Fred', 'secret_fred', False)
         self.assertEqual(res, expected)
 
         request.registry.settings['versioning.auth.pwd'] = 'secret'
-        view = self.ClassView(request)
-        view.current_user = self.user_fred
-        res = helper.get_svn_login(request, self.user_fred)
+        res = helper.get_svn_login(request, self.user_fred, self.user_fred,
+                                   False)
         expected = (True, 'Fred', 'secret', False)
+        self.assertEqual(res, expected)
+
+        func_str = '%s.fake_get_svn_username' % (
+            fake_get_svn_username.__module__)
+
+        request.registry.settings['versioning.get_svn_username'] = func_str
+        res = helper.get_svn_login(request, self.user_fred, self.user_fred,
+                                   False)
+        expected = (True, fake_get_svn_username(), 'secret', False)
         self.assertEqual(res, expected)
 
     @login_user('Bob')
@@ -625,7 +653,8 @@ class TestVersioningViewFakeRepo(BaseTestCase, CreateRepo):
                             'create conflict')
         open(file1, 'w').write('Hello Fred')
         self.client.update(self.client_dir)
-        o = helper.PysvnVersioning(None, ['.xml'], None, self.client_dir)
+        o = helper.PysvnVersioning(None, ['.xml'], None, None, self.client_dir,
+                                   False)
         s = o.empty_status(file1)
         self.assertEqual(s.status, helper.STATUS_CONFLICTED)
 
@@ -924,7 +953,8 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
 class TestHelper(CreateRepo):
 
     def test_empty_status(self):
-        o = helper.PysvnVersioning(None, ['.xml'], None, self.client_dir)
+        o = helper.PysvnVersioning(None, ['.xml'], None, None, self.client_dir,
+                                   False)
         expected = helper.StatusObject(self.client_dir, '.',
                                        helper.STATUS_NORMAL)
         self.assertEqual(o.empty_status(self.client_dir), expected)
@@ -967,7 +997,8 @@ class TestHelper(CreateRepo):
         self.assertEqual(o.empty_status(file1), expected)
 
     def test_status(self):
-        o = helper.PysvnVersioning(None, ['.xml'], None, self.client_dir)
+        o = helper.PysvnVersioning(None, ['.xml'], None, None,
+                                   self.client_dir, False)
         self.assertEqual(o.status(), [])
         # Add new file
         file1 = os.path.join(self.client_dir, 'file1.xml')
@@ -1040,7 +1071,8 @@ class TestHelper(CreateRepo):
         self.assertEqual(o.status('file7.xml'), expected)
 
     def test_status_subfolder(self):
-        o = helper.PysvnVersioning(None, ['.xml'], None, self.client_dir)
+        o = helper.PysvnVersioning(None, ['.xml'], None, None, self.client_dir,
+                                   False)
         self.assertEqual(o.status(), [])
         folder1 = os.path.join(self.client_dir, 'folder1')
         folder2 = os.path.join(self.client_dir, 'folder2')
@@ -1074,7 +1106,8 @@ class TestHelper(CreateRepo):
         self.assertEqual(o.status('folder2'), expected)
 
     def test_full_status(self):
-        o = helper.PysvnVersioning(None, ['.xml'], None, self.client_dir)
+        o = helper.PysvnVersioning(None, ['.xml'], None, None, self.client_dir,
+                                  False)
         self.assertEqual(o.full_status(), [])
         folder1 = os.path.join(self.client_dir, 'folder1')
         os.mkdir(folder1)
@@ -1107,7 +1140,8 @@ class TestHelper(CreateRepo):
         self.assertEqual(o.full_status('folder2/file2.xml'), expected)
 
     def test_update(self):
-        o = helper.PysvnVersioning(None, ['.xml'], None, self.client_dir)
+        o = helper.PysvnVersioning(None, ['.xml'], None, None, self.client_dir,
+                                  False)
         file1 = os.path.join(self.client_dir, 'file1.xml')
         self.assertFalse(os.path.isfile(file1))
         self.client.checkout('file://%s' % self.repo, 'svn_waxe_client1')
@@ -1119,7 +1153,8 @@ class TestHelper(CreateRepo):
         self.assertTrue(os.path.isfile(file1))
 
     def test_diff(self):
-        o = helper.PysvnVersioning(None, ['.xml'], None, self.client_dir)
+        o = helper.PysvnVersioning(None, ['.xml'], None, None, self.client_dir,
+                                  False)
         self.assertEqual(o.diff(), [])
         folder1 = os.path.join(self.client_dir, 'folder1')
         folder2 = os.path.join(folder1, 'folder2')
@@ -1164,7 +1199,8 @@ class TestHelper(CreateRepo):
 
     def test_full_diff(self):
         difflib.HtmlDiff._default_prefix = 0
-        o = helper.PysvnVersioning(None, ['.xml'], None, self.client_dir)
+        o = helper.PysvnVersioning(None, ['.xml'], None, None, self.client_dir,
+                                  False)
         self.assertEqual(o.full_diff(), [])
         folder1 = os.path.join(self.client_dir, 'folder1')
         folder2 = os.path.join(folder1, 'folder2')
@@ -1230,7 +1266,8 @@ class TestHelper(CreateRepo):
         self.assertTrue('<span class="diff_add">Hello</span>' in html)
 
     def test_get_commitable_files(self):
-        o = helper.PysvnVersioning(None, ['.xml'], None, self.client_dir)
+        o = helper.PysvnVersioning(None, ['.xml'], None, None, self.client_dir,
+                                  False)
         self.assertEqual(o.get_commitable_files(), [])
         # Add new file
         file1 = os.path.join(self.client_dir, 'file1.xml')
@@ -1304,7 +1341,8 @@ class TestHelper(CreateRepo):
         self.assertEqual(o.get_commitable_files('file7.xml'), expected)
 
     def test_unversioned_parents(self):
-        o = helper.PysvnVersioning(None, ['.xml'], None, self.client_dir)
+        o = helper.PysvnVersioning(None, ['.xml'], None, None, self.client_dir,
+                                  False)
         self.assertEqual(o.unversioned_parents(self.client_dir), [])
         folder1 = os.path.join(self.client_dir, 'folder1')
         folder2 = os.path.join(self.client_dir, 'folder2')
@@ -1330,7 +1368,8 @@ class TestHelper(CreateRepo):
         self.assertEqual(list(o.unversioned_parents(file2)), [])
 
     def test_add(self):
-        o = helper.PysvnVersioning(None, ['.xml'], None, self.client_dir)
+        o = helper.PysvnVersioning(None, ['.xml'], None, None, self.client_dir,
+                                  False)
         self.assertEqual(o.unversioned_parents(self.client_dir), [])
         folder1 = os.path.join(self.client_dir, 'folder1')
         folder2 = os.path.join(self.client_dir, 'folder2')
@@ -1365,7 +1404,8 @@ class TestHelper(CreateRepo):
         self.assertEqual(res, [])
 
     def test_commit(self):
-        o = helper.PysvnVersioning(None, ['.xml'], None, self.client_dir)
+        o = helper.PysvnVersioning(None, ['.xml'], None, None, self.client_dir,
+                                  False)
         self.assertEqual(o.unversioned_parents(self.client_dir), [])
         folder1 = os.path.join(self.client_dir, 'folder1')
         folder2 = os.path.join(self.client_dir, 'folder2')
@@ -1394,7 +1434,8 @@ class TestHelper(CreateRepo):
         self.assertEqual(res.status, helper.STATUS_UNVERSIONED)
 
     def test_resolve(self):
-        o = helper.PysvnVersioning(None, ['.xml'], None, self.client_dir)
+        o = helper.PysvnVersioning(None, ['.xml'], None, None, self.client_dir,
+                                   False)
         self.assertEqual(o.get_commitable_files(), [])
         file1 = os.path.join(self.client_dir, 'file1.xml')
         open(file1, 'w').write('Hello')
@@ -1415,7 +1456,8 @@ class TestHelper(CreateRepo):
         self.assertEqual(s.status, helper.STATUS_MODIFED)
 
     def test_revert(self):
-        o = helper.PysvnVersioning(None, ['.xml'], None, self.client_dir)
+        o = helper.PysvnVersioning(None, ['.xml'], None, None, self.client_dir,
+                                  False)
         self.assertEqual(o.get_commitable_files(), [])
         file1 = os.path.join(self.client_dir, 'file1.xml')
         open(file1, 'w').write('Hello')
@@ -1450,7 +1492,8 @@ class TestHelper(CreateRepo):
         self.assertEqual(s.status, helper.STATUS_UNVERSIONED)
 
     def test_remove(self):
-        o = helper.PysvnVersioning(None, ['.xml'], None, self.client_dir)
+        o = helper.PysvnVersioning(None, ['.xml'], None, None, self.client_dir,
+                                  False)
         self.assertEqual(o.get_commitable_files(), [])
         file1 = os.path.join(self.client_dir, 'file1.xml')
         open(file1, 'w').write('Hello')
@@ -1490,7 +1533,8 @@ class TestHelper(CreateRepo):
         self.assertEqual(s.status, helper.STATUS_NORMAL)
 
     def test_has_conflict(self):
-        o = helper.PysvnVersioning(None, ['.xml'], None, self.client_dir)
+        o = helper.PysvnVersioning(None, ['.xml'], None, None, self.client_dir,
+                                  False)
         self.assertEqual(o.get_commitable_files(), [])
         file1 = os.path.join(self.client_dir, 'file1.xml')
         open(file1, 'w').write('Hello')
@@ -1552,7 +1596,8 @@ class TestHelperNoRepo(unittest.TestCase):
             FakeSvnStatus(folder2, 'normal')
         ]
 
-        o = helper.PysvnVersioning(None, ['.xml'], None, self.client_dir)
+        o = helper.PysvnVersioning(None, ['.xml'], None, None, self.client_dir,
+                                  False)
         self.client.status = lambda *args, **kw: []
         res = o._status(abspath, changes)
 
@@ -1569,7 +1614,8 @@ class TestHelperNoRepo(unittest.TestCase):
                 'unversioned'),
         ]
 
-        o = helper.PysvnVersioning(None, ['.xml'], None, self.client_dir)
+        o = helper.PysvnVersioning(None, ['.xml'], None, None, self.client_dir,
+                                  False)
         self.client.status = lambda *args, **kw: subchanges
         res = o._status(abspath, changes)
         expected = [
@@ -1591,7 +1637,8 @@ class TestHelperNoRepo(unittest.TestCase):
             FakeSvnStatus(self.client_dir, 'unversioned'),
         ]
 
-        o = helper.PysvnVersioning(None, ['.xml'], None, self.client_dir)
+        o = helper.PysvnVersioning(None, ['.xml'], None, None, self.client_dir,
+                                  False)
         res = o._status(abspath, changes)
         expected = [
             helper.StatusObject(folder1, 'folder1', helper.STATUS_UNVERSIONED),
