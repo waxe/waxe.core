@@ -65,7 +65,8 @@ setup(name='waxe.core',
       [paste.app_factory]
       main = waxe.core:main
       [console_scripts]
-      initialize_waxe_db = waxe.scripts.initializedb:main
+      initialize_waxe_db = waxe.core.scripts.initializedb:main
+      update_waxe_indexation = waxe.core.scripts.search_indexation:main
       """,
       )
 

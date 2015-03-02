@@ -58,7 +58,7 @@ module.exports = function(grunt) {
             'src/plugins-options.js',
             'src/window.js',
         ],
-        dest: '../waxe/static/js/<%= pkg.name %>.js'
+        dest: '../waxe/core/static/js/<%= pkg.name %>.js'
       }
     },
     uglify: {
@@ -67,7 +67,7 @@ module.exports = function(grunt) {
       },
       dist: {
         src: '<%= concat.dist.dest %>',
-        dest: '../waxe/static/js/<%= pkg.name %>.min.js'
+        dest: '../waxe/core/static/js/<%= pkg.name %>.min.js'
       },
     },
     qunit: {
@@ -99,7 +99,7 @@ module.exports = function(grunt) {
                 paths: ['libs/bootstrap-3.0.2/less/']
             },
             files: {
-                "../waxe/static/css/<%= pkg.name %>.css": [
+                "../waxe/core/static/css/<%= pkg.name %>.css": [
                     "bower_components/xmltool/webmedia/css/xmltool.less",
                     "bower_components/jstree/dist/themes/default/style.css",
                     "css/*.less",
@@ -113,7 +113,7 @@ module.exports = function(grunt) {
                 cleancss: true
             },
             files: {
-                "../waxe/static/css/<%= pkg.name %>.min.css": [
+                "../waxe/core/static/css/<%= pkg.name %>.min.css": [
                     "bower_components/xmltool/webmedia/css/xmltool.less",
                     "bower_components/jstree/dist/themes/default/style.css",
                     "css/*.less",
@@ -129,7 +129,7 @@ module.exports = function(grunt) {
                     expand: true,
                     cwd: 'libs/bootstrap-3.0.2/fonts',
                     src: ['*'],
-                    dest: '../waxe/static/fonts/'
+                    dest: '../waxe/core/static/fonts/'
                 }
             ]
         }
