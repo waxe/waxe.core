@@ -53,6 +53,20 @@ def get_xml_plugins(request):
     return mods
 
 
+def get_js_resources(request):
+    settings = request.registry.settings
+    if 'waxe.extra_js_resources' in settings:
+        return settings['waxe.extra_js_resources'].strip().split()
+    return []
+
+
+def get_css_resources(request):
+    settings = request.registry.settings
+    if 'waxe.extra_css_resources' in settings:
+        return settings['waxe.extra_css_resources'].strip().split()
+    return []
+
+
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
     """
@@ -84,11 +98,14 @@ def main(global_config, **settings):
     config = Configurator(settings=settings,
                           session_factory=session_factory,
                           root_factory=RootFactory)
-    config.add_static_view('static', 'waxe.core:static', cache_max_age=3600)
+    config.add_static_view('static-core', 'waxe.core:static', cache_max_age=3600)
+
     # TODO: not sure we need to define dtd_urls here.
     config.set_request_property(get_dtd_urls, 'dtd_urls', reify=True)
 
     config.set_request_property(get_xml_plugins, 'xml_plugins', reify=True)
+    config.set_request_property(get_js_resources, 'js_resources', reify=True)
+    config.set_request_property(get_css_resources, 'css_resources', reify=True)
 
     for module, prefix, extra_prefix in get_views_modules(settings,
                                                           waxe_editors,

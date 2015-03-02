@@ -15,6 +15,15 @@
     CKEDITOR.config.entities_greek = false;
     CKEDITOR.config.entities_latin = false;
   </script>
+
+  % for resource in request.css_resources:
+    <link rel="stylesheet" type="text/css" href="${request.static_url(resource)}" />
+  % endfor
+
+  % for resource in request.js_resources:
+    <script type="text/javascript" src="${request.static_url(resource)}"></script>
+  % endfor
+
 </head>
   ${next.body()}
 </html>
