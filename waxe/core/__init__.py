@@ -13,6 +13,7 @@ from .models import (
 import taskq.models as taskqm
 from .security import RootFactory
 from . import config_parser
+from . import resource
 
 
 # Add the modules you want to be include in the config
@@ -30,7 +31,7 @@ def get_views_modules(settings, waxe_editors, waxe_renderers):
     for exts, mod in waxe_renderers:
         route_prefix = mod.ROUTE_PREFIX
         lis += [(mod.__name__, True, route_prefix)]
-    if 'versioning' in settings:
+    if 'waxe.versioning' in settings:
         lis += [('waxe.core.views.versioning.views', True, 'versioning')]
     return lis
 
@@ -54,17 +55,19 @@ def get_xml_plugins(request):
 
 
 def get_js_resources(request):
+    lis = resource.JS_RESOURCES
     settings = request.registry.settings
-    if 'waxe.extra_js_resources' in settings:
-        return settings['waxe.extra_js_resources'].strip().split()
-    return []
+    if 'waxe.extra_js_resources' not in settings:
+        return lis
+    return lis + settings['waxe.extra_js_resources'].strip().split()
 
 
 def get_css_resources(request):
+    lis = resource.CSS_RESOURCES
     settings = request.registry.settings
-    if 'waxe.extra_css_resources' in settings:
-        return settings['waxe.extra_css_resources'].strip().split()
-    return []
+    if 'waxe.extra_css_resources' not in settings:
+        return lis
+    return lis + settings['waxe.extra_css_resources'].strip().split()
 
 
 def main(global_config, **settings):

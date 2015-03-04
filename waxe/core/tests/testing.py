@@ -146,7 +146,7 @@ class WaxeTestCaseVersioning(DBTestCase):
 
     def setUp(self):
         self.settings = SETTINGS.copy()
-        self.settings['versioning'] = True
+        self.settings['waxe.versioning'] = True
         app = main({}, **self.settings)
         app = twc.middleware.TwMiddleware(app)
         self.testapp = TestApp(app)

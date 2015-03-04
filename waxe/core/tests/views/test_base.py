@@ -229,7 +229,7 @@ class TestBaseView(BaseTestCase):
         res = BaseView(request).has_versioning()
         self.assertEqual(res, False)
 
-        request.registry.settings['versioning'] = 'true'
+        request.registry.settings['waxe.versioning'] = 'true'
         res = BaseView(request).has_versioning()
         self.assertEqual(res, False)
 
@@ -237,7 +237,7 @@ class TestBaseView(BaseTestCase):
         res = BaseView(request).has_versioning()
         self.assertEqual(res, True)
 
-        request.registry.settings['versioning'] = 'false'
+        request.registry.settings['waxe.versioning'] = 'false'
         res = BaseView(request).has_versioning()
         self.assertEqual(res, False)
 
@@ -341,7 +341,7 @@ class TestBaseView(BaseTestCase):
             'xml_renderer': False,
         })
 
-        request.registry.settings['versioning'] = 'true'
+        request.registry.settings['waxe.versioning'] = 'true'
         view = BaseView(request)
         view.current_user = self.user_bob
         res = view._response({})
@@ -767,7 +767,7 @@ class TestBaseUserView(BaseTestCase):
         )
         self.assertEqual(res, expected)
 
-        request.registry.settings['versioning'] = 'true'
+        request.registry.settings['waxe.versioning'] = 'true'
         self.user_bob.config.use_versioning = True
         res = BaseUserView(request)._get_nav_editor(
             'file1.xml',

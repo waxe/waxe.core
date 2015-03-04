@@ -123,7 +123,7 @@ class BaseView(object):
         """Returns True if the current_user root path is versionned and he can
         use it!
         """
-        if self.request.registry.settings.get('versioning') == 'true':
+        if self.request.registry.settings.get('waxe.versioning') == 'true':
             if (self.current_user and
                self.current_user.config and
                self.current_user.config.use_versioning):

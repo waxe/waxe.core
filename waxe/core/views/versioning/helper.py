@@ -70,8 +70,8 @@ def svn_ssl_server_trust_prompt(trust_dict):
 
 
 def get_svn_username(request, current_user, logged_user, commit):
-    if 'versioning.get_svn_username' in request.registry.settings:
-        func = request.registry.settings['versioning.get_svn_username']
+    if 'waxe.versioning.get_svn_username' in request.registry.settings:
+        func = request.registry.settings['waxe.versioning.get_svn_username']
         mod, func = func.rsplit('.', 1)
         func = getattr(importlib.import_module(mod), func)
         return func(request, current_user, logged_user, commit)

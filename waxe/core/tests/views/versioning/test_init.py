@@ -165,7 +165,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
         func_str = '%s.fake_get_svn_username' % (
             fake_get_svn_username.__module__)
 
-        request.registry.settings['versioning.get_svn_username'] = func_str
+        request.registry.settings['waxe.versioning.get_svn_username'] = func_str
         res = helper.get_svn_username(request, self.user_bob, self.user_bob,
                                       False)
         self.assertEqual(res, fake_get_svn_username())
@@ -213,7 +213,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
         func_str = '%s.fake_get_svn_username' % (
             fake_get_svn_username.__module__)
 
-        request.registry.settings['versioning.get_svn_username'] = func_str
+        request.registry.settings['waxe.versioning.get_svn_username'] = func_str
         res = helper.get_svn_login(request, self.user_fred, self.user_fred,
                                    False)
         expected = (True, fake_get_svn_username(), 'secret', False)
