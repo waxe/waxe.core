@@ -37,13 +37,11 @@ module.exports = function(grunt) {
             'libs/bootstrap-3.0.2/js/tab.js',
             'libs/bootstrap-3.0.2/js/affix.js',
             'libs/js/jquery.layout-latest.min.js',
-            'bower_components/jstree/dist/jstree.js',
             'libs/js/jquery.message.js',
             'libs/js/jquery.autosize.js',
             'libs/codemirror/codemirror.js',
             'libs/codemirror/xml.js',
             'bower_components/jquery.contenteditablesync/src/*.js',
-            'bower_components/xmltool/webmedia/js/*.js',
             'src/jquery.filebrowser.js',
             'src/ajax.js',
             'src/event.js',
@@ -54,7 +52,6 @@ module.exports = function(grunt) {
             'src/jquery.filebrowser.js',
             'src/navbar.js',
             'src/versioning.js',
-            'src/jstree.js',
             'src/plugins-options.js',
             'src/window.js',
         ],
@@ -100,8 +97,6 @@ module.exports = function(grunt) {
             },
             files: {
                 "../waxe/core/static/css/<%= pkg.name %>.css": [
-                    "bower_components/xmltool/webmedia/css/xmltool.less",
-                    "bower_components/jstree/dist/themes/default/style.css",
                     "css/*.less",
                     "libs/codemirror/codemirror.css"
                 ]
@@ -114,8 +109,6 @@ module.exports = function(grunt) {
             },
             files: {
                 "../waxe/core/static/css/<%= pkg.name %>.min.css": [
-                    "bower_components/xmltool/webmedia/css/xmltool.less",
-                    "bower_components/jstree/dist/themes/default/style.css",
                     "css/*.less",
                     "libs/codemirror/codemirror.css"
                 ]
