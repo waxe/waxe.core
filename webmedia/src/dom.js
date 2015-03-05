@@ -190,7 +190,9 @@ waxe.cache = {
                 $nav_editor.html('');
             }
 
-            if ($('#xmltool-form').length === 0){
+
+            var xtForm = $('#xmltool-form');
+            if (xtForm.length === 0 || xtForm.hasClass('no-tree')){
                 waxe.layout.hideTree();
             }
             else {

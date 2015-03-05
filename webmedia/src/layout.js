@@ -81,6 +81,8 @@ var waxe = waxe || {};
         this.showTree = function() {
             if (this.treePosition) {
                 this.obj.show(this.treePosition);
+                // Hack to make sure the resizer is always displayed
+                $('.ui-layout-resizer-' + this.treePosition).show();
             }
         };
 
