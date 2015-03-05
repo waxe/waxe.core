@@ -20010,6 +20010,8 @@ var waxe = waxe || {};
         this.showTree = function() {
             if (this.treePosition) {
                 this.obj.show(this.treePosition);
+                // Hack to make sure the resizer is always displayed
+                $('.ui-layout-resizer-' + this.treePosition).show();
             }
         };
 
@@ -20377,7 +20379,9 @@ waxe.cache = {
                 $nav_editor.html('');
             }
 
-            if ($('#xmltool-form').length === 0){
+
+            var xtForm = $('#xmltool-form');
+            if (xtForm.length === 0 || xtForm.hasClass('no-tree')){
                 waxe.layout.hideTree();
             }
             else {
