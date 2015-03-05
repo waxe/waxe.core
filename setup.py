@@ -32,6 +32,7 @@ requires = [
     'whoosh',
     'taskq',
     'webhelpers',
+    'importlib',
 ]
 
 setup(name='waxe.core',
