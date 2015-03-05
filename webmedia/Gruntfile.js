@@ -123,6 +123,25 @@ module.exports = function(grunt) {
                     cwd: 'libs/bootstrap-3.0.2/fonts',
                     src: ['*'],
                     dest: '../waxe/core/static/fonts/'
+                },
+                // Improve this rules to only copy needed files
+                {
+                    expand: true,
+                    cwd: 'bower_components/bootstrap/',
+                    src: ['**'],
+                    dest: '../waxe/core/static/bootstrap/'
+                },
+                {
+                    expand: true,
+                    cwd: 'bower_components/ckeditor/',
+                    src: ['**'],
+                    dest: '../waxe/core/static/ckeditor/'
+                },
+                {
+                    expand: true,
+                    cwd: 'bower_components/font-awesome/',
+                    src: ['**'],
+                    dest: '../waxe/core/static/font-awesome/'
                 }
             ]
         }
