@@ -190,17 +190,16 @@ waxe.cache = {
                 $nav_editor.html('');
             }
 
-
-            var xtForm = $('#xmltool-form');
-            if (xtForm.length === 0 || xtForm.hasClass('no-tree')){
+            var $xtForm = $('#xmltool-form');
+            if ($xtForm.length === 0 || $xtForm.hasClass('no-tree')){
                 waxe.layout.hideTree();
             }
             else {
                 waxe.layout.showTree();
+
             }
-
-
             waxe.dom.loadCodemirror();
+            waxe.dom.addTextareaEvent();
         },
         load: function(url, modal){
             $(document).message('info', 'Loading...', {'autohide': false});
@@ -250,10 +249,20 @@ waxe.cache = {
                 });
             }
         },
+        addTextareaEvent: function() {
+            $('#xmltool-form').on('focus', 'textarea', function() {
+                // TODO: find a better logic to know if the text has been
+                // updated
+                if(waxe.form.$element) {
+                    waxe.form.$element.trigger('field_change.xmltool');
+                }
+            });
+        }
      };
 
     $(document).ready(function(){
         waxe.dom.loadCodemirror();
+        waxe.dom.addTextareaEvent();
 
         $(document).on('click', 'form[data-action] [type=submit]', function(e){
             $(this).parents('form').data('clicked', $(e.target));
