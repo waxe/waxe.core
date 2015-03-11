@@ -80,7 +80,7 @@ def get_svn_username(request, current_user, logged_user, commit):
 
 def get_svn_login(request, current_user, logged_user, commit):
     auth = False
-    if 'versioning.auth.active' in request.registry.settings:
+    if 'waxe.versioning.auth.active' in request.registry.settings:
         auth = True
 
     editor_login = get_svn_username(request, current_user, logged_user, commit)
@@ -88,7 +88,7 @@ def get_svn_login(request, current_user, logged_user, commit):
         # No auth, no need to find a password
         return False, str(editor_login), None, False
 
-    pwd = request.registry.settings.get('versioning.auth.pwd')
+    pwd = request.registry.settings.get('waxe.versioning.auth.pwd')
     if not pwd:
         pwd = current_user.config.versioning_password
 
@@ -107,7 +107,7 @@ def get_svn_client(request, current_user, logged_user, commit):
                                                                   current_user,
                                                                   logged_user,
                                                                   commit)
-    if request.registry.settings.get('versioning.auth.https'):
+    if request.registry.settings.get('waxe.versioning.auth.https'):
         client.callback_ssl_server_trust_prompt = svn_ssl_server_trust_prompt
     return client
 

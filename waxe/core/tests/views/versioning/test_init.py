@@ -181,7 +181,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
         expected = (False, 'Bob', None, False)
         self.assertEqual(res, expected)
 
-        request.registry.settings['versioning.auth.active'] = True
+        request.registry.settings['waxe.versioning.auth.active'] = True
         try:
             helper.get_svn_login(request, self.user_bob, self.user_bob, False)
             assert(False)
@@ -204,7 +204,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
         expected = (True, 'Fred', 'secret_fred', False)
         self.assertEqual(res, expected)
 
-        request.registry.settings['versioning.auth.pwd'] = 'secret'
+        request.registry.settings['waxe.versioning.auth.pwd'] = 'secret'
         res = helper.get_svn_login(request, self.user_fred, self.user_fred,
                                    False)
         expected = (True, 'Fred', 'secret', False)
