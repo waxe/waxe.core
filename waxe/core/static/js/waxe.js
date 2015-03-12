@@ -1,4 +1,4 @@
-/*! Waxe - v0.1.0 - 2015-03-06
+/*! Waxe - v0.1.0 - 2015-03-12
 * https://github.com/LeResKP/waxe
 * Copyright (c) 2015 Aurélien Matouillot; Licensed MIT */
 /*!
@@ -19995,7 +19995,7 @@ var waxe = waxe || {};
             if(this.treePosition) {
                 pluginOptions[this.treePosition] = {
                     initHidden: true,
-                    size: '33%',
+                    size: '25%',
                     onresize_end: function(size){
                         var tree = $('#tree');
                         tree.height(tree.parent().parent().height());
