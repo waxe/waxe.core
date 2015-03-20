@@ -50,7 +50,7 @@ def main(argv=sys.argv):
         # TODO: support another extensions for the search
         extensions = ['.xml']
         paths = browser.get_all_files(extensions, uc.root_path, uc.root_path)[1]
-        search.do_index(dirname, paths)
+        # search.do_index(dirname, paths)
         Task.create(search.do_index, [dirname, paths],
                     owner=str(uc.user.iduser),
                     unique_key='search_%i' % uc.user.iduser)
