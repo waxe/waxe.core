@@ -17,7 +17,7 @@ from waxe.core.models import (
     DBSession,
     UserConfig,
 )
-from taskq.models import Task
+import taskq.models as taskqm
 
 
 def usage(argv):
@@ -35,6 +35,7 @@ def main(argv=sys.argv):
     settings = get_appsettings(config_uri, name="waxe")
     engine = engine_from_config(settings, 'sqlalchemy.')
     DBSession.configure(bind=engine)
+    taskqm.DBSession.configure(bind=engine)
 
     if 'whoosh.path' not in settings:
         print 'whoosh_indexes_path not defined in your conf, nothing to do!'
@@ -51,7 +52,7 @@ def main(argv=sys.argv):
         extensions = ['.xml']
         paths = browser.get_all_files(extensions, uc.root_path, uc.root_path)[1]
         # search.do_index(dirname, paths)
-        Task.create(search.do_index, [dirname, paths],
+        taskqm.Task.create(search.do_index, [dirname, paths],
                     owner=str(uc.user.iduser),
                     unique_key='search_%i' % uc.user.iduser)
 
