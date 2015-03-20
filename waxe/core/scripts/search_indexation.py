@@ -11,9 +11,9 @@ from pyramid.paster import (
     setup_logging,
 )
 
-from waxe import search, browser
+from waxe.core import search, browser
 
-from waxe.models import (
+from waxe.core.models import (
     DBSession,
     UserConfig,
 )
