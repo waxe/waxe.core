@@ -15,6 +15,7 @@ from waxe.core.views.base import (
     NavigationView,
     BaseUserView,
     JSONHTTPBadRequest,
+    JSONView,
     NAV_EDIT,
     NAV_EDIT_TEXT,
     NAV_DIFF,
@@ -27,6 +28,30 @@ class EmptyClass(object):
 
 def fake__get_xmltool_transform():
     return 'Hello world'
+
+
+class TestJSONView(BaseTestCase):
+
+    def test_req_get(self):
+        request = testing.DummyRequest()
+        view = JSONView(request)
+        res = view.req_get()
+        self.assertEqual(res, {})
+
+    def test_req_post(self):
+        request = testing.DummyRequest()
+        view = JSONView(request)
+        res = view.req_post()
+        self.assertEqual(res, {})
+
+        request.body = '{"hello": "world"}'
+        request.json_body = {"hello": "world"}
+        res = view.req_post()
+        self.assertEqual(res, {'hello': 'world'})
+
+        request.POST = {'key': 'value'}
+        res = view.req_post()
+        self.assertEqual(res, {'key': 'value'})
 
 
 class TestBaseView(BaseTestCase):

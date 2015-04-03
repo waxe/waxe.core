@@ -3,6 +3,7 @@ import importlib
 from pyramid.httpexceptions import HTTPBadRequest
 from pyramid.security import has_permission
 from pyramid.renderers import render
+from pyramid.view import view_defaults
 from .. import security, models, search, browser
 from taskq.models import Task
 
@@ -14,6 +15,24 @@ NAV_DIFF = 'diff'
 
 class JSONHTTPBadRequest(HTTPBadRequest):
     pass
+
+
+@view_defaults(renderer='json')
+class JSONView(object):
+
+    def __init__(self, request):
+        self.request = request
+
+    def req_get(self):
+        return self.request.GET
+
+    def req_post(self):
+        if self.request.POST:
+            return self.request.POST
+        if self.request.body:
+            # Angular post the data as body
+            return self.request.json_body
+        return {}
 
 
 class BaseView(object):
