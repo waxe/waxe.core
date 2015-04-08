@@ -23,10 +23,12 @@ class TestIndexView(BaseTestCase):
     def setUp(self):
         super(TestIndexView, self).setUp()
         self.config.registry.settings.update({
-            'versioning': True,
-            'authentication.cookie.secret': 'scrt',
-            'authentication.cookie.callback': ('waxe.core.security.'
-                                               'get_user_permissions')
+            'waxe.versioning': True,
+            'pyramid_auth.cookie.secret': 'scrt',
+            'pyramid_auth.cookie.callback': ('waxe.core.security.'
+                                             'get_user_permissions'),
+            'pyramid_auth.cookie.validate_function': (
+                'waxe.core.security.validate_password'),
         })
         self.config.include('pyramid_auth')
         self.user_fred.config.use_versioning = True

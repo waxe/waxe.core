@@ -145,9 +145,11 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
     def setUp(self):
         super(TestVersioningView, self).setUp()
         self.config.registry.settings.update({
-            'authentication.cookie.secret': 'scrt',
-            'authentication.cookie.callback': ('waxe.core.security.'
-                                               'get_user_permissions')
+            'pyramid_auth.cookie.secret': 'scrt',
+            'pyramid_auth.cookie.callback': ('waxe.core.security.'
+                                             'get_user_permissions'),
+            'pyramid_auth.cookie.validate_function': (
+                'waxe.core.security.validate_password'),
         })
         self.config.include('pyramid_auth')
 
@@ -604,9 +606,11 @@ class TestVersioningViewFakeRepo(BaseTestCase, CreateRepo):
     def setUp(self):
         super(TestVersioningViewFakeRepo, self).setUp()
         self.config.registry.settings.update({
-            'authentication.cookie.secret': 'scrt',
-            'authentication.cookie.callback': ('waxe.core.security.'
-                                               'get_user_permissions')
+            'pyramid_auth.cookie.secret': 'scrt',
+            'pyramid_auth.cookie.callback': ('waxe.core.security.'
+                                             'get_user_permissions'),
+            'pyramid_auth.cookie.validate_function': (
+                'waxe.core.security.validate_password'),
         })
         self.config.include('pyramid_auth')
 
