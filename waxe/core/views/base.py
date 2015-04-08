@@ -3,7 +3,8 @@ import importlib
 from pyramid.httpexceptions import HTTPBadRequest
 from pyramid.security import has_permission
 from pyramid.renderers import render
-from pyramid.view import view_defaults
+from pyramid.view import view_defaults, view_config
+from pyramid.httpexceptions import HTTPException
 from .. import security, models, search, browser
 from taskq.models import Task
 
@@ -15,6 +16,12 @@ NAV_DIFF = 'diff'
 
 class JSONHTTPBadRequest(HTTPBadRequest):
     pass
+
+
+@view_config(context=HTTPException, renderer='json')
+def exception_view(context, request):
+    request.response.status = context._status
+    return str(context)
 
 
 @view_defaults(renderer='json')
