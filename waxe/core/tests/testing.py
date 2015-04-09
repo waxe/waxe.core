@@ -53,10 +53,11 @@ dtd_url = os.path.join(path, 'exercise.dtd')
 
 SETTINGS = {
     'sqlalchemy.url': 'sqlite://',
-    'pyramid_auth.cookie.secret': 'secret',
     'mako.directories': 'waxe.core:templates',
     'session.key': 'session_key',
     'pyramid.includes': ['pyramid_auth', 'pyramid_sqladmin', 'pyramid_mako'],
+    'pyramid_auth.no_routes': 'true',
+    'pyramid_auth.cookie.secret': 'secret',
     'pyramid_auth.cookie.validate_function': 'waxe.core.security.validate_password',
     'pyramid_auth.cookie.callback': 'waxe.core.security.get_user_permissions',
     'dtd_urls': dtd_url,

@@ -18,11 +18,6 @@ class JSONHTTPBadRequest(HTTPBadRequest):
     pass
 
 
-@view_config(context=HTTPException, renderer='json')
-def exception_view(context, request):
-    request.response.status = context._status
-    return str(context)
-
 
 @view_defaults(renderer='json')
 class JSONView(object):

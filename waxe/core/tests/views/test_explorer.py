@@ -541,21 +541,17 @@ class TestExplorerView(LoggedBobTestCase):
 
 class TestFunctionalTestExplorerView(WaxeTestCase):
 
-    def test_home_forbidden(self):
-        res = self.testapp.get('/account/Bob/', status=302)
-        self.assertEqual(
-            res.location,
-            'http://localhost/login?next=http%3A%2F%2Flocalhost%2Faccount%2FBob%2F')
-        res = res.follow()
-        self.assertEqual(res.status, "200 OK")
-        self.assertTrue('<form' in res.body)
-        self.assertTrue('Login' in res.body)
+    def test_permissions(self):
+        self.testapp.get('/account/Bob/', status=401)
+        self.testapp.get('/account/Bob/folder-content.json', status=401)
+        self.testapp.get('/account/Bob/open.json', status=401)
+        self.testapp.get('/account/Bob/saveas-content.json', status=401)
+        self.testapp.get('/account/Bob/saveas.json', status=401)
+        self.testapp.get('/account/Bob/create-folder.json', status=401)
 
     @login_user('Fred')
     def test_home_bad_login(self):
-        res = self.testapp.get('/account/Fred/', status=302)
-        self.assertEqual(res.location,
-                         'http://localhost/forbidden')
+        self.testapp.get('/account/Fred/', status=403)
 
     @login_user('Admin')
     def test_home_admin(self):
@@ -600,16 +596,6 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
 
-    def test_folder_content_forbidden(self):
-        res = self.testapp.get('/account/Bob/folder-content.json', status=302)
-        self.assertEqual(
-            res.location,
-            'http://localhost/login?next=http%3A%2F%2Flocalhost%2Faccount%2FBob%2Ffolder-content.json')
-        res = res.follow()
-        self.assertEqual(res.status, "200 OK")
-        self.assertTrue('<form' in res.body)
-        self.assertTrue('Login' in res.body)
-
     @login_user('Bob')
     def test_folder_content(self):
         path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
@@ -636,16 +622,6 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
         self.assertTrue('>file2.xml<' in dic['content'])
         self.assertEqual(dic['cache'],  {'opensaveas': 'folder1'})
 
-    def test_open_forbidden(self):
-        res = self.testapp.get('/account/Bob/open.json', status=302)
-        self.assertEqual(
-            res.location,
-            'http://localhost/login?next=http%3A%2F%2Flocalhost%2Faccount%2FBob%2Fopen.json')
-        res = res.follow()
-        self.assertEqual(res.status, "200 OK")
-        self.assertTrue('<form' in res.body)
-        self.assertTrue('Login' in res.body)
-
     @login_user('Bob')
     def test_open(self):
         path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
@@ -658,16 +634,6 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
         self.assertTrue('modal' in dic)
         self.assertTrue('>folder1<' in dic['modal'])
         self.assertTrue('>file1.xml<' in dic['modal'])
-
-    def test_saveas_content_forbidden(self):
-        res = self.testapp.get('/account/Bob/saveas-content.json', status=302)
-        self.assertEqual(
-            res.location,
-            'http://localhost/login?next=http%3A%2F%2Flocalhost%2Faccount%2FBob%2Fsaveas-content.json')
-        res = res.follow()
-        self.assertEqual(res.status, "200 OK")
-        self.assertTrue('<form' in res.body)
-        self.assertTrue('Login' in res.body)
 
     @login_user('Bob')
     def test_saveas_content(self):
@@ -682,16 +648,6 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
         self.assertTrue('>folder1<' in dic['content'])
         self.assertTrue('>file1.xml<' in dic['content'])
 
-    def test_saveas_forbidden(self):
-        res = self.testapp.get('/account/Bob/saveas.json', status=302)
-        self.assertEqual(
-            res.location,
-            'http://localhost/login?next=http%3A%2F%2Flocalhost%2Faccount%2FBob%2Fsaveas.json')
-        res = res.follow()
-        self.assertEqual(res.status, "200 OK")
-        self.assertTrue('<form' in res.body)
-        self.assertTrue('Login' in res.body)
-
     @login_user('Bob')
     def test_saveas(self):
         path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
@@ -704,16 +660,6 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
         self.assertTrue('modal' in dic)
         self.assertTrue('>folder1<' in dic['modal'])
         self.assertTrue('>file1.xml<' in dic['modal'])
-
-    def test_create_folder_forbidden(self):
-        res = self.testapp.get('/account/Bob/create-folder.json', status=302)
-        self.assertEqual(
-            res.location,
-            'http://localhost/login?next=http%3A%2F%2Flocalhost%2Faccount%2FBob%2Fcreate-folder.json')
-        res = res.follow()
-        self.assertEqual(res.status, "200 OK")
-        self.assertTrue('<form' in res.body)
-        self.assertTrue('Login' in res.body)
 
     @login_user('Bob')
     def test_create_folder(self):

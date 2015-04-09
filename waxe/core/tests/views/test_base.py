@@ -59,6 +59,7 @@ class TestBaseView(BaseTestCase):
     def setUp(self):
         super(TestBaseView, self).setUp()
         self.config.registry.settings.update({
+            'pyramid_auth.no_routes': 'true',
             'pyramid_auth.cookie.secret': 'scrt',
             'pyramid_auth.cookie.callback': ('waxe.core.security.'
                                              'get_user_permissions'),

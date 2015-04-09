@@ -606,6 +606,7 @@ class TestVersioningViewFakeRepo(BaseTestCase, CreateRepo):
     def setUp(self):
         super(TestVersioningViewFakeRepo, self).setUp()
         self.config.registry.settings.update({
+            'pyramid_auth.no_routes': 'true',
             'pyramid_auth.cookie.secret': 'scrt',
             'pyramid_auth.cookie.callback': ('waxe.core.security.'
                                              'get_user_permissions'),
@@ -795,12 +796,7 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
             '/account/Bob/versioning/commit.json',
             '/account/Bob/versioning/update-texts.json',
         ]:
-            res = self.testapp.get(url, status=302)
-            self.assertTrue('http://localhost/login?next=' in res.location)
-            res = res.follow()
-            self.assertEqual(res.status, "200 OK")
-            self.assertTrue('<form' in res.body)
-            self.assertTrue('Login' in res.body)
+            self.testapp.get(url, status=401)
 
     @login_user('Bob')
     def test_short_status(self):

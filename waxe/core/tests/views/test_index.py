@@ -24,6 +24,7 @@ class TestIndexView(BaseTestCase):
         super(TestIndexView, self).setUp()
         self.config.registry.settings.update({
             'waxe.versioning': True,
+            'pyramid_auth.no_routes': 'true',
             'pyramid_auth.cookie.secret': 'scrt',
             'pyramid_auth.cookie.callback': ('waxe.core.security.'
                                              'get_user_permissions'),
@@ -109,14 +110,7 @@ class TestIndexView(BaseTestCase):
 class FunctionalTestIndexView(WaxeTestCase):
 
     def test_redirect_forbidden(self):
-        res = self.testapp.get('/', status=302)
-        self.assertEqual(
-            res.location,
-            'http://localhost/login?next=http%3A%2F%2Flocalhost%2F')
-        res = res.follow()
-        self.assertEqual(res.status, "200 OK")
-        self.assertTrue('<form' in res.body)
-        self.assertTrue('Login' in res.body)
+        self.testapp.get('/', status=401)
 
     @login_user('Admin')
     def test_redirect(self):
