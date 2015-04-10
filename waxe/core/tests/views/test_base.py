@@ -283,6 +283,118 @@ class TestBaseView(BaseTestCase):
         self.assertEqual(res, 'Hello world')
 
     @login_user('Fred')
+    def test__profile_editor(self):
+        request = self.DummyRequest()
+        request.matched_route = EmptyClass()
+        request.matched_route.name = 'route_json'
+        request.registry.settings['dtd_urls'] = 'http://dtd_url'
+
+        res = BaseView(request)._profile()
+        expected = {
+            'base_path': '/account/Fred',
+            'dtd_urls': ['http://dtd_url'],
+            'editor_login': 'Fred',
+            'extenstions': ['.xml'],
+            'layout_readonly_position': 'south',
+            'layout_tree_position': 'west',
+            'login': 'Fred',
+            'logins': ['Fred'],
+            'root_path': None,
+            'root_template_path': None,
+            'search': False,
+            'versioning': False,
+            'xml_renderer': False
+        }
+        self.assertEqual(res, expected)
+
+        # Search & versioning
+        request.registry.settings['whoosh.path'] = '/tmp/fake'
+        request.registry.settings['waxe.versioning'] = 'true'
+        self.user_bob.config.use_versioning = True
+
+        res = BaseView(request)._profile()
+        expected = {
+            'base_path': '/account/Fred',
+            'dtd_urls': ['http://dtd_url'],
+            'editor_login': 'Fred',
+            'extenstions': ['.xml'],
+            'layout_readonly_position': 'south',
+            'layout_tree_position': 'west',
+            'login': 'Fred',
+            'logins': ['Fred'],
+            'root_path': None,
+            'root_template_path': None,
+            'search': True,
+            'versioning': True,
+            'xml_renderer': False
+        }
+        self.assertEqual(res, expected)
+
+    @login_user('Bob')
+    def test__profile_admin(self):
+        request = self.DummyRequest()
+        request.matched_route = EmptyClass()
+        request.matched_route.name = 'route'
+        request.registry.settings['dtd_urls'] = 'http://dtd_url'
+
+        res = BaseView(request)._profile()
+        expected = {
+            'base_path': '/account/Bob',
+            'dtd_urls': ['http://dtd_url'],
+            'editor_login': 'Bob',
+            'extenstions': ['.xml'],
+            'layout_readonly_position': 'south',
+            'layout_tree_position': 'west',
+            'login': 'Bob',
+            'logins': ['Bob'],
+            'root_path': None,
+            'root_template_path': None,
+            'search': False,
+            'versioning': False,
+            'xml_renderer': False
+        }
+
+        self.assertEqual(res, expected)
+
+        self.user_fred.roles = [self.role_editor, self.role_contributor]
+
+        res = BaseView(request)._profile()
+        self.assertEqual(res, {
+            'base_path': '/account/Bob',
+            'dtd_urls': ['http://dtd_url'],
+            'editor_login': 'Bob',
+            'extenstions': ['.xml'],
+            'layout_readonly_position': 'south',
+            'layout_tree_position': 'west',
+            'login': 'Bob',
+            'logins': ['Bob', 'Fred'],
+            'root_path': None,
+            'root_template_path': None,
+            'search': False,
+            'versioning': False,
+            'xml_renderer': False
+        })
+
+        view = BaseView(request)
+        view.current_user = self.user_fred
+        res = view._profile()
+        self.assertEqual(res, {
+            'base_path': '/account/Fred',
+            'dtd_urls': ['http://dtd_url'],
+            'editor_login': 'Fred',
+            'extenstions': ['.xml'],
+            'layout_readonly_position': 'south',
+            'layout_tree_position': 'west',
+            'login': 'Bob',
+            'logins': ['Bob', 'Fred'],
+            'root_path': None,
+            'root_template_path': None,
+            'search': False,
+            'versioning': False,
+            'xml_renderer': False
+        })
+
+    @login_user('Fred')
     def test__response_editor(self):
         request = self.DummyRequest()
         request.matched_route = EmptyClass()

@@ -1,3 +1,4 @@
+import json
 from pyramid import testing
 from ..testing import WaxeTestCase, login_user, BaseTestCase
 from waxe.core import security
@@ -122,3 +123,15 @@ class FunctionalTestIndexView(WaxeTestCase):
         expected = ('Go to your <a href="/admin">'
                     'admin interface</a> to insert a new user')
         self.assertTrue(expected in res.body)
+
+
+class FunctionalTestIndexView2(WaxeTestCase):
+
+    def test_forbidden(self):
+        self.testapp.get('/profile.json', status=401)
+
+    @login_user('Admin')
+    def test_profile(self):
+        res = self.testapp.get('/profile.json', status=200)
+        dic = json.loads(res.body)
+        self.assertTrue('login' in dic)

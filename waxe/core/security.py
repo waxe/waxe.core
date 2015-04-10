@@ -1,4 +1,9 @@
-from pyramid.security import Everyone, Allow, unauthenticated_userid
+from pyramid.security import (
+    Everyone,
+    Allow,
+    unauthenticated_userid,
+    Authenticated
+)
 import sqlalchemy.orm.exc as sqla_exc
 import logging
 import bcrypt
@@ -11,6 +16,7 @@ log = logging.getLogger(__name__)
 class RootFactory(object):
     __acl__ = [
         (Allow, Everyone, 'view'),
+        (Allow, Authenticated, 'authenticated'),
         (Allow, 'role:%s' % ROLE_ADMIN, ['admin', 'edit']),
         (Allow, 'role:%s' % ROLE_EDITOR, ['editor', 'edit']),
         (Allow, 'role:%s' % ROLE_CONTRIBUTOR, ['contributor', 'edit']),

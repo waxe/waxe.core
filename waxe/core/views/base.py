@@ -18,7 +18,6 @@ class JSONHTTPBadRequest(HTTPBadRequest):
     pass
 
 
-
 @view_defaults(renderer='json')
 class JSONView(object):
 
@@ -201,6 +200,45 @@ class BaseView(object):
                                self.request.registry.settings)
         return dic
 
+    def _profile(self):
+        """Get the profile of the user
+        """
+        dic = {
+            'login': self.logged_user_login,
+            'editor_login': self.logged_user_login,
+            'base_path': '/account/%s' % self.logged_user_login,
+            'root_path': self.root_path,
+            'root_template_path': None,
+            'extenstions': self.extensions,
+            'versioning': self.has_versioning(),
+            'search': ('whoosh.path' in self.request.registry.settings),
+            'xml_renderer': ('waxe.renderers' in
+                             self.request.registry.settings),
+            'dtd_urls': self.request.registry.settings['dtd_urls'].split(),
+            'layout_tree_position': models.LAYOUT_DEFAULTS['tree_position'],
+            'layout_readonly_position': models.LAYOUT_DEFAULTS[
+                'readonly_position'],
+            'logins': [],
+        }
+
+        if self.current_user:
+            dic['editor_login'] = self.current_user.login
+            dic['base_path'] = '/account/%s' % self.current_user.login
+            config = self.current_user.config
+            if config:
+                dic['root_template_path'] = config.root_template_path
+
+        if self.logged_user and self.logged_user.config:
+            config = self.logged_user.config
+            dic['layout_tree_position'] = config.tree_position
+            dic['layout_readonly_position'] = config.readonly_position
+
+        logins = self.get_editable_logins()
+        if logins:
+            dic['logins'] = logins
+
+        return dic
+
 
 class NavigationView(BaseView):
 
@@ -283,7 +321,7 @@ class BaseUserView(NavigationView):
             self.root_path = self.current_user.config.root_path
 
         if (not self.root_path and
-                request.matched_route.name != 'redirect'):
+                request.matched_route.name not in ['redirect', 'profile']):
             if self._is_json():
                 raise JSONHTTPBadRequest('root path not defined')
             raise HTTPBadRequest('root path not defined')
@@ -366,3 +404,10 @@ class BaseUserView(NavigationView):
                 )
             html += ['<li%s><a%s>%s</a></li>' % (li_class, attrs, name)]
         return '<ul class="nav nav-tabs">%s</ul>' % ''.join(html)
+
+
+class JSONBaseUserView(JSONView, BaseUserView):
+
+    def __init__(self, request):
+        JSONView.__init__(self, request)
+        BaseUserView.__init__(self, request)
