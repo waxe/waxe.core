@@ -2,6 +2,7 @@ import os
 import json
 from pyramid import testing
 import pyramid.httpexceptions as exc
+from webob.multidict import MultiDict
 from mock import patch
 from waxe.core.tests.testing import LoggedBobTestCase, WaxeTestCase, login_user
 from waxe.core.views.explorer import ExplorerView
@@ -105,6 +106,47 @@ class TestExplorerView(LoggedBobTestCase):
                 self.assertEqual(len(res['results']), 1)
                 expected = [('file1.xml', 'Excerpt of the file1')]
                 self.assertEqual(res['results'], expected)
+
+    def test_remove(self):
+        class C(object): pass
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
+        self.user_bob.config.root_path = path
+
+        request = testing.DummyRequest()
+        request.matched_route = C()
+        request.matched_route.name = 'route_json'
+        request.custom_route_path = lambda *args, **kw: '/filepath'
+
+        try:
+            ExplorerView(request).remove()
+            assert(False)
+        except exc.HTTPClientError, e:
+            self.assertEqual(str(e), 'No filename given')
+
+        request = testing.DummyRequest(
+            post=MultiDict([
+                ('paths', 'unexisting1.xml'),
+                ('paths', 'unexisting2.xml')
+            ]))
+
+        try:
+            ExplorerView(request).remove()
+            assert(False)
+        except exc.HTTPClientError, e:
+            expected = (
+                "The following filenames don't exist: "
+                "unexisting1.xml, unexisting2.xml"
+            )
+            self.assertEqual(str(e), expected)
+
+        request = testing.DummyRequest(
+            post=MultiDict([
+                ('paths', 'file1.xml'),
+            ]))
+
+        with patch('os.remove', return_value=True):
+            res = ExplorerView(request).remove()
+            self.assertEqual(res, True)
 
 
 class TestFunctionalTestExplorerView(WaxeTestCase):

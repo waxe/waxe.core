@@ -1,5 +1,6 @@
 from pyramid import testing
 from pyramid.httpexceptions import HTTPBadRequest
+from webob.multidict import MultiDict
 from mock import patch
 
 from ..testing import BaseTestCase, LoggedBobTestCase, login_user
@@ -52,6 +53,21 @@ class TestJSONView(BaseTestCase):
         request.POST = {'key': 'value'}
         res = view.req_post
         self.assertEqual(res, {'key': 'value'})
+
+    def test_req_post_getall(self):
+        request = testing.DummyRequest()
+        view = JSONView(request)
+        res = view.req_post_getall('key')
+        self.assertEqual(res, {})
+
+        request.body = '{"hello": ["world"]}'
+        request.json_body = {"hello": ["world"]}
+        res = view.req_post_getall('hello')
+        self.assertEqual(res, ['world'])
+
+        request.POST = MultiDict([('key', 'value')])
+        res = view.req_post_getall('key')
+        self.assertEqual(res, ['value'])
 
 
 class TestBaseView(BaseTestCase):

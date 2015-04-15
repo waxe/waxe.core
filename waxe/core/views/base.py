@@ -37,6 +37,15 @@ class JSONView(object):
             return self.request.json_body
         return {}
 
+    def req_post_getall(self, key):
+        if self.request.POST:
+            return self.request.POST.getall(key)
+        if self.request.body:
+            # Angular post the data as body
+            # The value as json should already be a list
+            return self.request.json_body.get(key)
+        return {}
+
 
 class BaseView(object):
     """All the Waxe views should inherit from this one. It doesn't make any

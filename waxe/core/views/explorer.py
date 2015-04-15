@@ -99,9 +99,35 @@ class ExplorerView(JSONBaseUserView):
             'items_per_page': mod_search.HITS_PER_PAGE,
         }
 
+    @view_config(route_name='remove_json', permission='edit')
+    def remove(self):
+        # TODO: use DELETE method
+        filenames = self.req_post_getall('paths')
+        if not filenames:
+            raise exc.HTTPClientError('No filename given')
+
+        absfilenames = []
+        errors = []
+        for filename in filenames:
+            absfilename = browser.absolute_path(filename, self.root_path)
+            if not os.path.isfile(absfilename):
+                errors += [filename]
+            absfilenames += [absfilename]
+
+        if errors:
+            raise exc.HTTPClientError(
+                "The following filenames don't exist: %s" % ', '.join(errors))
+
+        for absfilename in absfilenames:
+            os.remove(absfilename)
+            self.add_indexation_task([absfilename])
+
+        return True
+
 
 def includeme(config):
     config.add_route('explore_json', '/explore.json')
     config.add_route('create_folder_json', '/create-folder.json')
     config.add_route('search_json', '/search.json')
+    config.add_route('remove_json', '/remove.json')
     config.scan(__name__)
