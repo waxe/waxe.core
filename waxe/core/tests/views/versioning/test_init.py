@@ -863,8 +863,7 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
                         res._headerlist)
         expected = {
             "error_msg": "No file selected!",
-            'breadcrumb': ('<li><a data-href="/account/Bob/explore.json?path=" '
-                           'href="/account/Bob/explore?path=">root</a></li>')
+            'breadcrumb': '<li>root</li>'
         }
         self.assertEqual(json.loads(res.body), expected)
 
@@ -900,8 +899,7 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
                         res._headerlist)
         expected = {
             "error_msg": "Missing parameters!",
-            'breadcrumb': ('<li><a data-href="/account/Bob/explore.json?path=" '
-                           'href="/account/Bob/explore?path=">root</a></li>')
+            'breadcrumb': '<li>root</li>'
         }
         self.assertEqual(json.loads(res.body), expected)
 
@@ -921,8 +919,7 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
                                 status=200)
         expected = {
             "error_msg": "A filename should be provided",
-            'breadcrumb': ('<li><a data-href="/account/Bob/explore.json?path=" '
-                           'href="/account/Bob/explore?path=">root</a></li>')
+            'breadcrumb': '<li>root</li>'
         }
         self.assertEqual(json.loads(res.body), expected)
 
@@ -942,8 +939,7 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
                                 status=200)
         expected = {
             "error_msg": "Missing parameters!",
-            'breadcrumb': ('<li><a data-href="/account/Bob/explore.json?path=" '
-                           'href="/account/Bob/explore?path=">root</a></li>')
+            'breadcrumb': '<li>root</li>'
         }
         self.assertEqual(json.loads(res.body), expected)
 

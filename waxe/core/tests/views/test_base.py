@@ -35,22 +35,22 @@ class TestJSONView(BaseTestCase):
     def test_req_get(self):
         request = testing.DummyRequest()
         view = JSONView(request)
-        res = view.req_get()
+        res = view.req_get
         self.assertEqual(res, {})
 
     def test_req_post(self):
         request = testing.DummyRequest()
         view = JSONView(request)
-        res = view.req_post()
+        res = view.req_post
         self.assertEqual(res, {})
 
         request.body = '{"hello": "world"}'
         request.json_body = {"hello": "world"}
-        res = view.req_post()
+        res = view.req_post
         self.assertEqual(res, {'hello': 'world'})
 
         request.POST = {'key': 'value'}
-        res = view.req_post()
+        res = view.req_post
         self.assertEqual(res, {'key': 'value'})
 
 
@@ -732,34 +732,23 @@ class TestNavigationView(LoggedBobTestCase):
         request.custom_route_path = lambda *args, **kw: '/filepath'
         res = NavigationView(request)._get_breadcrumb('folder1')
         expected = (
-            '<li>'
-            '<a data-href="/filepath" href="/filepath">root</a>'
-            '</li>'
+            '<li>root</li>'
             '<li class="active">folder1</li>'
         )
         self.assertEqual(res, expected)
 
         res = NavigationView(request)._get_breadcrumb('')
-        expected = (
-            '<li class="active">root</li>'
-        )
+        expected = '<li class="active">root</li>'
         self.assertEqual(res, expected)
 
         res = NavigationView(request)._get_breadcrumb('', force_link=True)
-        expected = (
-            '<li>'
-            '<a data-href="/filepath" href="/filepath">root</a>'
-            '</li>'
-        )
+        expected = '<li>root</li>'
         self.assertEqual(res, expected)
 
-        res = NavigationView(request)._get_breadcrumb('',
-                                                      data_href_name='data-modal-href', force_link=True)
-        expected = (
-            '<li>'
-            '<a data-modal-href="/filepath" href="/filepath">root</a>'
-            '</li>'
-        )
+        res = NavigationView(request)._get_breadcrumb(
+            '',
+            data_href_name='data-modal-href', force_link=True)
+        expected = '<li>root</li>'
         self.assertEqual(res, expected)
 
 

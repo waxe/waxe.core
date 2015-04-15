@@ -24,9 +24,11 @@ class JSONView(object):
     def __init__(self, request):
         self.request = request
 
+    @property
     def req_get(self):
         return self.request.GET
 
+    @property
     def req_post(self):
         if self.request.POST:
             return self.request.POST
@@ -284,18 +286,14 @@ class NavigationView(BaseView):
     def _get_breadcrumb(self, relpath, route_name='explore',
                         data_href_name='data-href', force_link=False,
                         rootpath=None):
+        # TODO: this function will be removed soon
         tple = self._get_breadcrumb_data(relpath, rootpath)
         html = []
         for index, (name, relpath) in enumerate(tple):
             if index == len(tple) - 1 and not force_link:
                 html += ['<li class="active">%s</li>' % (name)]
             else:
-                html += ['<li>%s</li>' % (
-                    self._generate_link_tag(
-                        name, relpath,
-                        route_name=route_name,
-                        data_href_name=data_href_name)
-                )]
+                html += ['<li>%s</li>' % name]
         return ''.join(html)
 
 
@@ -343,6 +341,7 @@ class BaseUserView(NavigationView):
         settings = self.request.registry.settings
         if 'whoosh.path' not in settings:
             return None
+
         return self.current_user.get_search_dirname(settings['whoosh.path'])
 
     def add_opened_file(self, path):

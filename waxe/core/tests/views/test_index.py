@@ -44,7 +44,7 @@ class TestIndexView(BaseTestCase):
             + '/%(login)s' % kw)
         res = IndexView(request).redirect()
         self.assertEqual(res.status, "302 Found")
-        self.assertEqual(res.location, '/home/Bob')
+        self.assertEqual(res.location, '/explore_json/Bob')
 
     def test_redirect_not_logged(self):
         request = testing.DummyRequest()
@@ -118,11 +118,7 @@ class FunctionalTestIndexView(WaxeTestCase):
         res = self.testapp.get('/', status=302)
         self.assertEqual(
             res.location,
-            'http://localhost/account/Admin/')
-        res = res.follow()
-        expected = ('Go to your <a href="/admin">'
-                    'admin interface</a> to insert a new user')
-        self.assertTrue(expected in res.body)
+            'http://localhost/account/Admin/explore.json')
 
 
 class FunctionalTestIndexView2(WaxeTestCase):

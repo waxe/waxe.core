@@ -41,7 +41,7 @@ class LoginView(JSONView):
         LoginForm = forms.create_login_form(self.request,
                                             validate_func)
         widget = LoginForm().req()
-        params = self.req_post()
+        params = self.req_post
 
         if not params:
             raise exc.HTTPClientError()

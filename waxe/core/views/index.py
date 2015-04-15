@@ -17,7 +17,8 @@ class IndexView(BaseUserView):
 
     @view_config(route_name='redirect', permission='edit')
     def redirect(self):
-        location = self.request.custom_route_path('home')
+        # TODO: this function will be removed soon
+        location = self.request.custom_route_path('explore_json')
         if self.request.query_string:
             location += '?%s' % self.request.query_string
         return HTTPFound(location=location)

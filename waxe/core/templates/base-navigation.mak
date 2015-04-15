@@ -14,13 +14,13 @@
               <b class="caret"></b>
             </a>
             <ul class="dropdown-menu dropdown-menu-icons">
-              <li><a title="New" data-href="${request.custom_route_path('new_json')}" href="#"><i class="fa fa-file-o"></i>New</a></li>
+              <li><a title="New" href="#"><i class="fa fa-file-o"></i>New</a></li>
               % if root_template_path:
-                <li><a title="New from template" data-href="${request.custom_route_path('open_template_json')}" href="#"><i class="fa fa-file-excel-o"></i>New (template)</a></li>
+                <li><a title="New from template" href="#"><i class="fa fa-file-excel-o"></i>New (template)</a></li>
               % endif
-              <li><a title="Open" data-cache="cache.opensaveas" data-href="${request.custom_route_path('open_json')}" href="#"><i class="fa fa-folder-open-o"></i>Open</a></li>
+              <li><a title="Open" data-cache="cache.opensaveas" href="#"><i class="fa fa-folder-open-o"></i>Open</a></li>
               <li class="disabled"><a title="Save" class="save" data-call="navbar.save" href="#"><i class="fa fa-save"></i>Save</a></li>
-              <li><a class="saveas" title="Save as" data-cache="cache.opensaveas" data-href="${request.custom_route_path('saveas_json')}" href="#"><i class="fa fa-save"></i>Save as</a></li>
+              <li><a class="saveas" title="Save as" data-cache="cache.opensaveas" href="#"><i class="fa fa-save"></i>Save as</a></li>
               <li><a class="split" title="Split view" data-call="navbar.split" data-href="${request.custom_route_path('edit')}" href="#"><i class="fa fa-minus"></i>Split view</a></li>
             </ul>
           </li>
@@ -72,8 +72,8 @@
         </ul>
       </div>
       <ul class="nav navbar-nav navbar-icons">
-        <li><a class="fa fa-file-o" title="New" data-href="${request.custom_route_path('new_json')}" href="#"></a></li>
-        <li><a class="fa fa-folder-open-o" title="Open" data-cache="cache.opensaveas" data-href="${request.custom_route_path('open_json')}" href="#"></a></li>
+        <li><a class="fa fa-file-o" title="New" href="#"></a></li>
+        <li><a class="fa fa-folder-open-o" title="Open" data-cache="cache.opensaveas" href="#"></a></li>
         <li><a class="save fa fa-save" title="Save" data-call="navbar.save" href="#"></a></li>
       </ul>
   </nav>
