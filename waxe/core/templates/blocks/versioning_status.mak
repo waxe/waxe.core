@@ -9,9 +9,9 @@
       <ul class="list-unstyled">
       % for conflicted in conflicteds:
         <li>
-        <input type="checkbox" checked="checked" name="filenames" value="${conflicted.relpath}" />
-        <span class="label label-${conflicted.status}">${conflicted.status}</span>
-        <a href="${request.custom_route_path('versioning_edit_conflict', _query=[('path', conflicted.relpath)])}" data-href="${request.custom_route_path('versioning_edit_conflict_json', _query=[('path', conflicted.relpath)])}">${conflicted.relpath}</a>
+        <input type="checkbox" checked="checked" name="filenames" value="${conflicted['relpath']}" />
+        <span class="label label-${conflicted['status']}">${conflicted['status']}</span>
+        <a href="${request.custom_route_path('versioning_edit_conflict', _query=[('path', conflicted['relpath'])])}" data-href="${request.custom_route_path('versioning_edit_conflict_json', _query=[('path', conflicted['relpath'])])}">${conflicted['relpath']}</a>
         </li>
         % endfor
       </ul>

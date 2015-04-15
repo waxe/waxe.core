@@ -128,6 +128,12 @@ class StatusObject(object):
                 return False
         return True
 
+    def to_dict(self):
+        return {
+            'relpath': self.relpath,
+            'status': self.status
+        }
+
 
 class PysvnVersioning(object):
 
