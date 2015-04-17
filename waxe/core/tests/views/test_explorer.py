@@ -156,12 +156,8 @@ class TestFunctionalTestExplorerView(WaxeTestCase):
 
     @login_user('Admin')
     def test_explore_json_admin(self):
-        res = self.testapp.get('/account/Admin/explore.json', status=200)
-        expected = ('Go to your <a href=\\"/admin\\">'
-                    'admin interface</a> to insert a new user')
-        self.assertTrue(expected in res.body)
-        self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
-                        res._headerlist)
+        res = self.testapp.get('/account/Admin/explore.json', status=400)
+        self.assertEqual(res.body, '"root path not defined"')
 
     @login_user('Bob')
     def test_explore_json(self):

@@ -170,47 +170,6 @@ class BaseView(object):
         mod, func = func.rsplit('.', 1)
         return getattr(importlib.import_module(mod), func)
 
-    def _response(self, dic):
-        """Update the given dic for non json request with some data needed in
-        the navbar.
-
-        :param dic: a dict containing some data for the reponse
-        :type dic: dict
-        :return: the given dict updated if needed
-        :rtype: dict
-        """
-        if self._is_json():
-            return dic
-
-        editor_login = self.logged_user_login
-        dic['root_template_path'] = None
-        if self.current_user:
-            editor_login = self.current_user.login
-            config = self.current_user.config
-            if config:
-                dic['root_template_path'] = config.root_template_path
-        dic['editor_login'] = editor_login
-        # Layout option
-        if self.logged_user and self.logged_user.config:
-            config = self.logged_user.config
-            dic['layout_tree_position'] = config.tree_position
-            dic['layout_readonly_position'] = config.readonly_position
-        else:
-            default = models.LAYOUT_DEFAULTS
-            dic['layout_tree_position'] = default['tree_position']
-            dic['layout_readonly_position'] = default['readonly_position']
-
-        logins = [l for l in self.get_editable_logins() if l != editor_login]
-        if logins:
-            dic['logins'] = logins
-
-        dic['versioning'] = self.has_versioning()
-        dic['search'] = ('whoosh.path' in self.request.registry.settings)
-        # Assume we have an XML renderer if we have renderer defined
-        dic['xml_renderer'] = ('waxe.renderers' in
-                               self.request.registry.settings)
-        return dic
-
     def _profile(self):
         """Get the profile of the user
         """
@@ -310,6 +269,7 @@ class BaseUserView(NavigationView):
     """Base view which check that the current user has a root path. It's to
     check he has some files to edit!
     """
+    # TODO: improve the error messages
     def __init__(self, request):
         super(BaseUserView, self).__init__(request)
 

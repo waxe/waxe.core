@@ -1,5 +1,6 @@
 import json
 from pyramid import testing
+import pyramid.httpexceptions as exc
 from ..testing import WaxeTestCase, login_user, BaseTestCase
 from waxe.core import security
 from waxe.core.models import (
@@ -10,8 +11,6 @@ from waxe.core.models import (
 
 from waxe.core.views.index import (
     IndexView,
-    BadRequestView,
-    HTTPBadRequest,
 )
 
 
@@ -56,56 +55,8 @@ class TestIndexView(BaseTestCase):
         try:
             IndexView(request).redirect()
             assert(False)
-        except HTTPBadRequest, e:
+        except exc.HTTPBadRequest, e:
             self.assertEqual(str(e), 'root path not defined')
-
-    @login_user('Admin')
-    def test_bad_request(self):
-        request = testing.DummyRequest()
-        request.context = security.RootFactory(request)
-        request.route_path = lambda *args, **kw: '/%s' % args[0]
-        request.matched_route = C()
-        request.matched_route.name = 'route_json'
-        dic = BadRequestView(request).bad_request()
-        self.assertEqual(len(dic), 1)
-        expected = ('Go to your <a href="/admin_home">'
-                    'admin interface</a> to insert a new user')
-        self.assertEqual(dic['content'], expected)
-
-        editor = User(login='editor', password='pass1')
-        editor.roles = [self.role_editor]
-        editor.config = UserConfig(root_path='/path')
-        DBSession.add(editor)
-
-        self.user_bob.roles += [self.role_editor]
-        request.route_path = lambda *args, **kw: '/editorpath'
-        dic = BadRequestView(request).bad_request()
-        self.maxDiff = None
-        expected = (
-            u'Please select the account you want to use:'
-            '\n<br />\n<br />\n'
-            '<ul class="list-unstyled">'
-            '\n  <li>\n    '
-            '<a href="/editorpath">Bob</a>\n  '
-            '</li>\n  '
-            '<li>\n    '
-            '<a href="/editorpath">editor</a>\n  '
-            '</li>\n</ul>\n')
-        self.assertEqual(len(dic), 1)
-        self.assertTrue(expected in dic['content'])
-
-    @login_user('Fred')
-    def test_bad_request_not_admin(self):
-        request = testing.DummyRequest()
-        request.context = security.RootFactory(request)
-        request.route_path = lambda *args, **kw: '/%s' % args[0]
-        request.matched_route = C()
-        request.matched_route.name = 'route_json'
-        self.user_fred.config.root_path = ''
-        dic = BadRequestView(request).bad_request()
-        self.assertEqual(len(dic), 1)
-        expected = 'There is a problem with your configuration'
-        self.assertTrue(expected in dic['content'])
 
 
 class FunctionalTestIndexView(WaxeTestCase):
