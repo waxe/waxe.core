@@ -210,62 +210,7 @@ class BaseView(object):
         return dic
 
 
-class NavigationView(BaseView):
-
-    def _generate_link_tag(self, name, relpath, route_name,
-                           data_href_name='data-href', extra_attrs=None):
-        """Generate HTML a with the ajax and natural href.
-        """
-        attrs = []
-        if route_name:
-            data_href_link = self.request.custom_route_path(
-                '%s_json' % route_name, _query=[('path', relpath)])
-
-            href_link = self.request.custom_route_path(
-                route_name, _query=[('path', relpath)])
-
-            attrs += [
-                (data_href_name, data_href_link),
-                ('href', href_link),
-            ]
-        else:
-            attrs += [('href', '#')]
-
-        if extra_attrs:
-            attrs += extra_attrs
-
-        attrs_str = ''.join([' %s="%s"' % (k, v) for k, v in attrs])
-        return '<a%s>%s</a>' % (
-            attrs_str,
-            name
-        )
-
-    def _get_breadcrumb_data(self, relpath, rootpath=None):
-        tple = []
-        while relpath and relpath != rootpath:
-            name = os.path.basename(relpath)
-            tple += [(name, relpath)]
-            relpath = os.path.dirname(relpath)
-
-        tple += [('root', rootpath or '')]
-        tple.reverse()
-        return tple
-
-    def _get_breadcrumb(self, relpath, route_name='explore',
-                        data_href_name='data-href', force_link=False,
-                        rootpath=None):
-        # TODO: this function will be removed soon
-        tple = self._get_breadcrumb_data(relpath, rootpath)
-        html = []
-        for index, (name, relpath) in enumerate(tple):
-            if index == len(tple) - 1 and not force_link:
-                html += ['<li class="active">%s</li>' % (name)]
-            else:
-                html += ['<li>%s</li>' % name]
-        return ''.join(html)
-
-
-class BaseUserView(NavigationView):
+class BaseUserView(BaseView):
     """Base view which check that the current user has a root path. It's to
     check he has some files to edit!
     """
@@ -288,7 +233,7 @@ class BaseUserView(NavigationView):
             self.root_path = self.current_user.config.root_path
 
         if (not self.root_path and
-                request.matched_route.name not in ['redirect', 'profile']):
+                request.matched_route.name not in ['profile']):
             if self._is_json():
                 raise JSONHTTPBadRequest('root path not defined')
             raise HTTPBadRequest('root path not defined')
@@ -346,32 +291,6 @@ class BaseUserView(NavigationView):
             # For example if we use ldap authentication, self.logged_user can
             # be None if the user is not in the DB.
             models.DBSession.add(self.logged_user)
-
-    def _get_nav_editor(self, filename, kind):
-        """Navs to display XML or Source when we edit a file
-        """
-        html = []
-        lis = [
-            ('XML', 'edit', NAV_EDIT),
-            ('Source', 'edit_text', NAV_EDIT_TEXT),
-        ]
-        if self.has_versioning():
-            lis += [('Diff', 'versioning_diff', NAV_DIFF)]
-
-        for name, route, k in lis:
-            li_class = ''
-            attrs = ''
-            if kind == k:
-                li_class = ' class="active"'
-            else:
-                attrs = ' href="%s" data-href="%s"' % (
-                    self.request.custom_route_path(route,
-                                                   _query=[('path', filename)]),
-                    self.request.custom_route_path('%s_json' % route,
-                                                   _query=[('path', filename)]),
-                )
-            html += ['<li%s><a%s>%s</a></li>' % (li_class, attrs, name)]
-        return '<ul class="nav nav-tabs">%s</ul>' % ''.join(html)
 
 
 class JSONBaseUserView(JSONView, BaseUserView):

@@ -13,7 +13,6 @@ from waxe.core.models import (
 from waxe.core import security
 from waxe.core.views.base import (
     BaseView,
-    NavigationView,
     BaseUserView,
     JSONHTTPBadRequest,
     JSONView,
@@ -450,88 +449,6 @@ class TestBaseView(BaseTestCase):
         self.assertTrue('/cpath' in res)
 
 
-class TestNavigationView(LoggedBobTestCase):
-
-    def test__generate_link_tag(self):
-        request = testing.DummyRequest()
-        request.custom_route_path = lambda *args, **kw: '/filepath'
-        obj = NavigationView(request)
-        res = obj._generate_link_tag(name='Hello', relpath='/path',
-                                     route_name='test')
-        expected = (
-            '<a data-href="/filepath" href="/filepath">Hello</a>'
-        )
-        self.assertEqual(res, expected)
-
-        res = obj._generate_link_tag(name='Hello', relpath='/path',
-                                     route_name='test',
-                                     data_href_name='data-modal-href')
-        expected = (
-            '<a data-modal-href="/filepath" href="/filepath">Hello</a>'
-        )
-        self.assertEqual(res, expected)
-
-        res = obj._generate_link_tag(name='Hello', relpath='/path',
-                                     route_name='test',
-                                     data_href_name='data-modal-href',
-                                     extra_attrs=[('id', 'myid')])
-        expected = (
-            '<a data-modal-href="/filepath" href="/filepath" id="myid">'
-            'Hello</a>'
-        )
-        self.assertEqual(res, expected)
-
-        res = obj._generate_link_tag(name='Hello', relpath='/path',
-                                     route_name=None,
-                                     data_href_name='data-modal-href',
-                                     extra_attrs=[('id', 'myid')])
-        expected = (
-            '<a href="#" id="myid">Hello</a>'
-        )
-        self.assertEqual(res, expected)
-
-    def test__get_breadcrumb_data(self):
-        request = testing.DummyRequest()
-        res = NavigationView(request)._get_breadcrumb_data('')
-        expected = [('root', '')]
-        self.assertEqual(res, expected)
-
-        res = NavigationView(request)._get_breadcrumb_data('folder1')
-        expected = [('root', ''), ('folder1', 'folder1')]
-        self.assertEqual(res, expected)
-
-        res = NavigationView(request)._get_breadcrumb_data(
-            'folder1/folder2/folder3',
-            'folder1/folder2')
-        expected = [('root', 'folder1/folder2'),
-                    ('folder3', 'folder1/folder2/folder3')]
-        self.assertEqual(res, expected)
-
-    def test__get_breadcrumb(self):
-        request = testing.DummyRequest()
-        request.custom_route_path = lambda *args, **kw: '/filepath'
-        res = NavigationView(request)._get_breadcrumb('folder1')
-        expected = (
-            '<li>root</li>'
-            '<li class="active">folder1</li>'
-        )
-        self.assertEqual(res, expected)
-
-        res = NavigationView(request)._get_breadcrumb('')
-        expected = '<li class="active">root</li>'
-        self.assertEqual(res, expected)
-
-        res = NavigationView(request)._get_breadcrumb('', force_link=True)
-        expected = '<li>root</li>'
-        self.assertEqual(res, expected)
-
-        res = NavigationView(request)._get_breadcrumb(
-            '',
-            data_href_name='data-modal-href', force_link=True)
-        expected = '<li>root</li>'
-        self.assertEqual(res, expected)
-
-
 class TestBaseUserView(BaseTestCase):
 
     def test___init__(self):
@@ -551,7 +468,7 @@ class TestBaseUserView(BaseTestCase):
         except JSONHTTPBadRequest, e:
             self.assertEqual(str(e), 'root path not defined')
 
-        request.matched_route.name = 'redirect'
+        request.matched_route.name = 'profile'
         res = BaseUserView(request)
         self.assertFalse(res.root_path)
         self.assertTrue(res)
@@ -655,57 +572,3 @@ class TestBaseUserView(BaseTestCase):
             request.registry.settings['whoosh.path'] = '/tmp/fake'
             res = view.add_indexation_task()
             m.assert_called_once()
-
-    def test__get_nav_editor(self):
-        class C(object): pass
-        request = testing.DummyRequest()
-        request.custom_route_path = lambda *args, **kw: '/%s/filepath' % args[0]
-        request.matched_route = C()
-        request.matched_route.name = 'route'
-        self.config.testing_securitypolicy(userid='Bob', permissive=True)
-
-        res = BaseUserView(request)._get_nav_editor(
-            'file1.xml',
-            kind=NAV_EDIT)
-        expected = (
-            '<ul class="nav nav-tabs">'
-            '<li class="active"><a>XML</a></li>'
-            '<li><a href="/edit_text/filepath" '
-            'data-href="/edit_text_json/filepath">Source</a></li>'
-            '</ul>'
-        )
-        self.assertEqual(res, expected)
-
-        request.registry.settings['waxe.versioning'] = 'true'
-        self.user_bob.config.use_versioning = True
-        res = BaseUserView(request)._get_nav_editor(
-            'file1.xml',
-            kind=NAV_EDIT)
-        expected = (
-            '<ul class="nav nav-tabs">'
-            '<li class="active"><a>XML</a></li>'
-            '<li><a href="/edit_text/filepath" '
-            'data-href="/edit_text_json/filepath">Source</a></li>'
-            '<li><a href="/versioning_diff/filepath" '
-            'data-href="/versioning_diff_json/filepath">Diff</a></li>'
-            '</ul>'
-        )
-        self.assertEqual(res, expected)
-
-        res = BaseUserView(request)._get_nav_editor(
-            'file1.xml',
-            kind=NAV_EDIT_TEXT)
-        expected = (
-            '<ul class="nav nav-tabs">'
-            '<li>'
-            '<a href="/edit/filepath" data-href="/edit_json/filepath">XML</a>'
-            '</li>'
-            '<li class="active"><a>Source</a></li>'
-            '<li>'
-            '<a href="/versioning_diff/filepath" '
-            'data-href="/versioning_diff_json/filepath">'
-            'Diff</a></li>'
-            '</ul>'
-        )
-        self.assertEqual(res, expected)
-
