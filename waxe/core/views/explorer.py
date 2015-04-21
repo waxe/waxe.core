@@ -1,11 +1,11 @@
 import os
 from pyramid.view import view_config
 import pyramid.httpexceptions as exc
-from base import JSONBaseUserView
+from base import BaseUserView
 from .. import browser, search as mod_search
 
 
-class ExplorerView(JSONBaseUserView):
+class ExplorerView(BaseUserView):
 
     @view_config(route_name='explore_json', permission='edit')
     def explore(self):

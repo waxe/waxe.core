@@ -7,7 +7,7 @@ import pyramid.httpexceptions as exc
 from waxe.core import browser
 from waxe.core import models
 from waxe.core.utils import escape_entities
-from ..base import BaseUserView, NAV_DIFF
+from ..base import BaseUserView
 from . import helper
 
 
@@ -42,8 +42,7 @@ class VersioningView(BaseUserView):
                 return False
         return False
 
-    @view_config(route_name='versioning_short_status_json', renderer='json',
-                 permission='edit')
+    @view_config(route_name='versioning_short_status_json', permission='edit')
     def short_status(self):
         """Status of the given path without any depth.
         """
@@ -54,8 +53,7 @@ class VersioningView(BaseUserView):
             dic[o.relpath] = o.status
         return dic
 
-    @view_config(route_name='versioning_status_json', renderer='json',
-                 permission='edit')
+    @view_config(route_name='versioning_status_json', permission='edit')
     def status(self, info_msg=None, error_msg=None):
         """Full status of the repo. We want to get all files
         """
@@ -96,8 +94,7 @@ class VersioningView(BaseUserView):
         }
         return dic
 
-    @view_config(route_name='versioning_diff_json', renderer='json',
-                 permission='edit')
+    @view_config(route_name='versioning_diff_json', permission='edit')
     def diff(self):
         relpath = self.request.GET.get('path', '')
         if not relpath:
@@ -135,8 +132,7 @@ class VersioningView(BaseUserView):
                     _query=[('path', relpath)])
         return content
 
-    @view_config(route_name='versioning_full_diff_json', renderer='json',
-                 permission='edit')
+    @view_config(route_name='versioning_full_diff_json', permission='edit')
     def full_diff(self):
         """Editable diff of all the files
         """
@@ -159,8 +155,7 @@ class VersioningView(BaseUserView):
         }, self.request)
         return content
 
-    @view_config(route_name='versioning_update_json', renderer='json',
-                 permission='edit')
+    @view_config(route_name='versioning_update_json', permission='edit')
     def update(self):
         relpath = self.request.GET.get('path', '')
         vobj = self.get_versioning_obj()
@@ -190,8 +185,7 @@ class VersioningView(BaseUserView):
         }, self.request)
         return content
 
-    @view_config(route_name='versioning_commit_json', renderer='json',
-                 permission='edit')
+    @view_config(route_name='versioning_commit_json', permission='edit')
     def commit(self):
         msg = self.request.POST.get('msg')
         filenames = self.request.POST.getall('path')
@@ -227,8 +221,7 @@ class VersioningView(BaseUserView):
                                                 iduser_commit=iduser_commit)
         return 'Files commited'
 
-    @view_config(route_name='versioning_update_texts_json', renderer='json',
-                 permission='edit')
+    @view_config(route_name='versioning_update_texts_json', permission='edit')
     def update_texts(self):
         params = xmltool.utils.unflatten_params(self.request.POST)
         if 'data' not in params or not params['data']:
@@ -258,8 +251,7 @@ class VersioningView(BaseUserView):
         self.add_indexation_task(absfilenames)
         return 'Files updated'
 
-    @view_config(route_name='versioning_edit_conflict_json', renderer='json',
-                 permission='edit')
+    @view_config(route_name='versioning_edit_conflict_json', permission='edit')
     def edit_conflict(self):
         """
         Basically it's the same function as editor.edit_text
@@ -290,7 +282,7 @@ class VersioningView(BaseUserView):
 
         return html
 
-    @view_config(route_name='versioning_update_conflict_json', renderer='json',
+    @view_config(route_name='versioning_update_conflict_json',
                  permission='edit')
     def update_conflict(self):
         # TODO: we should have an event 'save' to fix the conflict if okay
@@ -317,7 +309,7 @@ class VersioningView(BaseUserView):
         self.add_indexation_task([absfilename])
         return 'Conflict fixed'
 
-    @view_config(route_name='versioning_revert_json', renderer='json', permission='edit')
+    @view_config(route_name='versioning_revert_json', permission='edit')
     def revert(self):
         filenames = self.request.POST.get('paths')
         if not filenames:

@@ -15,11 +15,7 @@ from waxe.core import security
 from waxe.core.views.base import (
     BaseView,
     BaseUserView,
-    JSONHTTPBadRequest,
     JSONView,
-    NAV_EDIT,
-    NAV_EDIT_TEXT,
-    NAV_DIFF,
 )
 
 
@@ -105,7 +101,7 @@ class TestBaseView(BaseTestCase):
             self.assertEqual(obj.logged_user_login, self.user_bob.login)
             self.assertEqual(obj.logged_user, self.user_bob)
             self.assertEqual(obj.current_user, self.user_bob)
-            self.assertEqual(obj.root_path, None)
+            self.assertEqual(obj.root_path, self.user_bob.config.root_path)
 
     @login_user('Bob')
     def test_custom_route_path(self):
@@ -287,118 +283,6 @@ class TestBaseView(BaseTestCase):
         res = func()
         self.assertEqual(res, 'Hello world')
 
-    @login_user('Fred')
-    def test__profile_editor(self):
-        request = self.DummyRequest()
-        request.matched_route = EmptyClass()
-        request.matched_route.name = 'route_json'
-        request.registry.settings['dtd_urls'] = 'http://dtd_url'
-
-        res = BaseView(request)._profile()
-        expected = {
-            'base_path': '/account/Fred',
-            'dtd_urls': ['http://dtd_url'],
-            'editor_login': 'Fred',
-            'extenstions': ['.xml'],
-            'layout_readonly_position': 'south',
-            'layout_tree_position': 'west',
-            'login': 'Fred',
-            'logins': ['Fred'],
-            'root_path': None,
-            'root_template_path': None,
-            'search': False,
-            'versioning': False,
-            'xml_renderer': False
-        }
-        self.assertEqual(res, expected)
-
-        # Search & versioning
-        request.registry.settings['whoosh.path'] = '/tmp/fake'
-        request.registry.settings['waxe.versioning'] = 'true'
-        self.user_bob.config.use_versioning = True
-
-        res = BaseView(request)._profile()
-        expected = {
-            'base_path': '/account/Fred',
-            'dtd_urls': ['http://dtd_url'],
-            'editor_login': 'Fred',
-            'extenstions': ['.xml'],
-            'layout_readonly_position': 'south',
-            'layout_tree_position': 'west',
-            'login': 'Fred',
-            'logins': ['Fred'],
-            'root_path': None,
-            'root_template_path': None,
-            'search': True,
-            'versioning': True,
-            'xml_renderer': False
-        }
-        self.assertEqual(res, expected)
-
-    @login_user('Bob')
-    def test__profile_admin(self):
-        request = self.DummyRequest()
-        request.matched_route = EmptyClass()
-        request.matched_route.name = 'route'
-        request.registry.settings['dtd_urls'] = 'http://dtd_url'
-
-        res = BaseView(request)._profile()
-        expected = {
-            'base_path': '/account/Bob',
-            'dtd_urls': ['http://dtd_url'],
-            'editor_login': 'Bob',
-            'extenstions': ['.xml'],
-            'layout_readonly_position': 'south',
-            'layout_tree_position': 'west',
-            'login': 'Bob',
-            'logins': ['Bob'],
-            'root_path': None,
-            'root_template_path': None,
-            'search': False,
-            'versioning': False,
-            'xml_renderer': False
-        }
-
-        self.assertEqual(res, expected)
-
-        self.user_fred.roles = [self.role_editor, self.role_contributor]
-
-        res = BaseView(request)._profile()
-        self.assertEqual(res, {
-            'base_path': '/account/Bob',
-            'dtd_urls': ['http://dtd_url'],
-            'editor_login': 'Bob',
-            'extenstions': ['.xml'],
-            'layout_readonly_position': 'south',
-            'layout_tree_position': 'west',
-            'login': 'Bob',
-            'logins': ['Bob', 'Fred'],
-            'root_path': None,
-            'root_template_path': None,
-            'search': False,
-            'versioning': False,
-            'xml_renderer': False
-        })
-
-        view = BaseView(request)
-        view.current_user = self.user_fred
-        res = view._profile()
-        self.assertEqual(res, {
-            'base_path': '/account/Fred',
-            'dtd_urls': ['http://dtd_url'],
-            'editor_login': 'Fred',
-            'extenstions': ['.xml'],
-            'layout_readonly_position': 'south',
-            'layout_tree_position': 'west',
-            'login': 'Bob',
-            'logins': ['Bob', 'Fred'],
-            'root_path': None,
-            'root_template_path': None,
-            'search': False,
-            'versioning': False,
-            'xml_renderer': False
-        })
-
     def test__get_last_files_no_current_user(self):
         request = testing.DummyRequest()
         request.custom_route_path = lambda *args, **kw: '/filepath'
@@ -450,11 +334,6 @@ class TestBaseUserView(BaseTestCase):
             assert(False)
         except exc.HTTPClientError, e:
             self.assertEqual(str(e), 'root path not defined')
-
-        request.matched_route.name = 'profile'
-        res = BaseUserView(request)
-        self.assertFalse(res.root_path)
-        self.assertTrue(res)
 
         request.matched_route.name = 'test'
         self.config.testing_securitypolicy(userid='Bob', permissive=True)

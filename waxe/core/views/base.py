@@ -1,22 +1,10 @@
-import os
 import importlib
-from pyramid.httpexceptions import HTTPBadRequest
 from pyramid.security import has_permission
 from pyramid.renderers import render
-from pyramid.view import view_defaults, view_config
-from pyramid.httpexceptions import HTTPException
+from pyramid.view import view_defaults
 import pyramid.httpexceptions as exc
 from .. import security, models, search, browser
 from taskq.models import Task
-
-
-NAV_EDIT = 'edit'
-NAV_EDIT_TEXT = 'edit_text'
-NAV_DIFF = 'diff'
-
-
-class JSONHTTPBadRequest(HTTPBadRequest):
-    pass
 
 
 @view_defaults(renderer='json')
@@ -48,17 +36,19 @@ class JSONView(object):
         return {}
 
 
-class BaseView(object):
+class BaseView(JSONView):
     """All the Waxe views should inherit from this one. It doesn't make any
     validation, it can be used anywhere
     """
 
     def __init__(self, request):
-        self.request = request
+        super(BaseView, self).__init__(request)
         self.logged_user_login = security.get_userid_from_request(self.request)
         self.logged_user = security.get_user(self.logged_user_login)
         self.current_user = self.logged_user
         self.root_path = None
+        if self.current_user and self.current_user.config:
+            self.root_path = self.current_user.config.root_path
         self.extensions = self.request.registry.settings['waxe.extensions']
 
         def custom_route_path(request):
@@ -161,45 +151,6 @@ class BaseView(object):
         mod, func = func.rsplit('.', 1)
         return getattr(importlib.import_module(mod), func)
 
-    def _profile(self):
-        """Get the profile of the user
-        """
-        dic = {
-            'login': self.logged_user_login,
-            'editor_login': self.logged_user_login,
-            'base_path': '/account/%s' % self.logged_user_login,
-            'root_path': self.root_path,
-            'root_template_path': None,
-            'extenstions': self.extensions,
-            'versioning': self.has_versioning(),
-            'search': ('whoosh.path' in self.request.registry.settings),
-            'xml_renderer': ('waxe.renderers' in
-                             self.request.registry.settings),
-            'dtd_urls': self.request.registry.settings['dtd_urls'].split(),
-            'layout_tree_position': models.LAYOUT_DEFAULTS['tree_position'],
-            'layout_readonly_position': models.LAYOUT_DEFAULTS[
-                'readonly_position'],
-            'logins': [],
-        }
-
-        if self.current_user:
-            dic['editor_login'] = self.current_user.login
-            dic['base_path'] = '/account/%s' % self.current_user.login
-            config = self.current_user.config
-            if config:
-                dic['root_template_path'] = config.root_template_path
-
-        if self.logged_user and self.logged_user.config:
-            config = self.logged_user.config
-            dic['layout_tree_position'] = config.tree_position
-            dic['layout_readonly_position'] = config.readonly_position
-
-        logins = self.get_editable_logins()
-        if logins:
-            dic['logins'] = logins
-
-        return dic
-
 
 class BaseUserView(BaseView):
     """Base view which check that the current user has a root path. It's to
@@ -218,11 +169,11 @@ class BaseUserView(BaseView):
                 user = models.User.query.filter_by(login=login).one()
                 self.current_user = user
 
+        self.root_path = None
         if self.current_user and self.current_user.config:
             self.root_path = self.current_user.config.root_path
 
-        if (not self.root_path and
-           request.matched_route.name not in ['profile']):
+        if not self.root_path:
             raise exc.HTTPClientError("root path not defined")
 
     def get_versioning_obj(self, commit=False):
@@ -278,10 +229,3 @@ class BaseUserView(BaseView):
             # For example if we use ldap authentication, self.logged_user can
             # be None if the user is not in the DB.
             models.DBSession.add(self.logged_user)
-
-
-class JSONBaseUserView(JSONView, BaseUserView):
-
-    def __init__(self, request):
-        JSONView.__init__(self, request)
-        BaseUserView.__init__(self, request)
