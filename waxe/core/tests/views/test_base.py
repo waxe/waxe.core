@@ -1,5 +1,6 @@
 from pyramid import testing
 from pyramid.httpexceptions import HTTPBadRequest
+import pyramid.httpexceptions as exc
 from webob.multidict import MultiDict
 from mock import patch
 
@@ -171,17 +172,6 @@ class TestBaseView(BaseTestCase):
             self.user_bob.roles = [self.role_contributor]
             res = BaseView(request).user_is_contributor()
             self.assertEqual(res, True)
-
-    def test__is_json(self):
-        request = self.DummyRequest()
-        request.matched_route = EmptyClass()
-        request.matched_route.name = 'test'
-        res = BaseView(request)._is_json()
-        self.assertEqual(res, False)
-
-        request.matched_route.name = 'test_json'
-        res = BaseView(request)._is_json()
-        self.assertEqual(res, True)
 
     def test_get_editable_logins_admin(self):
         request = self.DummyRequest()
@@ -458,14 +448,7 @@ class TestBaseUserView(BaseTestCase):
         try:
             BaseUserView(request)
             assert(False)
-        except HTTPBadRequest, e:
-            self.assertEqual(str(e), 'root path not defined')
-
-        request.matched_route.name = 'test_json'
-        try:
-            BaseUserView(request)
-            assert(False)
-        except JSONHTTPBadRequest, e:
+        except exc.HTTPClientError, e:
             self.assertEqual(str(e), 'root path not defined')
 
         request.matched_route.name = 'profile'
@@ -487,14 +470,7 @@ class TestBaseUserView(BaseTestCase):
         try:
             res = BaseUserView(request)
             assert(False)
-        except HTTPBadRequest, e:
-            self.assertEqual(str(e), "The user doesn't exist")
-
-        request.matched_route.name = 'test_json'
-        try:
-            res = BaseUserView(request)
-            assert(False)
-        except JSONHTTPBadRequest, e:
+        except exc.HTTPClientError, e:
             self.assertEqual(str(e), "The user doesn't exist")
 
         # Current user

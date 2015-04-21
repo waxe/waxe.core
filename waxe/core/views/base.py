@@ -5,6 +5,7 @@ from pyramid.security import has_permission
 from pyramid.renderers import render
 from pyramid.view import view_defaults, view_config
 from pyramid.httpexceptions import HTTPException
+import pyramid.httpexceptions as exc
 from .. import security, models, search, browser
 from taskq.models import Task
 
@@ -117,16 +118,6 @@ class BaseView(object):
                               self.request.context,
                               self.request)
 
-    def _is_json(self):
-        """Check the current request is a json one.
-
-        :return: True if it's a json request
-        :rtype: bool
-
-        .. note:: We assume the json route names always end with '_json'
-        """
-        return self.request.matched_route.name.endswith('_json')
-
     def get_editable_logins(self):
         """Get the editable login by the logged user.
 
@@ -223,9 +214,7 @@ class BaseUserView(BaseView):
             logins = self.get_editable_logins()
             if login:
                 if login not in logins:
-                    if self._is_json():
-                        raise JSONHTTPBadRequest('The user doesn\'t exist')
-                    raise HTTPBadRequest('The user doesn\'t exist')
+                    raise exc.HTTPClientError("The user doesn't exist")
                 user = models.User.query.filter_by(login=login).one()
                 self.current_user = user
 
@@ -233,10 +222,8 @@ class BaseUserView(BaseView):
             self.root_path = self.current_user.config.root_path
 
         if (not self.root_path and
-                request.matched_route.name not in ['profile']):
-            if self._is_json():
-                raise JSONHTTPBadRequest('root path not defined')
-            raise HTTPBadRequest('root path not defined')
+           request.matched_route.name not in ['profile']):
+            raise exc.HTTPClientError("root path not defined")
 
     def get_versioning_obj(self, commit=False):
         """Get the versioning object. For now only svn is supported.
