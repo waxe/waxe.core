@@ -152,6 +152,7 @@ class BaseView(JSONView):
         return getattr(importlib.import_module(mod), func)
 
 
+@view_defaults(renderer='json', permission='edit')
 class BaseUserView(BaseView):
     """Base view which check that the current user has a root path. It's to
     check he has some files to edit!

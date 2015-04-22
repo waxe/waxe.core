@@ -42,7 +42,7 @@ class VersioningView(BaseUserView):
                 return False
         return False
 
-    @view_config(route_name='versioning_short_status_json', permission='edit')
+    @view_config(route_name='versioning_short_status_json')
     def short_status(self):
         """Status of the given path without any depth.
         """
@@ -53,7 +53,7 @@ class VersioningView(BaseUserView):
             dic[o.relpath] = o.status
         return dic
 
-    @view_config(route_name='versioning_status_json', permission='edit')
+    @view_config(route_name='versioning_status_json')
     def status(self, info_msg=None, error_msg=None):
         """Full status of the repo. We want to get all files
         """
@@ -94,7 +94,7 @@ class VersioningView(BaseUserView):
         }
         return dic
 
-    @view_config(route_name='versioning_diff_json', permission='edit')
+    @view_config(route_name='versioning_diff_json')
     def diff(self):
         relpath = self.request.GET.get('path', '')
         if not relpath:
@@ -132,7 +132,7 @@ class VersioningView(BaseUserView):
                     _query=[('path', relpath)])
         return content
 
-    @view_config(route_name='versioning_full_diff_json', permission='edit')
+    @view_config(route_name='versioning_full_diff_json')
     def full_diff(self):
         """Editable diff of all the files
         """
@@ -155,7 +155,7 @@ class VersioningView(BaseUserView):
         }, self.request)
         return content
 
-    @view_config(route_name='versioning_update_json', permission='edit')
+    @view_config(route_name='versioning_update_json')
     def update(self):
         relpath = self.request.GET.get('path', '')
         vobj = self.get_versioning_obj()
@@ -185,7 +185,7 @@ class VersioningView(BaseUserView):
         }, self.request)
         return content
 
-    @view_config(route_name='versioning_commit_json', permission='edit')
+    @view_config(route_name='versioning_commit_json')
     def commit(self):
         msg = self.request.POST.get('msg')
         filenames = self.request.POST.getall('path')
@@ -221,7 +221,7 @@ class VersioningView(BaseUserView):
                                                 iduser_commit=iduser_commit)
         return 'Files commited'
 
-    @view_config(route_name='versioning_update_texts_json', permission='edit')
+    @view_config(route_name='versioning_update_texts_json')
     def update_texts(self):
         params = xmltool.utils.unflatten_params(self.request.POST)
         if 'data' not in params or not params['data']:
@@ -251,7 +251,7 @@ class VersioningView(BaseUserView):
         self.add_indexation_task(absfilenames)
         return 'Files updated'
 
-    @view_config(route_name='versioning_edit_conflict_json', permission='edit')
+    @view_config(route_name='versioning_edit_conflict_json')
     def edit_conflict(self):
         """
         Basically it's the same function as editor.edit_text
@@ -282,8 +282,7 @@ class VersioningView(BaseUserView):
 
         return html
 
-    @view_config(route_name='versioning_update_conflict_json',
-                 permission='edit')
+    @view_config(route_name='versioning_update_conflict_json')
     def update_conflict(self):
         # TODO: we should have an event 'save' to fix the conflict if okay
         filecontent = self.request.POST.get('filecontent')
@@ -309,7 +308,7 @@ class VersioningView(BaseUserView):
         self.add_indexation_task([absfilename])
         return 'Conflict fixed'
 
-    @view_config(route_name='versioning_revert_json', permission='edit')
+    @view_config(route_name='versioning_revert_json')
     def revert(self):
         filenames = self.request.POST.get('paths')
         if not filenames:

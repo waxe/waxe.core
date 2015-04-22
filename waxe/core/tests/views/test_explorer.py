@@ -152,7 +152,10 @@ class TestExplorerView(LoggedBobTestCase):
 class TestFunctionalTestExplorerView(WaxeTestCase):
 
     def test_permissions(self):
+        self.testapp.get('/account/Bob/explore.json', status=401)
         self.testapp.get('/account/Bob/create-folder.json', status=401)
+        self.testapp.get('/account/Bob/search.json', status=401)
+        self.testapp.get('/account/Bob/remove.json', status=401)
 
     @login_user('Admin')
     def test_explore_json_admin(self):

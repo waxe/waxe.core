@@ -7,7 +7,7 @@ from .. import browser, search as mod_search
 
 class ExplorerView(BaseUserView):
 
-    @view_config(route_name='explore_json', permission='edit')
+    @view_config(route_name='explore_json')
     def explore(self):
         """Get the files and the folders for the given path
         """
@@ -41,7 +41,7 @@ class ExplorerView(BaseUserView):
             }]
         return lis
 
-    @view_config(route_name='create_folder_json', permission='edit')
+    @view_config(route_name='create_folder_json')
     def create_folder(self):
         path = self.req_post.get('path', '')
         name = self.req_post.get('name', None)
@@ -66,7 +66,7 @@ class ExplorerView(BaseUserView):
             'link': relpath
         }
 
-    @view_config(route_name='search_json', permission='edit')
+    @view_config(route_name='search_json')
     def search(self):
         dirname = self.get_search_dirname()
         if not dirname or not os.path.exists(dirname):
@@ -99,7 +99,7 @@ class ExplorerView(BaseUserView):
             'items_per_page': mod_search.HITS_PER_PAGE,
         }
 
-    @view_config(route_name='remove_json', permission='edit')
+    @view_config(route_name='remove_json')
     def remove(self):
         # TODO: use DELETE method
         filenames = self.req_post_getall('paths')
