@@ -5,7 +5,7 @@ from base import BaseUserView
 from .. import browser, search as mod_search
 
 
-class ExplorerView(BaseUserView):
+class FileManagerView(BaseUserView):
 
     @view_config(route_name='explore_json')
     def explore(self):

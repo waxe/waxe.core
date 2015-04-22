@@ -5,11 +5,10 @@ import pyramid.httpexceptions as exc
 from webob.multidict import MultiDict
 from mock import patch
 from waxe.core.tests.testing import LoggedBobTestCase, WaxeTestCase, login_user
-from waxe.core.views.explorer import ExplorerView
-import waxe.core.models as models
+from waxe.core.views.filemanager import FileManagerView
 
 
-class TestExplorerView(LoggedBobTestCase):
+class TestFileManagerView(LoggedBobTestCase):
 
     def test_explore(self):
         class C(object): pass
@@ -17,7 +16,7 @@ class TestExplorerView(LoggedBobTestCase):
         request.custom_route_path = lambda *args, **kw: '/%s/filepath' % args[0]
         request.matched_route = C()
         request.matched_route.name = 'route'
-        res = ExplorerView(request).explore()
+        res = FileManagerView(request).explore()
         expected = [
             {
                 'status': None,
@@ -35,7 +34,7 @@ class TestExplorerView(LoggedBobTestCase):
 
         self.user_bob.config.root_path = '/unexisting'
         try:
-            res = ExplorerView(request).explore()
+            res = FileManagerView(request).explore()
             assert(False)
         except exc.HTTPNotFound, e:
             expected = "Directory . doesn't exist"
@@ -47,7 +46,7 @@ class TestExplorerView(LoggedBobTestCase):
             path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
             request = testing.DummyRequest()
             try:
-                res = ExplorerView(request).create_folder()
+                res = FileManagerView(request).create_folder()
                 assert(False)
             except exc.HTTPClientError, e:
                 self.assertEqual(str(e), 'No name given')
@@ -56,11 +55,11 @@ class TestExplorerView(LoggedBobTestCase):
             request.custom_route_path = lambda *args, **kw: '/filepath'
             request.matched_route = C()
             request.matched_route.name = 'route'
-            res = ExplorerView(request).create_folder()
+            res = FileManagerView(request).create_folder()
             self.assertTrue(os.path.isdir(os.path.join(path, 'new_folder')))
 
             try:
-                ExplorerView(request).create_folder()
+                FileManagerView(request).create_folder()
             except exc.HTTPInternalServerError, e:
                 self.assertTrue('File exists' in str(e))
         finally:
@@ -80,28 +79,28 @@ class TestExplorerView(LoggedBobTestCase):
         request.custom_route_path = lambda *args, **kw: '/filepath'
 
         try:
-            res = ExplorerView(request).search()
+            res = FileManagerView(request).search()
             assert(False)
         except exc.HTTPInternalServerError, e:
             self.assertEqual(str(e), 'The search is not available')
 
         request.registry.settings['whoosh.path'] = '/tmp/fake'
         try:
-            res = ExplorerView(request).search()
+            res = FileManagerView(request).search()
             assert(False)
         except exc.HTTPInternalServerError, e:
             self.assertEqual(str(e), 'The search is not available')
 
         with patch('os.path.exists', return_value=True):
             with patch('waxe.core.search.do_search', return_value=(None, 0)):
-                res = ExplorerView(request).search()
+                res = FileManagerView(request).search()
                 self.assertEqual(res['nb_items'], 0)
 
             return_value = ([
                 (os.path.join(path, 'file1.xml'), 'Excerpt of the file1')
             ], 1)
             with patch('waxe.core.search.do_search', return_value=return_value):
-                res = ExplorerView(request).search()
+                res = FileManagerView(request).search()
                 self.assertEqual(res['nb_items'], 1)
                 self.assertEqual(len(res['results']), 1)
                 expected = [('file1.xml', 'Excerpt of the file1')]
@@ -118,7 +117,7 @@ class TestExplorerView(LoggedBobTestCase):
         request.custom_route_path = lambda *args, **kw: '/filepath'
 
         try:
-            ExplorerView(request).remove()
+            FileManagerView(request).remove()
             assert(False)
         except exc.HTTPClientError, e:
             self.assertEqual(str(e), 'No filename given')
@@ -130,7 +129,7 @@ class TestExplorerView(LoggedBobTestCase):
             ]))
 
         try:
-            ExplorerView(request).remove()
+            FileManagerView(request).remove()
             assert(False)
         except exc.HTTPClientError, e:
             expected = (
@@ -145,11 +144,11 @@ class TestExplorerView(LoggedBobTestCase):
             ]))
 
         with patch('os.remove', return_value=True):
-            res = ExplorerView(request).remove()
+            res = FileManagerView(request).remove()
             self.assertEqual(res, True)
 
 
-class TestFunctionalTestExplorerView(WaxeTestCase):
+class TestFunctionalTestFileManagerView(WaxeTestCase):
 
     def test_permissions(self):
         self.testapp.get('/account/Bob/explore.json', status=401)
