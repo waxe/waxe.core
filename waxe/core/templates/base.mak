@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<html>
 <head>
   <title>Waxe</title>
   <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/>
@@ -16,6 +17,10 @@
     CKEDITOR.config.entities_greek = false;
     CKEDITOR.config.entities_latin = false;
   </script>
+
+  % for resource in request.str_resources:
+	${resource}
+  % endfor
 
   % for resource in request.css_resources:
     <link rel="stylesheet" type="text/css" href="${request.static_url(resource)}" />

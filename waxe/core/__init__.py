@@ -54,6 +54,10 @@ def get_xml_plugins(request):
     return mods
 
 
+def get_str_resources(request):
+    return resource.STR_RESOURCES
+
+
 def get_js_resources(request):
     lis = resource.JS_RESOURCES
     settings = request.registry.settings
@@ -107,6 +111,7 @@ def main(global_config, **settings):
     config.set_request_property(get_dtd_urls, 'dtd_urls', reify=True)
 
     config.set_request_property(get_xml_plugins, 'xml_plugins', reify=True)
+    config.set_request_property(get_str_resources, 'str_resources', reify=True)
     config.set_request_property(get_js_resources, 'js_resources', reify=True)
     config.set_request_property(get_css_resources, 'css_resources', reify=True)
 
