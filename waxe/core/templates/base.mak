@@ -19,7 +19,7 @@
   </script>
 
   % for resource in request.str_resources:
-	${resource}
+	${resource|n}
   % endfor
 
   % for resource in request.css_resources:
