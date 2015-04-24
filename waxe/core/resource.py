@@ -23,4 +23,5 @@ def add_str_resource(s):
     """Use this function to inject whatever you want in the <head>
     """
     global STR_RESOURCES
-    STR_RESOURCES += [s]
+    if s not in STR_RESOURCES:
+        STR_RESOURCES += [s]
