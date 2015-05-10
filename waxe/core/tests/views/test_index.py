@@ -1,7 +1,8 @@
+import os
 from pyramid import testing
 import json
 from ..testing import BaseTestCase, WaxeTestCase, login_user
-from waxe.core.views.index import IndexView
+from waxe.core.views.index import IndexView, IndexUserView
 from waxe.core import security
 
 
@@ -28,6 +29,22 @@ class TestIndexView(BaseTestCase):
         request.context = security.RootFactory(request)
         return request
 
+    def test__profile_no_user(self):
+        request = self.DummyRequest()
+        request.matched_route = EmptyClass()
+        request.matched_route.name = 'route_json'
+        request.registry.settings['dtd_urls'] = 'http://dtd_url'
+
+        res = IndexView(request).profile()
+        expected = {
+            'logins': [],
+            'has_file': False,
+            'login': None,
+            'layout_tree_position': 'west',
+            'layout_readonly_position': 'south'
+        }
+        self.assertEqual(res, expected)
+
     @login_user('Fred')
     def test__profile_editor(self):
         request = self.DummyRequest()
@@ -37,42 +54,11 @@ class TestIndexView(BaseTestCase):
 
         res = IndexView(request).profile()
         expected = {
-            'base_path': '/account/Fred',
-            'dtd_urls': ['http://dtd_url'],
-            'editor_login': 'Fred',
-            'extenstions': ['.xml'],
-            'layout_readonly_position': 'south',
-            'layout_tree_position': 'west',
-            'login': 'Fred',
             'logins': ['Fred'],
-            'root_path': self.user_fred.config.root_path,
-            'root_template_path': None,
-            'search': False,
-            'versioning': False,
-            'xml_renderer': False
-        }
-        self.assertEqual(res, expected)
-
-        # Search & versioning
-        request.registry.settings['whoosh.path'] = '/tmp/fake'
-        request.registry.settings['waxe.versioning'] = 'true'
-        self.user_bob.config.use_versioning = True
-
-        res = IndexView(request).profile()
-        expected = {
-            'base_path': '/account/Fred',
-            'dtd_urls': ['http://dtd_url'],
-            'editor_login': 'Fred',
-            'extenstions': ['.xml'],
-            'layout_readonly_position': 'south',
-            'layout_tree_position': 'west',
+            'has_file': True,
             'login': 'Fred',
-            'logins': ['Fred'],
-            'root_path': self.user_fred.config.root_path,
-            'root_template_path': None,
-            'search': True,
-            'versioning': True,
-            'xml_renderer': False
+            'layout_tree_position': 'west',
+            'layout_readonly_position': 'south'
         }
         self.assertEqual(res, expected)
 
@@ -85,63 +71,96 @@ class TestIndexView(BaseTestCase):
 
         res = IndexView(request).profile()
         expected = {
-            'base_path': '/account/Bob',
-            'dtd_urls': ['http://dtd_url'],
-            'editor_login': 'Bob',
-            'extenstions': ['.xml'],
-            'layout_readonly_position': 'south',
-            'layout_tree_position': 'west',
-            'login': 'Bob',
             'logins': ['Bob'],
-            'root_path': self.user_bob.config.root_path,
-            'root_template_path': None,
-            'search': False,
-            'versioning': False,
-            'xml_renderer': False
+            'has_file': True,
+            'login': 'Bob',
+            'layout_tree_position': 'west',
+            'layout_readonly_position': 'south'
         }
-
         self.assertEqual(res, expected)
 
         self.user_fred.roles = [self.role_editor, self.role_contributor]
+        self.user_bob.config.tree_position = 'tree'
+        self.user_bob.config.readonly_position = 'readonly'
 
         res = IndexView(request).profile()
-        self.assertEqual(res, {
-            'base_path': '/account/Bob',
-            'dtd_urls': ['http://dtd_url'],
-            'editor_login': 'Bob',
-            'extenstions': ['.xml'],
-            'layout_readonly_position': 'south',
-            'layout_tree_position': 'west',
-            'login': 'Bob',
+        expected = {
             'logins': ['Bob', 'Fred'],
-            'root_path': self.user_bob.config.root_path,
-            'root_template_path': None,
-            'search': False,
-            'versioning': False,
-            'xml_renderer': False
-        })
-
-        view = IndexView(request)
-        view.current_user = self.user_fred
-        res = view.profile()
-        self.assertEqual(res, {
-            'base_path': '/account/Fred',
-            'dtd_urls': ['http://dtd_url'],
-            'editor_login': 'Fred',
-            'extenstions': ['.xml'],
-            'layout_readonly_position': 'south',
-            'layout_tree_position': 'west',
+            'has_file': True,
             'login': 'Bob',
-            'logins': ['Bob', 'Fred'],
-            'root_path': self.user_bob.config.root_path,
-            'root_template_path': None,
-            'search': False,
-            'versioning': False,
-            'xml_renderer': False
+            'layout_tree_position': 'tree',
+            'layout_readonly_position': 'readonly'
+        }
+        self.assertEqual(res, expected)
+
+
+class TestIndexUserView(BaseTestCase):
+
+    def setUp(self):
+        super(TestIndexUserView, self).setUp()
+        self.config.registry.settings.update({
+            'pyramid_auth.no_routes': 'true',
+            'pyramid_auth.cookie.secret': 'scrt',
+            'pyramid_auth.cookie.callback': ('waxe.core.security.'
+                                             'get_user_permissions'),
+            'pyramid_auth.cookie.validate_function': (
+                'waxe.core.security.validate_password'),
         })
+        self.config.include('pyramid_auth')
+
+    def DummyRequest(self):
+        request = testing.DummyRequest()
+        request.context = security.RootFactory(request)
+        return request
+
+    @login_user('Fred')
+    def test_account_profile_editor(self):
+        request = self.DummyRequest()
+        request.matched_route = EmptyClass()
+        request.matched_route.name = 'route_json'
+        request.registry.settings['dtd_urls'] = 'http://dtd_url'
+
+        res = IndexUserView(request).account_profile()
+        expected = {
+            'account_profile': {
+                'templates_path': None,
+                'has_versioning': False,
+                'dtd_urls': ['http://dtd_url'],
+                'has_search': False,
+                'login': 'Fred',
+                'has_template_files': False,
+                'has_xml_renderer': False
+            }
+        }
+        self.assertEqual(res, expected)
+
+        request.registry.settings['whoosh.path'] = 'search_path'
+        request.registry.settings['waxe.renderers'] = 'render'
+        path = os.path.join(os.getcwd(), 'waxe', 'core', 'tests', 'files')
+        self.user_fred.config.root_path = path
+        self.user_fred.config.root_template_path = os.path.join(path,
+                                                                'folder1')
+        res = IndexUserView(request).account_profile()
+        expected = {
+            'account_profile': {
+                'templates_path': 'folder1',
+                'has_versioning': False,
+                'dtd_urls': ['http://dtd_url'],
+                'has_search': True,
+                'login': 'Fred',
+                'has_template_files': True,
+                'has_xml_renderer': True
+            }
+        }
+        self.assertEqual(res, expected)
+
+        request.GET = {'full': True}
+        res = IndexUserView(request).account_profile()
+        self.assertTrue('account_profile' in res)
+        self.assertTrue('user_profile' in res)
 
 
-class FunctionalTestIndexView2(WaxeTestCase):
+class FunctionalTestIndexView(WaxeTestCase):
 
     def test_forbidden(self):
         self.testapp.get('/profile.json', status=401)
@@ -151,3 +170,15 @@ class FunctionalTestIndexView2(WaxeTestCase):
         res = self.testapp.get('/profile.json', status=200)
         dic = json.loads(res.body)
         self.assertTrue('login' in dic)
+
+
+class FunctionalTestIndexUserView(WaxeTestCase):
+
+    def test_forbidden(self):
+        self.testapp.get('/account/admin/account-profile.json', status=401)
+
+    @login_user('Bob')
+    def test_account_profile(self):
+        res = self.testapp.get('/account/Bob/account-profile.json',
+                               status=200)
+        self.assertTrue(res)

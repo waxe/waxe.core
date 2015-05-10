@@ -151,6 +151,32 @@ class BaseView(JSONView):
         mod, func = func.rsplit('.', 1)
         return getattr(importlib.import_module(mod), func)
 
+    def logged_user_profile(self):
+        """Get the profile of the logged user
+        """
+        has_file = False
+        if self.logged_user and self.logged_user.config:
+            has_file = bool(self.logged_user.config.root_path)
+        dic = {
+            'login': self.logged_user_login,
+            'has_file': has_file,
+            'layout_tree_position': models.LAYOUT_DEFAULTS['tree_position'],
+            'layout_readonly_position': models.LAYOUT_DEFAULTS[
+                'readonly_position'],
+            'logins': [],
+        }
+
+        if self.logged_user and self.logged_user.config:
+            config = self.logged_user.config
+            dic['layout_tree_position'] = config.tree_position
+            dic['layout_readonly_position'] = config.readonly_position
+
+        logins = self.get_editable_logins()
+        if logins:
+            dic['logins'] = logins
+
+        return dic
+
 
 @view_defaults(renderer='json', permission='edit')
 class BaseUserView(BaseView):

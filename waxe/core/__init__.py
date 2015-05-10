@@ -20,7 +20,8 @@ from . import resource
 views_modules = [
     ('waxe.core.views.index', False, ''),
     ('waxe.core.views.auth', False, ''),
-    ('waxe.core.views.explorer', True, ''),
+    ('waxe.core.views.filemanager', True, ''),
+    ('waxe.txt.views.editor', True, 'txt'),
 ]
 
 
