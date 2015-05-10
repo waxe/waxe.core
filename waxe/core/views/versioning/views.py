@@ -83,10 +83,10 @@ class VersioningView(BaseUserView):
         uncommitables = [so.to_dict() for so in uncommitables
                          if not helper.is_conflicted(so, conflicteds_abspath)]
 
-        conflicteds = [{
-            'relpath': 'debug/dash.xml',
-            'status': 'unversioned',
-        }]
+        # conflicteds = [{
+        #     'relpath': 'debug/dash.xml',
+        #     'status': 'unversioned',
+        # }]
         dic = {
             'conflicteds': conflicteds,
             'uncommitables': uncommitables,
@@ -144,10 +144,15 @@ class VersioningView(BaseUserView):
         lis = []
         can_commit = True
         for filename in filenames:
-            lis += vobj.full_diff(filename)
+            lis += vobj.full_diff_content(filename)
             absfilename = browser.absolute_path(filename, self.root_path)
             if can_commit and not self.can_commit(absfilename):
                 can_commit = False
+
+        return {
+            'diffs': lis,
+            'can_commit': can_commit
+        }
 
         content = render('blocks/versioning_full_diff.mak', {
             'files': lis,
@@ -174,10 +179,17 @@ class VersioningView(BaseUserView):
             )
 
         absfilenames = [f for (status, f) in filenames]
-        files = [(status, browser.relative_path(f, self.root_path))
-                 for status, f in filenames]
+        files = [
+            {
+                'status': status,
+                'path': browser.relative_path(f, self.root_path),
+                'addLink': status in [helper.STATUS_ADDED,
+                                      helper.STATUS_MODIFED]
+            } for status, f in filenames]
 
         self.add_indexation_task(absfilenames)
+        return files
+
         content = render('blocks/versioning_update.mak', {
             'files': files,
             'STATUS_ADDED': helper.STATUS_ADDED,
@@ -187,8 +199,8 @@ class VersioningView(BaseUserView):
 
     @view_config(route_name='versioning_commit_json')
     def commit(self):
-        msg = self.request.POST.get('msg')
-        filenames = self.request.POST.getall('path')
+        msg = self.req_post.get('msg')
+        filenames = self.req_post_getall('paths')
         if not filenames:
             raise exc.HTTPClientError('No filename given')
         if not msg:
@@ -223,7 +235,7 @@ class VersioningView(BaseUserView):
 
     @view_config(route_name='versioning_update_texts_json')
     def update_texts(self):
-        params = xmltool.utils.unflatten_params(self.request.POST)
+        params = xmltool.utils.unflatten_params(self.req_post)
         if 'data' not in params or not params['data']:
             raise exc.HTTPClientError('Missing parameters!')
 
@@ -310,9 +322,9 @@ class VersioningView(BaseUserView):
 
     @view_config(route_name='versioning_revert_json')
     def revert(self):
-        filenames = self.request.POST.get('paths')
+        filenames = self.req_post_getall('paths')
         if not filenames:
-            filename = self.request.GET.get('path')
+            filename = self.req_post.get('path')
             if filename:
                 filenames = [filename]
 
@@ -333,8 +345,13 @@ class VersioningView(BaseUserView):
         for filename in filenames:
             # TODO: also check the file is versioned
             # If not versioned, remove it!
-            vobj.revert(filename)
             absfilename = browser.absolute_path(filename, self.root_path)
+            so = vobj.status(filename)[0]
+            if so.status == helper.STATUS_UNVERSIONED:
+                os.remove(absfilename)
+            else:
+                vobj.revert(filename)
+
             self.add_indexation_task([absfilename])
 
         return 'Files reverted'

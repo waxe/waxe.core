@@ -325,14 +325,16 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
             expected = 'No filename given'
             self.assertEqual(str(e), expected)
 
-        request = self.DummyRequest(params={'path': 'nonexisting.xml'})
+        request = self.DummyRequest()
+        request.POST = MultiDict(path='nonexisting.xml')
         try:
             self.ClassView(request).revert()
         except exc.HTTPClientError, e:
             expected = 'File nonexisting.xml doesn\'t exist'
             self.assertEqual(str(e), expected)
 
-        request = self.DummyRequest(params={'path': 'file1.xml'})
+        request = self.DummyRequest()
+        request.POST = MultiDict(path='file1.xml')
         res = self.ClassView(request).revert()
         self.assertEqual(res, 'Files reverted')
 
@@ -352,33 +354,70 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                                     params={'filenames': 'file1.xml'})
         request.GET = MultiDict({'paths': 'file1.xml'})
         res = self.ClassView(request).full_diff()
-        self.assertTrue('class="diff"' in res)
-        self.assertEqual(res.count('diff_from'), 1)
-        self.assertTrue('name="commit"' in res)
+        expected = {
+            'can_commit': True,
+            'diffs': [
+                {
+                    'right': u'Hello world',
+                    'relpath': u'file1.xml',
+                    'left': u'Hello'
+                }
+            ]
+        }
+        self.assertEqual(res, expected)
 
         request = self.DummyRequest(root_path=self.client_dir,
                                     params={'filenames': 'file3.xml'})
         request.GET = MultiDict({'paths': 'file3.xml'})
         res = self.ClassView(request).full_diff()
-        self.assertTrue('class="diff"' in res)
-        self.assertEqual(res.count('diff_from'), 1)
-        self.assertTrue('name="commit"' in res)
+        expected = {
+            'can_commit': True,
+            'diffs': [
+                {
+                    'right': u'Hello',
+                    'relpath': u'file3.xml',
+                    'left': ''
+                }
+            ]
+        }
+        self.assertEqual(res, expected)
 
         request = self.DummyRequest(root_path=self.client_dir,
                                     params={'filenames': 'file3.xml'})
         request.GET = MultiDict({'paths': 'file3.xml'})
         self.user_bob.roles = [self.role_contributor]
         res = self.ClassView(request).full_diff()
-        self.assertTrue('class="diff"' in res)
-        self.assertEqual(res.count('diff_from'), 1)
-        self.assertTrue('name="commit"' not in res)
+        expected = {
+            'can_commit': False,
+            'diffs': [
+                {
+                    'right': u'Hello',
+                    'relpath': u'file3.xml',
+                    'left': u''
+                }
+            ]
+        }
+        self.assertEqual(res, expected)
 
         request.GET = MultiDict([('paths', 'file1.xml'),
                                  ('paths', 'file3.xml')])
         res = self.ClassView(request).full_diff()
-        self.assertTrue('class="diff"' in res)
-        self.assertEqual(res.count('diff_from'), 2)
-        self.assertTrue('name="commit"' not in res)
+        expected = {
+            'can_commit': False,
+            'diffs': [
+                {
+                    'right': u'Hello world',
+                    'relpath': u'file1.xml',
+                    'left': u'Hello'
+                },
+                {
+                    'right': u'Hello',
+                    'relpath': u'file3.xml',
+                    'left': u''
+                }
+            ]
+        }
+        self.assertEqual(res, expected)
 
     @login_user('Bob')
     def test_commit(self):
@@ -395,14 +434,14 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                     self.assertEqual(str(e), expected)
 
                 request = self.DummyRequest(root_path=self.client_dir)
-                request.POST = MultiDict(path='test.xml')
+                request.POST = MultiDict(paths='test.xml')
                 try:
                     self.ClassView(request).commit()
                     assert(False)
                 except exc.HTTPClientError, e:
                     expected = "No commit message"
                     self.assertEqual(str(e), expected)
-                request.POST = MultiDict(path='test.xml',
+                request.POST = MultiDict(paths='test.xml',
                                          msg='my commit message')
 
                 with patch('waxe.core.views.versioning.helper.PysvnVersioning.commit', return_value=True):
@@ -703,7 +742,7 @@ class TestVersioningViewFakeRepo(BaseTestCase, CreateRepo):
         request.matched_route.name = 'route'
 
         res = VersioningView(request).update()
-        self.assertTrue('The repository was already updated' in res)
+        self.assertEqual(res, [])
 
         # Create a conflict
         self.client.checkout('file://%s' % self.repo, 'svn_waxe_client1')
@@ -728,22 +767,28 @@ class TestVersioningViewFakeRepo(BaseTestCase, CreateRepo):
         self.client.add(client1file)
         self.client.checkin([client1file], 'New file')
         res = VersioningView(request).update()
-        self.assertTrue('label-added' in res)
-        self.assertTrue('client1file.xml' in res)
+        expected = [
+            {'status': 'added', 'path': 'client1file.xml', 'addLink': True}
+        ]
+        self.assertEqual(res, expected)
 
         # Update modify
         open(client1file, 'w').write('Hello Bob content')
         self.client.checkin([client1file], 'Update file')
         res = VersioningView(request).update()
-        self.assertTrue('label-modified' in res)
-        self.assertTrue('client1file.xml' in res)
+        expected = [
+            {'status': 'modified', 'path': 'client1file.xml', 'addLink': True}
+        ]
+        self.assertEqual(res, expected)
 
         # Update delete
         self.client.remove(client1file)
         self.client.checkin([client1file], 'Delete file')
         res = VersioningView(request).update()
-        self.assertTrue('label-deleted' in res)
-        self.assertTrue('client1file.xml' in res)
+        expected = [
+            {'status': 'deleted', 'path': 'client1file.xml', 'addLink': False}
+        ]
+        self.assertEqual(res, expected)
 
 
 class FunctionalTestViewsNoVersioning(WaxeTestCase):
@@ -822,9 +867,7 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
         self.user_bob.config = UserConfig(root_path=self.client_dir,
                                           versioning_password='secret_bob')
         res = self.testapp.get('/account/Bob/versioning/update.json', status=200)
-        self.assertTrue('The repository was already updated!' in res.body)
-        self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
-                        res._headerlist)
+        self.assertEqual(json.loads(res.body), [])
 
     @login_user('Bob')
     def test_update_texts_json(self):
@@ -1097,6 +1140,92 @@ class TestHelper(CreateRepo):
         self.assertEqual(len(res), 2)
         self.assertTrue('Deleted file ' in res[0])
         self.assertTrue('New file ' in res[1])
+
+    def test_full_diff_content(self):
+        difflib.HtmlDiff._default_prefix = 0
+        o = helper.PysvnVersioning(None, ['.xml'], None, None, self.client_dir,
+                                  False)
+        self.assertEqual(o.full_diff_content(), [])
+        folder1 = os.path.join(self.client_dir, 'folder1')
+        folder2 = os.path.join(folder1, 'folder2')
+        os.mkdir(folder1)
+        os.mkdir(folder2)
+        file1 = os.path.join(folder1, 'file1.xml')
+        file2 = os.path.join(folder2, 'file2.xml')
+        open(file1, 'w').write('Hello')
+        self.client.add(folder1)
+        self.client.checkin([folder1], 'Add folder')
+        open(file1, 'w').write('Hello World')
+        res = o.full_diff_content('folder1/file1.xml')
+        self.assertEqual(len(res), 1)
+        expected = [
+            {
+                'right': u'Hello World',
+                'relpath': u'folder1/file1.xml',
+                'left': u'Hello'
+            }
+        ]
+        self.assertEqual(res, expected)
+
+        # Unversioned files are not taken into account
+        open(file2, 'w').write('Hello')
+        res2 = o.full_diff_content()
+        expected = [
+            {
+                'right': u'Hello World',
+                'relpath': u'folder1/file1.xml',
+                'left': u'Hello'
+            },
+            {
+                'right': u'Hello',
+                'relpath': u'folder1/folder2/file2.xml',
+                'left': u''
+            }
+        ]
+        self.assertEqual(res2, expected)
+
+        res3 = o.full_diff_content('folder1/folder2/file2.xml')
+        expected = [
+            {
+                'right': u'Hello',
+                'relpath': u'folder1/folder2/file2.xml',
+                'left': u''
+            }
+        ]
+        self.assertEqual(res3, expected)
+
+        self.client.add(file2)
+        res = o.full_diff_content()
+        expected = [
+            {
+                'right': u'Hello World',
+                'relpath': u'folder1/file1.xml',
+                'left': u'Hello'
+            },
+            {
+                'right': u'Hello',
+                'relpath': u'folder1/folder2/file2.xml',
+                'left': u''
+            }
+        ]
+        self.assertEqual(res, expected)
+
+        self.client.revert(file1)
+        self.client.remove(file1)
+        res = o.full_diff_content()
+        expected = [
+            {
+                'right': u'',
+                'relpath': u'folder1/file1.xml',
+                'left': u'Hello'
+            },
+            {
+                'right': u'Hello',
+                'relpath': u'folder1/folder2/file2.xml',
+                'left': u''
+            }
+        ]
+        self.assertEqual(res, expected)
 
     def test_full_diff(self):
         difflib.HtmlDiff._default_prefix = 0

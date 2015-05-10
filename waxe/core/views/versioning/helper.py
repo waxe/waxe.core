@@ -294,8 +294,10 @@ class PysvnVersioning(object):
                 diffs += [s]
         return diffs
 
-    def full_diff(self, path=None):
+
+    def full_diff_content(self, path=None):
         diffs = []
+        contents = []
         lis = self.full_status(path)
         d = diff.HtmlDiff()
         for so in lis:
@@ -313,8 +315,23 @@ class PysvnVersioning(object):
                 old_rev = pysvn.Revision(pysvn.opt_revision_kind.number,
                                          info.revision.number)
                 old_content = self.client.cat(so.abspath, old_rev)
+
+            contents.append({
+                'left': old_content.decode('utf-8'),
+                'right': new_content.decode('utf-8'),
+                'relpath': so.relpath,
+            })
+        return contents
+
+    def full_diff(self, path=None):
+        contents = self.full_diff_content(path=path)
+        d = diff.HtmlDiff()
+        diffs = []
+        for dic in contents:
+            old_content = dic['left']
+            new_content = dic['right']
             diffs += [(
-                so.relpath,
+                dic['relpath'],
                 d.make_table(
                     old_content.decode('utf-8').splitlines(),
                     new_content.decode('utf-8').splitlines())
