@@ -56,7 +56,8 @@ class TestSecurity(BaseTestCase):
         self.assertEqual(security.validate_password(request,
                                                     'Bob', 'toto'), False)
         self.assertEqual(security.validate_password(request,
-                                                    'Bob', 'secret_bob'), True)
+                                                    'Bob', 'secret_bob'),
+                         self.user_bob)
 
     def test_get_user_permissions(self):
         request = testing.DummyRequest()

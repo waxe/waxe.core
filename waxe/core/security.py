@@ -48,10 +48,12 @@ def validate_password(request, login, password):
         # A define and valid password can't be empty
         return False
     try:
-        return bcrypt.hashpw(password, user.password) == user.password
+        if (bcrypt.hashpw(password, user.password) == user.password):
+            return user
     except ValueError:
         # Can fail if the value in the DB is not bcrypted.
-        return False
+        pass
+    return False
 
 
 def get_user_permissions(login, request):
