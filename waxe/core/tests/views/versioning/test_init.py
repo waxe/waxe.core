@@ -241,12 +241,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
         res = self.ClassView(request).status()
         expected = {
             'uncommitables': [],
-            'conflicteds': [
-                {
-                    'status': 'unversioned',
-                    'relpath': 'debug/dash.xml'
-                }
-            ],
+            'conflicteds': [],
             'others': [
                 {
                     'status': 'modified',
