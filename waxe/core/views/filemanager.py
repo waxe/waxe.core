@@ -2,7 +2,7 @@ import os
 from pyramid.view import view_config
 import pyramid.httpexceptions as exc
 from base import BaseUserView
-from .. import browser, search as mod_search
+from .. import browser, search as mod_search, events
 
 
 class FileManagerView(BaseUserView):
@@ -102,6 +102,7 @@ class FileManagerView(BaseUserView):
     @view_config(route_name='remove_json')
     def remove(self):
         # TODO: use DELETE method
+        # And also support to delete folder
         filenames = self.req_post_getall('paths')
         if not filenames:
             raise exc.HTTPClientError('No filename given')
@@ -120,8 +121,8 @@ class FileManagerView(BaseUserView):
 
         for absfilename in absfilenames:
             os.remove(absfilename)
-            self.add_indexation_task([absfilename])
 
+        events.trigger('deleted', view=self, paths=filenames)
         return True
 
 

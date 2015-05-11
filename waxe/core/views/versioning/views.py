@@ -4,14 +4,26 @@ import xmltool
 from pyramid.renderers import render
 from pyramid.view import view_config
 import pyramid.httpexceptions as exc
-from waxe.core import browser
-from waxe.core import models
+from waxe.core import browser, models, events
 from waxe.core.utils import escape_entities
 from ..base import BaseUserView
 from . import helper
 
 
 log = pyramid_logging.getLogger(__name__)
+
+
+def on_updated_conflicted(view, path):
+    vobj = view.get_versioning_obj()
+    if not vobj:
+        return
+
+    try:
+        vobj.resolve(path)
+    except Exception, e:
+        log.exception(e, request=view.request)
+        raise exc.HTTPClientError(
+            'Conflict\'s resolution failed: %s' % str(e))
 
 
 class VersioningView(BaseUserView):
@@ -178,7 +190,6 @@ class VersioningView(BaseUserView):
                 'Please try again.' % str(e)
             )
 
-        absfilenames = [f for (status, f) in filenames]
         files = [
             {
                 'status': status,
@@ -187,15 +198,11 @@ class VersioningView(BaseUserView):
                                       helper.STATUS_MODIFED]
             } for status, f in filenames]
 
-        self.add_indexation_task(absfilenames)
+        events.trigger('updated',
+                       view=self,
+                       paths=[browser.relative_path(f, self.root_path)
+                              for status, f in filenames])
         return files
-
-        content = render('blocks/versioning_update.mak', {
-            'files': files,
-            'STATUS_ADDED': helper.STATUS_ADDED,
-            'STATUS_MODIFED': helper.STATUS_MODIFED,
-        }, self.request)
-        return content
 
     @view_config(route_name='versioning_commit_json')
     def commit(self):
@@ -260,7 +267,7 @@ class VersioningView(BaseUserView):
         if not status:
             raise exc.HTTPClientError('<br />'.join(error_msgs))
 
-        self.add_indexation_task(absfilenames)
+        events.trigger('updated', view=self, paths=files)
         return 'Files updated'
 
     @view_config(route_name='versioning_edit_conflict_json')
@@ -317,7 +324,7 @@ class VersioningView(BaseUserView):
             log.exception(e, request=self.request)
             raise exc.HTTPClientError(
                 'Conflict\'s resolution failed: %s' % str(e))
-        self.add_indexation_task([absfilename])
+        events.trigger('updated', view=self, path=filename)
         return 'Conflict fixed'
 
     @view_config(route_name='versioning_revert_json')
@@ -352,8 +359,7 @@ class VersioningView(BaseUserView):
             else:
                 vobj.revert(filename)
 
-            self.add_indexation_task([absfilename])
-
+        events.trigger('updated', view=self, paths=filenames)
         return 'Files reverted'
 
 
@@ -371,3 +377,5 @@ def includeme(config):
     config.add_route('versioning_update_conflict_json', 'update-conflict.json')
     config.add_route('versioning_revert_json', '/revert.json')
     config.scan(__name__)
+
+    events.on('updated_conflicted.txt', on_updated_conflicted)
