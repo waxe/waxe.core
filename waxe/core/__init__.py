@@ -18,6 +18,7 @@ from . import resource
 
 # Add the modules you want to be include in the config
 views_modules = [
+    ('waxe.angular.views.index', False, ''),
     ('waxe.core.views.index', False, ''),
     ('waxe.core.views.auth', False, ''),
     ('waxe.core.views.filemanager', True, ''),
