@@ -48,7 +48,7 @@ module.exports = function(grunt) {
             'src/layout.js',
             'src/form.js',
             'src/utils.js',
-            'src/dom.js',
+            // 'src/dom.js',
             'src/jquery.filebrowser.js',
             'src/navbar.js',
             'src/versioning.js',
