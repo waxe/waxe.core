@@ -151,20 +151,20 @@ class TestFileManagerView(LoggedBobTestCase):
 class TestFunctionalTestFileManagerView(WaxeTestCase):
 
     def test_permissions(self):
-        self.testapp.get('/account/Bob/explore.json', status=401)
-        self.testapp.get('/account/Bob/create-folder.json', status=401)
-        self.testapp.get('/account/Bob/search.json', status=401)
-        self.testapp.get('/account/Bob/remove.json', status=401)
+        self.testapp.get('/api/1/account/Bob/explore.json', status=401)
+        self.testapp.get('/api/1/account/Bob/create-folder.json', status=401)
+        self.testapp.get('/api/1/account/Bob/search.json', status=401)
+        self.testapp.get('/api/1/account/Bob/remove.json', status=401)
 
     @login_user('Admin')
     def test_explore_json_admin(self):
-        res = self.testapp.get('/account/Admin/explore.json', status=400)
+        res = self.testapp.get('/api/1/account/Admin/explore.json', status=400)
         self.assertEqual(res.body, '"root path not defined"')
 
     @login_user('Bob')
     def test_explore_json(self):
         self.user_bob.config.root_path = '/unexisting'
-        res = self.testapp.get('/account/Bob/explore.json', status=404)
+        res = self.testapp.get('/api/1/account/Bob/explore.json', status=404)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
         # TODO: add more tests
@@ -173,14 +173,14 @@ class TestFunctionalTestFileManagerView(WaxeTestCase):
     def test_create_folder(self):
         path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
-        res = self.testapp.post('/account/Bob/create-folder.json', status=400)
+        res = self.testapp.post('/api/1/account/Bob/create-folder.json', status=400)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
         self.assertEqual(res.body, '"No name given"')
 
         try:
             res = self.testapp.post(
-                '/account/Bob/create-folder.json',
+                '/api/1/account/Bob/create-folder.json',
                 status=200,
                 params={'name': 'new_folder'})
             dic = json.loads(res.body)
@@ -188,7 +188,7 @@ class TestFunctionalTestFileManagerView(WaxeTestCase):
             self.assertTrue(os.path.isdir(os.path.join(path, 'new_folder')))
 
             res = self.testapp.post(
-                '/account/Bob/create-folder.json',
+                '/api/1/account/Bob/create-folder.json',
                 status=500,
                 params={'name': 'new_folder'})
             self.assertTrue('File exists' in res.body)
@@ -202,4 +202,4 @@ class TestFunctionalTestFileManagerView(WaxeTestCase):
     def test_search_json(self):
         path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
-        self.testapp.get('/account/Bob/search.json', status=500)
+        self.testapp.get('/api/1/account/Bob/search.json', status=500)

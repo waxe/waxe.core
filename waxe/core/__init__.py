@@ -18,11 +18,11 @@ from . import resource
 
 # Add the modules you want to be include in the config
 views_modules = [
-    ('waxe.angular.views.index', False, ''),
-    ('waxe.core.views.index', False, ''),
-    ('waxe.core.views.auth', False, ''),
-    ('waxe.core.views.filemanager', True, ''),
-    ('waxe.txt.views.editor', True, 'txt'),
+    ('waxe.core.views.index', False, True, ''),
+    ('waxe.core.views.auth', False, True, ''),
+    ('waxe.core.views.filemanager', True, True, ''),
+    ('waxe.angular.views.index', False, False, ''),
+    ('waxe.txt.views.editor', True, True, 'txt'),
 ]
 
 
@@ -30,12 +30,12 @@ def get_views_modules(settings, waxe_editors, waxe_renderers):
     lis = list(views_modules)
     for exts, mod in waxe_editors:
         route_prefix = mod.ROUTE_PREFIX
-        lis += [(mod.__name__, True, route_prefix)]
+        lis += [(mod.__name__, True, True, route_prefix)]
     for exts, mod in waxe_renderers:
         route_prefix = mod.ROUTE_PREFIX
-        lis += [(mod.__name__, True, route_prefix)]
+        lis += [(mod.__name__, True, True, route_prefix)]
     if 'waxe.versioning' in settings:
-        lis += [('waxe.core.views.versioning.views', True, 'versioning')]
+        lis += [('waxe.core.views.versioning.views', True, True, 'versioning')]
     return lis
 
 
@@ -93,6 +93,7 @@ def main(global_config, **settings):
     engine = engine_from_config(settings, 'sqlalchemy.')
     DBSession.configure(bind=engine)
     Base.metadata.bind = engine
+    # taskq should use the same engine
     taskqm.DBSession.configure(bind=engine)
     taskqm.Base.metadata.bind = engine
 
@@ -112,22 +113,24 @@ def main(global_config, **settings):
 
     # TODO: not sure we need to define dtd_urls here.
     config.set_request_property(get_dtd_urls, 'dtd_urls', reify=True)
-
     config.set_request_property(get_xml_plugins, 'xml_plugins', reify=True)
+
     config.set_request_property(get_str_resources, 'str_resources', reify=True)
     config.set_request_property(get_js_resources, 'js_resources', reify=True)
     config.set_request_property(get_css_resources, 'css_resources', reify=True)
 
-    for module, prefix, extra_prefix in get_views_modules(settings,
+    for module, prefix, api, extra_prefix in get_views_modules(settings,
                                                           waxe_editors,
                                                           waxe_renderers):
         route_prefix = None
+        if api:
+            route_prefix = '/api/1'
         if prefix:
-            route_prefix = '/account/{login}'
+            route_prefix += '/account/{login}'
             if extra_prefix:
                 route_prefix += '/%s' % extra_prefix
         else:
             if extra_prefix:
-                route_prefix = '/%s' % extra_prefix
+                route_prefix += '/%s' % extra_prefix
         config.include(module, route_prefix=route_prefix)
     return config.make_wsgi_app()

@@ -790,11 +790,11 @@ class FunctionalTestViewsNoVersioning(WaxeTestCase):
 
     def test_404(self):
         for url in [
-            '/account/Bob/versioning/status.json',
-            '/account/Bob/versioning/full-diff.json',
-            '/account/Bob/versioning/update.json',
-            '/account/Bob/versioning/commit.json',
-            '/account/Bob/versioning/update-texts.json',
+            '/api/1/account/Bob/versioning/status.json',
+            '/api/1/account/Bob/versioning/full-diff.json',
+            '/api/1/account/Bob/versioning/update.json',
+            '/api/1/account/Bob/versioning/commit.json',
+            '/api/1/account/Bob/versioning/update-texts.json',
         ]:
             self.testapp.get(url, status=404)
 
@@ -804,18 +804,18 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
 
     def test_forbidden(self):
         for url in [
-            '/account/Bob/versioning/status.json',
-            '/account/Bob/versioning/full-diff.json',
-            '/account/Bob/versioning/update.json',
-            '/account/Bob/versioning/commit.json',
-            '/account/Bob/versioning/update-texts.json',
+            '/api/1/account/Bob/versioning/status.json',
+            '/api/1/account/Bob/versioning/full-diff.json',
+            '/api/1/account/Bob/versioning/update.json',
+            '/api/1/account/Bob/versioning/commit.json',
+            '/api/1/account/Bob/versioning/update-texts.json',
         ]:
             self.testapp.get(url, status=401)
 
     @login_user('Bob')
     def test_short_status_json(self):
         self.user_bob.config = UserConfig(root_path=self.client_dir)
-        res = self.testapp.get('/account/Bob/versioning/short-status.json',
+        res = self.testapp.get('/api/1/account/Bob/versioning/short-status.json',
                                status=200)
         expected = {
             'file3.xml': helper.STATUS_UNVERSIONED,
@@ -827,7 +827,7 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
     @login_user('Bob')
     def test_status_json(self):
         self.user_bob.config = UserConfig(root_path=self.client_dir)
-        res = self.testapp.get('/account/Bob/versioning/status.json', status=200)
+        res = self.testapp.get('/api/1/account/Bob/versioning/status.json', status=200)
         self.assertTrue(res.body)
         self.assertTrue('file1.xml' in res.body)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
@@ -836,24 +836,24 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
     @login_user('Bob')
     def test_full_diff_json(self):
         self.user_bob.config = UserConfig(root_path=self.client_dir)
-        res = self.testapp.get('/account/Bob/versioning/full-diff.json',
+        res = self.testapp.get('/api/1/account/Bob/versioning/full-diff.json',
                                status=400)
         self.assertEqual(res.body,
                          '"No filename given"')
 
-        res = self.testapp.post('/account/Bob/versioning/full-diff.json',
+        res = self.testapp.post('/api/1/account/Bob/versioning/full-diff.json',
                                 status=400)
         self.assertEqual(res.body,
                          '"No filename given"')
 
-        res = self.testapp.get('/account/Bob/versioning/full-diff.json', status=200,
+        res = self.testapp.get('/api/1/account/Bob/versioning/full-diff.json', status=200,
                                params={'paths': 'file1.xml'})
         self.assertTrue('diff' in res.body)
 
     @login_user('Bob')
     def test_commit_json(self):
         self.user_bob.config = UserConfig(root_path=self.client_dir)
-        res = self.testapp.post('/account/Bob/versioning/commit.json',
+        res = self.testapp.post('/api/1/account/Bob/versioning/commit.json',
                                 status=400)
         self.assertEqual(res.body, '"No filename given"')
 
@@ -861,14 +861,14 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
     def test_update_json(self):
         self.user_bob.config = UserConfig(root_path=self.client_dir,
                                           versioning_password='secret_bob')
-        res = self.testapp.get('/account/Bob/versioning/update.json', status=200)
+        res = self.testapp.get('/api/1/account/Bob/versioning/update.json', status=200)
         self.assertEqual(json.loads(res.body), [])
 
     @login_user('Bob')
     def test_update_texts_json(self):
         path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
-        res = self.testapp.post('/account/Bob/versioning/update-texts.json',
+        res = self.testapp.post('/api/1/account/Bob/versioning/update-texts.json',
                                 status=400)
         self.assertEqual(res.body, '"Missing parameters!"')
 
@@ -876,7 +876,7 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
     def test_edit_conflict_json(self):
         path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
-        res = self.testapp.post('/account/Bob/versioning/edit-conflict.json',
+        res = self.testapp.post('/api/1/account/Bob/versioning/edit-conflict.json',
                                 status=400)
         self.assertEqual(res.body, '"No filename given"')
 
@@ -884,7 +884,7 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
     def test_update_conflict_json(self):
         path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
-        res = self.testapp.post('/account/Bob/versioning/update-conflict.json',
+        res = self.testapp.post('/api/1/account/Bob/versioning/update-conflict.json',
                                 status=400)
         self.assertEqual(res.body, '"Missing parameters!"')
 

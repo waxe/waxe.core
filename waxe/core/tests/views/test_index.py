@@ -163,11 +163,11 @@ class TestIndexUserView(BaseTestCase):
 class FunctionalTestIndexView(WaxeTestCase):
 
     def test_forbidden(self):
-        self.testapp.get('/profile.json', status=401)
+        self.testapp.get('/api/1/profile.json', status=401)
 
     @login_user('Admin')
     def test_profile(self):
-        res = self.testapp.get('/profile.json', status=200)
+        res = self.testapp.get('/api/1/profile.json', status=200)
         dic = json.loads(res.body)
         self.assertTrue('login' in dic)
 
@@ -175,10 +175,10 @@ class FunctionalTestIndexView(WaxeTestCase):
 class FunctionalTestIndexUserView(WaxeTestCase):
 
     def test_forbidden(self):
-        self.testapp.get('/account/admin/account-profile.json', status=401)
+        self.testapp.get('/api/1/account/admin/account-profile.json', status=401)
 
     @login_user('Bob')
     def test_account_profile(self):
-        res = self.testapp.get('/account/Bob/account-profile.json',
+        res = self.testapp.get('/api/1/account/Bob/account-profile.json',
                                status=200)
         self.assertTrue(res)

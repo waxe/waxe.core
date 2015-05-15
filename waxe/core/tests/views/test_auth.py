@@ -5,13 +5,14 @@ class FunctionalTestAuthView(WaxeTestCase):
 
     def test_login(self):
         # POST only
-        self.testapp.get('/login.json', status=404)
+        self.testapp.get('/api/1/login.json', status=404)
         # No params
-        self.testapp.post('/login.json', status=400)
+        self.testapp.post('/api/1/login.json', status=400)
         # Bad params
-        self.testapp.post('/login.json', params={'hello': 'world'}, status=401)
+        self.testapp.post('/api/1/login.json', params={'hello': 'world'},
+                          status=401)
         # Bad password
-        self.testapp.post('/login.json',
+        self.testapp.post('/api/1/login.json',
                           params={
                               'login': 'Bob',
                               'password': 'XXX',
@@ -19,7 +20,7 @@ class FunctionalTestAuthView(WaxeTestCase):
                           status=401)
 
         # OK
-        res = self.testapp.post('/login.json',
+        res = self.testapp.post('/api/1/login.json',
                                 params={
                                     'login': 'Bob',
                                     'password': 'secret_bob',
@@ -28,7 +29,7 @@ class FunctionalTestAuthView(WaxeTestCase):
         self.assertEqual(res.body, 'true')
 
         # It should work when posting as json
-        res = self.testapp.post_json('/login.json',
+        res = self.testapp.post_json('/api/1/login.json',
                                      params={
                                          'login': 'Bob',
                                          'password': 'secret_bob',
@@ -38,7 +39,7 @@ class FunctionalTestAuthView(WaxeTestCase):
 
     def test_logout(self):
         # GET only
-        self.testapp.post('/logout.json', status=404)
+        self.testapp.post('/api/1/logout.json', status=404)
         # OK
-        res = self.testapp.get('/logout.json', status=200)
+        res = self.testapp.get('/api/1/logout.json', status=200)
         self.assertEqual(res.body, '"You are logged off"')
