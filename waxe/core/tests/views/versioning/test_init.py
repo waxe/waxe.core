@@ -563,6 +563,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
         path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         request = self.DummyRequest(params={})
+        request.xmltool_transform = None
         try:
             self.ClassView(request).update_texts()
             assert(False)
@@ -577,6 +578,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                 'data:1:filecontent': 'content of the file 2',
                 'data:1:filename': 'thefilename2.xml',
             })
+        request.xmltool_transform = None
 
         def raise_func(*args, **kw):
             raise Exception('My error')
@@ -601,6 +603,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
         request.custom_route_path = lambda *args, **kw: '/filepath'
 
         with patch('xmltool.elements.Element.write', return_value=None):
+            request.xmltool_transform = None
             res = self.ClassView(request).update_texts()
             expected = 'Files updated'
             self.assertEqual(res,  expected)

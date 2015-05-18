@@ -253,7 +253,8 @@ class VersioningView(BaseUserView):
             absfilename = browser.absolute_path(filename, root_path)
             try:
                 obj = xmltool.load_string(filecontent)
-                obj.write(absfilename, transform=self._get_xmltool_transform())
+                obj.write(absfilename,
+                          transform=self.request.xmltool_transform)
                 files += [filename]
                 absfilenames += [absfilename]
             except Exception, e:

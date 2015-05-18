@@ -142,15 +142,6 @@ class BaseView(JSONView):
                 return True
         return False
 
-    def _get_xmltool_transform(self):
-        """Before writing XML, we can call a function to transform it.
-        """
-        if 'waxe.xml.xmltool.transform' not in self.request.registry.settings:
-            return None
-        func = self.request.registry.settings['waxe.xml.xmltool.transform']
-        mod, func = func.rsplit('.', 1)
-        return getattr(importlib.import_module(mod), func)
-
     def logged_user_profile(self):
         """Get the profile of the logged user
         """
