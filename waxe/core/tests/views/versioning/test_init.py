@@ -620,105 +620,6 @@ class TestVersioningViewFakeRepo(BaseTestCase, CreateRepo):
         })
         self.config.include('pyramid_auth')
 
-    @login_user('Bob')
-    def test_edit_conflict(self):
-        class C(object): pass
-        self.user_bob.config.root_path = self.client_dir
-        file1 = os.path.join(self.client_dir, 'file1.xml')
-        open(file1, 'w').write('Hello')
-        request = testing.DummyRequest()
-        request.context = security.RootFactory(request)
-        request.matched_route = C()
-        request.matched_route.name = 'route'
-        request.route_path = lambda *args, **kw: '/%s' % args[0]
-        try:
-            VersioningView(request).edit_conflict()
-        except exc.HTTPClientError, e:
-            expected = 'No filename given'
-            self.assertEqual(str(e), expected)
-
-        request = testing.DummyRequest(params={'path': 'file1.xml'})
-        request.matched_route = C()
-        request.matched_route.name = 'route'
-        request.custom_route_path = lambda *args, **kw: '/%s/filepath' % args[0]
-        res = VersioningView(request).edit_conflict()
-        expected = '<form data-action="/versioning_update_conflict_json/filepath'
-        self.assertTrue(expected in res)
-        expected = '<textarea class="codemirror" name="filecontent">'
-        self.assertTrue(expected in res)
-        expected = ('<input type="hidden" id="_xml_filename" '
-                    'name="filename" value="file1.xml" />')
-        self.assertTrue(expected in res)
-
-    @login_user('Bob')
-    def test_update_conflict(self):
-        class C(object): pass
-        self.user_bob.config.root_path = self.client_dir
-        file1 = os.path.join(self.client_dir, 'file1.xml')
-        open(file1, 'w').write('Hello')
-        self.client.add(file1)
-        self.client.checkin([file1], 'Initial commit')
-        # Create a conflict
-        self.client.checkout('file://%s' % self.repo, 'svn_waxe_client1')
-        open(os.path.join('svn_waxe_client1', 'file1.xml'), 'w').write('Hello Bob')
-        self.client.checkin([os.path.join('svn_waxe_client1', 'file1.xml')],
-                            'create conflict')
-        open(file1, 'w').write('Hello Fred')
-        self.client.update(self.client_dir)
-        o = helper.PysvnVersioning(None, ['.xml'], None, None, self.client_dir,
-                                   False)
-        s = o.empty_status(file1)
-        self.assertEqual(s.status, helper.STATUS_CONFLICTED)
-
-        request = testing.DummyRequest(params={})
-        request.context = security.RootFactory(request)
-        request.matched_route = C()
-        request.matched_route.name = 'route'
-        request.route_path = lambda *args, **kw: '/%s' % args[0]
-        try:
-            res = VersioningView(request).update_conflict()
-            assert(False)
-        except exc.HTTPClientError, e:
-            expected = 'Missing parameters!'
-            self.assertEqual(str(e), expected)
-
-        request = testing.DummyRequest(
-            params={'filecontent': 'content of the file',
-                    'filename': 'file1.xml'})
-        request.context = security.RootFactory(request)
-        request.custom_route_path = lambda *args, **kw: '/filepath'
-        request.matched_route = C()
-        request.matched_route.name = 'route'
-        request.route_path = lambda *args, **kw: '/%s' % args[0]
-
-        def raise_func(*args, **kw):
-            raise Exception('My error')
-
-        with patch('xmltool.load_string') as m:
-            m.side_effect = raise_func
-            try:
-                VersioningView(request).update_conflict()
-                assert(False)
-            except exc.HTTPClientError, e:
-                expected = 'The conflict is not resolved: My error'
-                self.assertEqual(str(e),  expected)
-
-        filecontent = open(file1, 'r').read()
-        request = testing.DummyRequest(
-            params={'filecontent': filecontent,
-                    'filename': 'file1.xml'})
-        request.context = security.RootFactory(request)
-        request.custom_route_path = lambda *args, **kw: '/filepath'
-        request.matched_route = C()
-        request.matched_route.name = 'route'
-        request.route_path = lambda *args, **kw: '/%s' % args[0]
-
-        m = MagicMock()
-        with patch('xmltool.load_string', return_value=m):
-            VersioningView(request).update_conflict()
-            s = o.empty_status(file1)
-            self.assertEqual(s.status, helper.STATUS_MODIFED)
-
     @login_user('Fred')
     def test_update(self):
         self.user_bob.config.root_path = self.client_dir
@@ -869,22 +770,6 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
         path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
         res = self.testapp.post('/api/1/account/Bob/versioning/update-texts.json',
-                                status=400)
-        self.assertEqual(res.body, '"Missing parameters!"')
-
-    @login_user('Bob')
-    def test_edit_conflict_json(self):
-        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
-        self.user_bob.config.root_path = path
-        res = self.testapp.post('/api/1/account/Bob/versioning/edit-conflict.json',
-                                status=400)
-        self.assertEqual(res.body, '"No filename given"')
-
-    @login_user('Bob')
-    def test_update_conflict_json(self):
-        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
-        self.user_bob.config.root_path = path
-        res = self.testapp.post('/api/1/account/Bob/versioning/update-conflict.json',
                                 status=400)
         self.assertEqual(res.body, '"Missing parameters!"')
 

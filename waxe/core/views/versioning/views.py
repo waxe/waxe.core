@@ -95,10 +95,6 @@ class VersioningView(BaseUserView):
         uncommitables = [so.to_dict() for so in uncommitables
                          if not helper.is_conflicted(so, conflicteds_abspath)]
 
-        # conflicteds = [{
-        #     'relpath': 'debug/dash.xml',
-        #     'status': 'unversioned',
-        # }]
         dic = {
             'conflicteds': conflicteds,
             'uncommitables': uncommitables,
@@ -269,63 +265,6 @@ class VersioningView(BaseUserView):
 
         events.trigger('updated', view=self, paths=files)
         return 'Files updated'
-
-    @view_config(route_name='versioning_edit_conflict_json')
-    def edit_conflict(self):
-        """
-        Basically it's the same function as editor.edit_text
-        """
-        filename = self.request.GET.get('path')
-        if not filename:
-            raise exc.HTTPClientError('No filename given')
-
-        root_path = self.root_path
-        absfilename = browser.absolute_path(filename, root_path)
-        try:
-            content = open(absfilename, 'r').read()
-            content = content.decode('utf-8')
-        except Exception, e:
-            log.exception(e, request=self.request)
-            raise exc.HTTPClientError(str(e))
-
-        content = escape_entities(content)
-
-        html = u'<form data-action="%s" action="%s" method="POST">' % (
-            self.request.custom_route_path('versioning_update_conflict_json'),
-            self.request.custom_route_path('versioning_update_conflict'),
-        )
-        html += u'<input type="hidden" id="_xml_filename" name="filename" value="%s" />' % filename
-        html += u'<textarea class="codemirror" name="filecontent">%s</textarea>' % content
-        html += u'<input type="submit" value="Save and resolve conflict" />'
-        html += u'</form>'
-
-        return html
-
-    @view_config(route_name='versioning_update_conflict_json')
-    def update_conflict(self):
-        # TODO: we should have an event 'save' to fix the conflict if okay
-        filecontent = self.request.POST.get('filecontent')
-        filename = self.request.POST.get('filename') or ''
-        if not filecontent or not filename:
-            raise exc.HTTPClientError('Missing parameters!')
-
-        absfilename = browser.absolute_path(filename, self.root_path)
-        try:
-            obj = xmltool.load_string(filecontent)
-            obj.write(absfilename, transform=self._get_xmltool_transform())
-        except Exception, e:
-            raise exc.HTTPClientError(
-                'The conflict is not resolved: %s' % str(e))
-
-        vobj = self.get_versioning_obj()
-        try:
-            vobj.resolve(filename)
-        except Exception, e:
-            log.exception(e, request=self.request)
-            raise exc.HTTPClientError(
-                'Conflict\'s resolution failed: %s' % str(e))
-        events.trigger('updated', view=self, path=filename)
-        return 'Conflict fixed'
 
     @view_config(route_name='versioning_revert_json')
     def revert(self):
