@@ -28,12 +28,17 @@ def trigger(eventname, *args, **kw):
     if base_eventname != eventname:
         eventnames += [base_eventname]
 
+    res = None
     for eventname in eventnames:
         callbacks = events.get(eventname)
         if not callbacks:
             continue
         for callback in callbacks:
-            callback(*args, **kw)
+            res = callback(*args, **kw)
+            if res is not None:
+                args = res
+                kw = {}
+    return res
 
 
 def on_updated(view, path=None, paths=None):
