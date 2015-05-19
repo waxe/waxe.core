@@ -94,6 +94,9 @@ def main(global_config, **settings):
     config.set_request_property(get_js_resources, 'js_resources', reify=True)
     config.set_request_property(get_css_resources, 'css_resources', reify=True)
 
+    resource.add_js_resource('waxe.core:static/js/waxe.js')
+    resource.add_css_resource('waxe.core:static/css/waxe.min.css')
+
     for (module, prefix, api, extra_prefix) in get_views_modules(
             settings,
             waxe_editors,
