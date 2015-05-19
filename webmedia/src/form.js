@@ -46,7 +46,8 @@ var waxe = waxe || {};
                 var d = $(document);
                 d.message.apply(d, arguments);
             },
-            treeContainerSelector: '#xml-editor-form-container'// waxe.layout.SELECTORS.center
+            formContainerSelector: '#xml-editor-form-container',
+            treeContainerSelector: '#xml-editor-tree-container'
         });
         this.$element.on('change.contenteditablesync', 'textarea', function() {
             that.status = that.STATUS_UPDATED;
