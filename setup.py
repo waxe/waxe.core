@@ -15,8 +15,8 @@ CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
 
 requires = [
     'pyramid_mako',
-    'pyramid',
-    'SQLAlchemy',
+    'pyramid==1.5.7',
+    'SQLAlchemy==1.0.4',
     'transaction',
     'pyramid_tm',
     'pyramid_debugtoolbar',
@@ -34,6 +34,15 @@ requires = [
     'webhelpers',
     'importlib',
 ]
+
+# TODO release:
+# * taskq
+# * waxe.angular
+# * waxe.txt
+# * waxe.xml => it should not be the case since it's a dependency
+# * pysvn ? add in the doc we need to create symllinks
+# => it shouldn't be dependency in case we don't use it
+# xmltool: we need a new release
 
 setup(name='waxe.core',
       version='0.1',
