@@ -236,37 +236,6 @@ class VersioningView(BaseUserView):
                                                 iduser_commit=iduser_commit)
         return 'Files commited'
 
-    @view_config(route_name='versioning_update_texts_json')
-    def update_texts(self):
-        params = xmltool.utils.unflatten_params(self.req_post)
-        if 'data' not in params or not params['data']:
-            raise exc.HTTPClientError('Missing parameters!')
-
-        root_path = self.root_path
-        status = True
-        error_msgs = []
-        files = []
-        absfilenames = []
-        for dic in params['data']:
-            filecontent = dic['filecontent']
-            filename = dic['filename']
-            absfilename = browser.absolute_path(filename, root_path)
-            try:
-                obj = xmltool.load_string(filecontent)
-                obj.write(absfilename,
-                          transform=self.request.xmltool_transform)
-                files += [filename]
-                absfilenames += [absfilename]
-            except Exception, e:
-                status = False
-                error_msgs += ['%s: %s' % (filename, str(e))]
-
-        if not status:
-            raise exc.HTTPClientError('<br />'.join(error_msgs))
-
-        events.trigger('updated', view=self, paths=files)
-        return 'Files updated'
-
     @view_config(route_name='versioning_revert_json')
     def revert(self):
         filenames = self.req_post_getall('paths')
@@ -312,7 +281,6 @@ def includeme(config):
     config.add_route('versioning_update_json', '/update.json')
     config.add_route('versioning_commit_json', '/commit.json')
     config.add_route('versioning_prepare_commit_json', '/prepare-commit.json')
-    config.add_route('versioning_update_texts_json', '/update-texts.json')
     config.add_route('versioning_edit_conflict_json', 'edit-conflict.json')
     config.add_route('versioning_update_conflict_json', 'update-conflict.json')
     config.add_route('versioning_revert_json', '/revert.json')

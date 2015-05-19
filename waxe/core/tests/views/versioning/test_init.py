@@ -558,56 +558,6 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
             res = view.can_commit('/home/test/folder1.xml')
             self.assertEqual(res, True)
 
-    @login_user('Bob')
-    def test_update_texts(self):
-        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
-        self.user_bob.config.root_path = path
-        request = self.DummyRequest(params={})
-        request.xmltool_transform = None
-        try:
-            self.ClassView(request).update_texts()
-            assert(False)
-        except exc.HTTPClientError, e:
-            expected = 'Missing parameters!'
-            self.assertEqual(str(e), expected)
-
-        request = self.DummyRequest(
-            params={
-                'data:0:filecontent': 'content of the file 1',
-                'data:0:filename': 'thefilename1.xml',
-                'data:1:filecontent': 'content of the file 2',
-                'data:1:filename': 'thefilename2.xml',
-            })
-        request.xmltool_transform = None
-
-        def raise_func(*args, **kw):
-            raise Exception('My error')
-
-        with patch('xmltool.load_string') as m:
-            m.side_effect = raise_func
-            try:
-                self.ClassView(request).update_texts()
-                assert(False)
-            except exc.HTTPClientError, e:
-                expected = (
-                    'thefilename1.xml: My error<br />'
-                    'thefilename2.xml: My error')
-                self.assertEqual(str(e),  expected)
-
-        filecontent = open(os.path.join(path, 'file1.xml'), 'r').read()
-        filecontent = filecontent.replace('exercise.dtd',
-                                          os.path.join(path, 'exercise.dtd'))
-        request = self.DummyRequest(
-            params={'data:0:filecontent': filecontent,
-                    'data:0:filename': 'thefilename.xml'})
-        request.custom_route_path = lambda *args, **kw: '/filepath'
-
-        with patch('xmltool.elements.Element.write', return_value=None):
-            request.xmltool_transform = None
-            res = self.ClassView(request).update_texts()
-            expected = 'Files updated'
-            self.assertEqual(res,  expected)
-
 
 class TestVersioningViewFakeRepo(BaseTestCase, CreateRepo):
 
@@ -698,7 +648,6 @@ class FunctionalTestViewsNoVersioning(WaxeTestCase):
             '/api/1/account/Bob/versioning/full-diff.json',
             '/api/1/account/Bob/versioning/update.json',
             '/api/1/account/Bob/versioning/commit.json',
-            '/api/1/account/Bob/versioning/update-texts.json',
         ]:
             self.testapp.get(url, status=404)
 
@@ -712,7 +661,6 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
             '/api/1/account/Bob/versioning/full-diff.json',
             '/api/1/account/Bob/versioning/update.json',
             '/api/1/account/Bob/versioning/commit.json',
-            '/api/1/account/Bob/versioning/update-texts.json',
         ]:
             self.testapp.get(url, status=401)
 
@@ -767,14 +715,6 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
                                           versioning_password='secret_bob')
         res = self.testapp.get('/api/1/account/Bob/versioning/update.json', status=200)
         self.assertEqual(json.loads(res.body), [])
-
-    @login_user('Bob')
-    def test_update_texts_json(self):
-        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
-        self.user_bob.config.root_path = path
-        res = self.testapp.post('/api/1/account/Bob/versioning/update-texts.json',
-                                status=400)
-        self.assertEqual(res.body, '"Missing parameters!"')
 
 
 class TestHelper(CreateRepo):
