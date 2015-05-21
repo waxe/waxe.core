@@ -97,13 +97,18 @@ def main(global_config, **settings):
     resource.add_js_resource('waxe.core:static/js/waxe.js')
     resource.add_css_resource('waxe.core:static/css/waxe.min.css')
 
+    api_prefix = '/api/1'
+    # Defined api url to be able to reverse the url according the server
+    # configuration (nginx, apache, ...)
+    config.add_route('api', api_prefix)
+
     for (module, prefix, api, extra_prefix) in get_views_modules(
             settings,
             waxe_editors,
             waxe_renderers):
         route_prefix = None
         if api:
-            route_prefix = '/api/1'
+            route_prefix = api_prefix
         if prefix:
             route_prefix += '/account/{login}'
             if extra_prefix:
