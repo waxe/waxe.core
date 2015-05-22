@@ -35,6 +35,8 @@ def get_views_modules(settings, waxe_editors, waxe_renderers):
         lis += [(mod.__name__, True, True, route_prefix)]
     if 'waxe.versioning' in settings:
         lis += [('waxe.core.views.versioning.views', True, True, 'versioning')]
+    if 'waxe.spellcheck' in settings:
+        lis += [('waxe.spellcheck.views.index', False, True, 'spellcheck')]
     return lis
 
 
