@@ -279,7 +279,7 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
         request = self.DummyRequest(params={'path': 'file1.xml'})
         res = self.ClassView(request).diff()
         expected = (
-            '<pre>Index: file1.xml\n'
+            'Index: file1.xml\n'
             '===================================='
             '===============================\n'
             '--- file1.xml\t(revision 1)\n'
@@ -289,26 +289,19 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
             '\ No newline at end of file\n'
             '+Hello world\n'
             '\ No newline at end of file\n'
-            '</pre>'
         )
-        self.assertTrue(expected in res)
-        self.assertTrue('data-href="/versioning_prepare_commit_json"'
-                        in res)
-        self.assertTrue('data-href="/versioning_revert_json"'
-                        in res)
+        self.assertTrue(expected in res['diff'])
+        self.assertEqual(res['can_commit'], True)
 
         with patch('waxe.core.views.versioning.views.VersioningView.can_commit', return_value=False):
             res = self.ClassView(request).diff()
-            self.assertTrue(expected in res)
-            self.assertFalse('data-href="/versioning_prepare_commit_json"'
-                             in res)
-            self.assertTrue('data-href="/versioning_revert_json"'
-                            in res)
+            self.assertTrue(expected in res['diff'])
+            self.assertEqual(res['can_commit'], False)
 
         with patch('waxe.core.views.versioning.helper.PysvnVersioning.diff',
                    return_value=[]):
             res = self.ClassView(request).diff()
-            self.assertTrue('The file is not modified!' in res)
+            self.assertEqual(res, {})
 
     @login_user('Bob')
     def test_revert(self):

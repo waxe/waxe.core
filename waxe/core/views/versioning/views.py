@@ -114,31 +114,17 @@ class VersioningView(BaseUserView):
 
         vobj = self.get_versioning_obj()
         lis = vobj.diff(relpath)
-        content = ''
         if not lis:
-            content = '<br />The file is not modified!'
+            return {}
 
+        content = ''
         for l in lis:
-            l = escape_entities(l)
-            content += '<pre>%s</pre>' % l
-            if vobj.status(relpath)[0].status == helper.STATUS_MODIFED:
-                content += (
-                    '<a data-confirm="Are you sure you want to revert '
-                    'the modification applied to this file?" '
-                    'class="btn btn-danger" '
-                    'data-href="%s">Revert</a>'
-                ) % self.request.custom_route_path(
-                    'versioning_revert_json',
-                    _query=[('path', relpath)])
-            if self.can_commit(absfilename):
-                content += (
-                    '<a  class="btn btn-success" '
-                    'style="margin-right: 10px;" '
-                    'data-href="%s">Commit</a>'
-                ) % self.request.custom_route_path(
-                    'versioning_prepare_commit_json',
-                    _query=[('path', relpath)])
-        return content
+            content += escape_entities(l)
+
+        return {
+            'diff': content,
+            'can_commit': self.can_commit(absfilename)
+        }
 
     @view_config(route_name='versioning_full_diff_json')
     def full_diff(self):
