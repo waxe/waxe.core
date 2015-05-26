@@ -1,8 +1,7 @@
 import os
 import locale
 import pysvn
-from waxe.core import browser
-from waxe.core import diff
+from waxe.core import browser, diff, utils
 import tempfile
 import importlib
 
@@ -317,8 +316,8 @@ class PysvnVersioning(object):
                 old_content = self.client.cat(so.abspath, old_rev)
 
             contents.append({
-                'left': old_content.decode('utf-8'),
-                'right': new_content.decode('utf-8'),
+                'left': utils.safe_str(old_content),
+                'right': utils.safe_str(new_content),
                 'relpath': so.relpath,
             })
         return contents
