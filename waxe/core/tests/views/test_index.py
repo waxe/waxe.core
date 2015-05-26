@@ -4,6 +4,7 @@ import json
 from ..testing import BaseTestCase, WaxeTestCase, login_user
 from waxe.core.views.index import IndexView, IndexUserView
 from waxe.core import security
+from waxe.core.models import UserOpenedFile, UserCommitedFile
 
 
 class EmptyClass(object):
@@ -93,6 +94,51 @@ class TestIndexView(BaseTestCase):
         }
         self.assertEqual(res, expected)
 
+    def test_last_files_no_current_user(self):
+        request = testing.DummyRequest()
+        request.custom_route_path = lambda *args, **kw: '/filepath'
+        request.route_path = lambda *args, **kw: '/filepath'
+        res = IndexView(request).last_files()
+        expected = {}
+        self.assertEqual(res, expected)
+
+    @login_user('Bob')
+    def test_last_files(self):
+        request = testing.DummyRequest()
+        request.custom_route_path = lambda *args, **kw: '/filepath'
+        request.route_path = lambda *args, **kw: '/filepath'
+        res = IndexView(request).last_files()
+        expected = {
+            'opened_files': [],
+            'commited_files': [],
+        }
+        self.assertEqual(res, expected)
+
+        request.current_user = self.user_bob
+        self.user_bob.opened_files = [UserOpenedFile(path='/path')]
+        res = IndexView(request).last_files()
+        expected = {
+            'opened_files': [{'path': '/path', 'user': ''}],
+            'commited_files': [],
+        }
+        self.assertEqual(res, expected)
+
+        self.user_bob.opened_files[0].user_owner = self.user_fred
+        res = IndexView(request).last_files()
+        expected = {
+            'opened_files': [{'path': '/path', 'user': 'Fred'}],
+            'commited_files': [],
+        }
+        self.assertEqual(res, expected)
+
+        self.user_bob.commited_files = [UserCommitedFile(path='/cpath')]
+        res = IndexView(request).last_files()
+        expected = {
+            'opened_files': [{'path': '/path', 'user': 'Fred'}],
+            'commited_files': [{'path': '/cpath', 'user': ''}],
+        }
+        self.assertEqual(res, expected)
+
 
 class TestIndexUserView(BaseTestCase):
 
@@ -164,12 +210,23 @@ class FunctionalTestIndexView(WaxeTestCase):
 
     def test_forbidden(self):
         self.testapp.get('/api/1/profile.json', status=401)
+        self.testapp.get('/api/1/last-files.json', status=401)
 
     @login_user('Admin')
     def test_profile(self):
         res = self.testapp.get('/api/1/profile.json', status=200)
         dic = json.loads(res.body)
         self.assertTrue('login' in dic)
+
+    @login_user('Admin')
+    def test_last_files(self):
+        res = self.testapp.get('/api/1/last-files.json', status=200)
+        dic = json.loads(res.body)
+        expected = {
+            'opened_files': [],
+            'commited_files': [],
+        }
+        self.assertEqual(dic, expected)
 
 
 class FunctionalTestIndexUserView(WaxeTestCase):

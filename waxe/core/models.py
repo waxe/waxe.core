@@ -243,7 +243,10 @@ class UserCommitedFile(Base):
     user = relationship('User',
                         foreign_keys=[iduser],
                         backref=backref("commited_files"))
-
+    user_owner = relationship(
+        'User',
+        foreign_keys=[iduser_commit],
+    )
 
 
 def get_editors():

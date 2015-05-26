@@ -20,6 +20,26 @@ class IndexView(BaseView):
         """
         return self.logged_user_profile()
 
+    @view_config(route_name='last_files', permission='authenticated')
+    def last_files(self):
+        if not self.current_user:
+            # User is authenticated but not in the DB
+            return {}
+        opened_files = self.current_user.opened_files[::-1]
+        opened_files = [
+            {'path': f.path,
+             'user': f.user_owner and f.user_owner.login or ''}
+            for f in opened_files]
+        commited_files = self.current_user.commited_files[::-1]
+        commited_files = [
+            {'path': f.path,
+             'user': f.user_owner and f.user_owner.login or ''}
+            for f in commited_files]
+        return {
+            'opened_files': opened_files,
+            'commited_files': commited_files
+        }
+
 
 class IndexUserView(BaseUserView):
 
@@ -52,6 +72,7 @@ class IndexUserView(BaseUserView):
 
 def includeme(config):
     config.add_route('profile', '/profile.json')
+    config.add_route('last_files', '/last-files.json')
     # TODO: remove hardcoding path
     config.add_route('account_profile',
                      '/account/{login}/account-profile.json')

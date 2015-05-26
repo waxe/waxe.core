@@ -266,45 +266,6 @@ class TestBaseView(BaseTestCase):
         res = BaseView(request).has_versioning()
         self.assertEqual(res, False)
 
-    def test__get_last_files_no_current_user(self):
-        request = testing.DummyRequest()
-        request.custom_route_path = lambda *args, **kw: '/filepath'
-        request.route_path = lambda *args, **kw: '/filepath'
-        res = BaseView(request)._get_last_files()
-        self.assertEqual(res, '')
-
-    @login_user('Bob')
-    def test__get_last_files(self):
-        request = testing.DummyRequest()
-        request.custom_route_path = lambda *args, **kw: '/filepath'
-        request.route_path = lambda *args, **kw: '/filepath'
-        res = BaseView(request)._get_last_files()
-        self.assertEqual(res, '')
-
-        request.current_user = self.user_bob
-        self.user_bob.opened_files = [UserOpenedFile(path='/path')]
-        res = BaseView(request)._get_last_files()
-        self.assertTrue('Last opened files' in res)
-        self.assertFalse('Last commited files' in res)
-        expected = '<a href="/filepath" data-href="/filepath">/path</a>'
-        self.assertTrue(expected in res)
-        self.assertFalse('/cpath' in res)
-
-        self.user_bob.opened_files[0].iduser_owner = self.user_fred.iduser
-        res = BaseView(request)._get_last_files()
-        self.assertTrue('Last opened files' in res)
-        self.assertFalse('Last commited files' in res)
-        expected = '<a href="/filepath">/path</a> (Fred)'
-        self.assertTrue(expected in res)
-        self.assertFalse('/cpath' in res)
-
-        self.user_bob.commited_files = [UserCommitedFile(path='/cpath')]
-        res = BaseView(request)._get_last_files()
-        self.assertTrue('Last opened files' in res)
-        self.assertTrue('Last commited files' in res)
-        self.assertTrue('/path' in res)
-        self.assertTrue('/cpath' in res)
-
 
 class TestBaseUserView(BaseTestCase):
 

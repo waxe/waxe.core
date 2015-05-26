@@ -63,21 +63,6 @@ class BaseView(JSONView):
                              'custom_route_path',
                              reify=True)
 
-    def _get_last_files(self):
-        """This function should be defined here since we need use it for the
-        user without config or config.root_path.
-        """
-        if not self.current_user:
-            # User is authenticated but not in the DB
-            return ''
-        opened_files = self.current_user.opened_files[::-1]
-        commited_files = self.current_user.commited_files[::-1]
-        html = render('blocks/last_files.mak',
-                      {'opened_files': opened_files,
-                       'commited_files': commited_files},
-                      self.request)
-        return html
-
     def user_is_admin(self):
         """Check if the logged user is admin.
 
