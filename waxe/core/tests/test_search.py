@@ -117,6 +117,24 @@ class TestSearch(unittest.TestCase):
         self.assertEqual(len(newdic), 5)
         self.assertEqual(newdic, dic)
 
+        # Test force
+        open(newfile, 'w').write(content)
+        search.incremental_index(indexpath, paths + [newfile])
+        with ix.searcher() as searcher:
+            fields = list(searcher.all_stored_fields())
+            self.assertEqual(len(fields), 6)
+
+        os.remove(newfile)
+        search.incremental_index(indexpath, paths)
+        with ix.searcher() as searcher:
+            fields = list(searcher.all_stored_fields())
+            self.assertEqual(len(fields), 6)
+
+        search.incremental_index(indexpath, paths, force=True)
+        with ix.searcher() as searcher:
+            fields = list(searcher.all_stored_fields())
+            self.assertEqual(len(fields), 5)
+
     def test_do_index(self):
         paths = browser.get_all_files(['.xml'], filepath, filepath)[1]
         self.assertEqual(len(paths), 5)
