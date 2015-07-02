@@ -30,13 +30,12 @@ requires = [
     'pyramid_sqladmin',
     'pyramid_logging',
     'whoosh',
-    'taskq',
+    'sqla_taskq',
     'webhelpers',
     'importlib',
 ]
 
 # TODO release:
-# * taskq
 # * waxe.angular
 # * waxe.txt
 # * waxe.xml => it should not be the case since it's a dependency

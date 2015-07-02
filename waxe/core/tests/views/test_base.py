@@ -367,7 +367,7 @@ class TestBaseUserView(BaseTestCase):
         res = view.add_indexation_task()
         self.assertEqual(res, None)
 
-        with patch('taskq.models.Task.create') as m:
+        with patch('sqla_taskq.models.Task.create') as m:
             request.registry.settings['whoosh.path'] = '/tmp/fake'
             res = view.add_indexation_task()
             m.assert_called_once()

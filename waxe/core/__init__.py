@@ -9,7 +9,7 @@ from .models import (
     DBSession,
     Base,
 )
-import taskq.models as taskqm
+import sqla_taskq.models as taskqm
 from .security import RootFactory
 from . import config_parser
 from . import resource

@@ -17,7 +17,7 @@ from waxe.core.models import (
     DBSession,
     UserConfig,
 )
-import taskq.models as taskqm
+import  sqla_taskq.models as taskqm
 
 
 def usage(argv):

@@ -4,7 +4,7 @@ from pyramid.renderers import render
 from pyramid.view import view_defaults
 import pyramid.httpexceptions as exc
 from .. import security, models, search, browser
-from taskq.models import Task
+from sqla_taskq.models import Task
 
 
 @view_defaults(renderer='json')
