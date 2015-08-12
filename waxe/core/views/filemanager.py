@@ -1,4 +1,6 @@
 import os
+import math
+from itertools import izip_longest
 from pyramid.view import view_config
 import pyramid.httpexceptions as exc
 from base import BaseUserView
@@ -39,7 +41,9 @@ class FileManagerView(BaseUserView):
                 # status will be updated in js
                 'status': None,
             }]
-        return lis
+        # We want to order alphabetically by columns
+        n = int(math.ceil(len(lis) / 2.0))
+        return list(sum(izip_longest(lis[:n], lis[n:]), ()))
 
     @view_config(route_name='create_folder_json')
     def create_folder(self):
