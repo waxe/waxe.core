@@ -47,7 +47,7 @@ class FileManagerView(BaseUserView):
 
     @view_config(route_name='create_folder_json')
     def create_folder(self):
-        path = self.req_post.get('path', '')
+        path = self.req_post.get('path') or ''
         name = self.req_post.get('name', None)
 
         if not name:
@@ -80,7 +80,7 @@ class FileManagerView(BaseUserView):
         if not search:
             raise exc.HTTPClientError('Nothing to search')
 
-        path = self.req_get.get('path', '')
+        path = self.req_get.get('path') or ''
         page_num = self.req_get.get('page') or 1
         try:
             page_num = int(page_num)
