@@ -7,6 +7,7 @@ from sqlalchemy import (
     ForeignKey,
     Table,
     Boolean,
+    UniqueConstraint,
 )
 
 from sqlalchemy.orm import (
@@ -47,6 +48,7 @@ user_role = Table(
     Base.metadata,
     Column('iduser', Integer, ForeignKey('user.iduser')),
     Column('idrole', Integer, ForeignKey('role.idrole')),
+    UniqueConstraint('iduser', 'idrole', name='uc_user_role_iduser_idrole')
 )
 
 
@@ -54,12 +56,14 @@ user_group = Table(
     'user_group',
     Base.metadata,
     Column('iduser', Integer, ForeignKey('user.iduser')),
-    Column('idgroup', Integer, ForeignKey('groups.idgroup')),
+    Column('idgroup', Integer, ForeignKey('group.idgroup')),
+    UniqueConstraint('iduser', 'idgroup', name='uc_user_group_iduser_idgroup')
 )
 
 
 class Group(Base):
-    __tablename__ = 'groups'
+    __table_args__ = (
+        UniqueConstraint('name', name='uc_group_name'),)
 
     idgroup = Column(Integer,
                      nullable=False,
@@ -70,6 +74,8 @@ class Group(Base):
 
 
 class Role(Base):
+    __table_args__ = (
+        UniqueConstraint('name', name='uc_role_name'),)
 
     idrole = Column(Integer,
                     nullable=False,
@@ -83,6 +89,8 @@ class Role(Base):
 
 
 class User(Base):
+    __table_args__ = (
+        UniqueConstraint('login', name='uc_user_login'),)
 
     iduser = Column(Integer,
                     nullable=False,
