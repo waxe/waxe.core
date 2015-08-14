@@ -141,7 +141,7 @@ class User(Base):
 
     def add_opened_file(self, path, iduser_owner=None):
         for f in self.opened_files:
-            if path == f.path:
+            if path == f.path and iduser_owner == f.iduser_owner:
                 # Remove occurence of the same path
                 # We should not have more than one occurence since we don't
                 # insert any duplicate.
@@ -156,7 +156,7 @@ class User(Base):
 
     def add_commited_file(self, path, iduser_commit=None):
         for f in self.commited_files:
-            if path == f.path:
+            if path == f.path and f.iduser_commit == iduser_commit:
                 # Remove occurence of the same path
                 # We should not have more than one occurence since we don't
                 # insert any duplicate.
@@ -245,6 +245,8 @@ class UserCommitedFile(Base):
                                   nullable=False,
                                   primary_key=True)
     iduser = Column(Integer, ForeignKey('user.iduser'))
+    # TODO: rename iduser_commit in iduser_owner. Also perhaps we can merge
+    # table UserOpenedFile and UserCommitedFile
     iduser_commit = Column(Integer, ForeignKey('user.iduser'))
     path = Column(String(255), nullable=False)
 

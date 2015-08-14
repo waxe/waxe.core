@@ -348,13 +348,44 @@ class TestBaseUserView(BaseTestCase):
         self.assertEqual(self.user_bob.opened_files[0].path, '/tmp')
 
         view.current_user = self.user_fred
-        res = view.add_opened_file('/tmp-1')
-        self.assertEqual(res, False)
-
         self.user_bob.config = None
         res = view.add_opened_file('/tmp-1')
         self.assertEqual(res, None)
         self.assertEqual(self.user_bob.opened_files[0].iduser_owner,
+                         self.user_fred.iduser)
+
+    def test_add_commited_file(self):
+        # Same test as test_add_opened_file
+        request = testing.DummyRequest()
+        request.matched_route = EmptyClass()
+        request.matched_route.name = 'test'
+
+        # No logged user
+        self.config.testing_securitypolicy(userid='Bob', permissive=True)
+        view = BaseUserView(request)
+        view.logged_user = None
+        res = view.add_commited_file('/tmp')
+        self.assertEqual(res, False)
+
+        self.config.testing_securitypolicy(userid='Bob', permissive=True)
+        view = BaseUserView(request)
+        res = view.add_commited_file('/tmp')
+        self.assertEqual(len(self.user_bob.commited_files), 1)
+        self.assertEqual(self.user_bob.commited_files[0].path, '/tmp')
+        self.assertEqual(res, None)
+
+        # We need to call flush to make the object deletable
+        DBSession.flush()
+        # The previous same path will be deleted and the new one added
+        res = view.add_commited_file('/tmp')
+        self.assertEqual(len(self.user_bob.commited_files), 1)
+        self.assertEqual(self.user_bob.commited_files[0].path, '/tmp')
+
+        view.current_user = self.user_fred
+        self.user_bob.config = None
+        res = view.add_commited_file('/tmp-1')
+        self.assertEqual(res, None)
+        self.assertEqual(self.user_bob.commited_files[0].iduser_commit,
                          self.user_fred.iduser)
 
     def test_add_indexation_task(self):

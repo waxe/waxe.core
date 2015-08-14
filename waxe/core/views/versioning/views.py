@@ -214,12 +214,8 @@ class VersioningView(BaseUserView):
             raise exc.HTTPClientError(
                 'Commit failed: %s' % str(e))
 
-        iduser_commit = None
-        if self.logged_user.iduser != self.current_user.iduser:
-            iduser_commit = self.logged_user.iduser
         for filename in filenames:
-            self.current_user.add_commited_file(filename,
-                                                iduser_commit=iduser_commit)
+            self.add_commited_file(filename)
         return 'Files commited'
 
     @view_config(route_name='versioning_revert_json')
@@ -238,15 +234,12 @@ class VersioningView(BaseUserView):
         for filename in filenames:
             absfilename = browser.absolute_path(filename, self.root_path)
             if not os.path.isfile(absfilename):
-                # TODO: concat error message and return it
                 errors += ['File %s doesn\'t exist' % filename]
 
         if errors:
             raise exc.HTTPClientError('<br />'.join(errors))
 
         for filename in filenames:
-            # TODO: also check the file is versioned
-            # If not versioned, remove it!
             absfilename = browser.absolute_path(filename, self.root_path)
             so = vobj.status(filename)[0]
             if so.status == helper.STATUS_UNVERSIONED:

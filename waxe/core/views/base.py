@@ -205,13 +205,19 @@ class BaseUserView(BaseView):
             return False
         iduser_owner = None
         if self.logged_user != self.current_user:
-            if self.logged_user.config and self.logged_user.config.root_path:
-                # Don't store the last edited files from another account if
-                # there is an account for the logged user.
-                return False
             iduser_owner = self.current_user.iduser
 
         self.logged_user.add_opened_file(path, iduser_owner=iduser_owner)
+
+    def add_commited_file(self, path):
+        if not self.logged_user:
+            # User is authenticated but not in the DB
+            return False
+        iduser_commit = None
+        if self.logged_user != self.current_user:
+            iduser_commit = self.current_user.iduser
+
+        self.logged_user.add_commited_file(path, iduser_commit=iduser_commit)
 
     def add_indexation_task(self, paths=None):
         dirname = self.get_search_dirname()

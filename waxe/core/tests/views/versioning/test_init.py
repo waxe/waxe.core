@@ -446,9 +446,11 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                     self.assertEqual(len(self.user_fred.commited_files), 0)
                     res = view.commit()
                     self.assertEqual(res, 'Files commited')
-                    self.assertEqual(len(self.user_fred.commited_files), 1)
-                    iduser_commit = self.user_fred.commited_files[0].iduser_commit
-                    self.assertEqual(iduser_commit, self.user_bob.iduser)
+                    self.assertEqual(len(self.user_fred.commited_files), 0)
+                    self.assertEqual(len(self.user_bob.commited_files), 2)
+                    # New file is inserted first
+                    iduser_commit = self.user_bob.commited_files[0].iduser_commit
+                    self.assertEqual(iduser_commit, self.user_fred.iduser)
 
                 with patch('waxe.core.views.versioning.helper.PysvnVersioning.commit', side_effect=Exception('Error')):
                     try:
