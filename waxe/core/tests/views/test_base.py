@@ -83,12 +83,15 @@ class TestBaseView(BaseTestCase):
 
     def test___init__(self):
         request = self.DummyRequest()
-        obj = BaseView(request)
-        self.assertEqual(obj.request, request)
-        self.assertEqual(obj.logged_user_login, None)
-        self.assertEqual(obj.logged_user, None)
-        self.assertEqual(obj.current_user, None)
-        self.assertEqual(obj.root_path, None)
+        with patch('waxe.core.security.get_userid_from_request',
+                   return_value='Unexisting'):
+            obj = BaseView(request)
+            self.assertEqual(obj.request, request)
+            self.assertEqual(obj.logged_user_login, 'Unexisting')
+            # The user has been inserted
+            self.assertEqual(obj.logged_user.login, 'Unexisting')
+            self.assertEqual(obj.current_user, obj.logged_user)
+            self.assertEqual(obj.root_path, None)
 
         with patch('waxe.core.security.get_userid_from_request',
                    return_value=self.user_bob.login):
@@ -115,9 +118,12 @@ class TestBaseView(BaseTestCase):
         self.assertEqual(path, '/home')
 
     def test_user_is_admin(self):
-        request = self.DummyRequest()
-        res = BaseView(request).user_is_admin()
-        self.assertEqual(res, False)
+        with patch('pyramid.authentication.'
+                   'AuthTktAuthenticationPolicy.unauthenticated_userid',
+                   return_value='Unexisting'):
+            request = self.DummyRequest()
+            res = BaseView(request).user_is_admin()
+            self.assertEqual(res, False)
 
         with patch('pyramid.authentication.'
                    'AuthTktAuthenticationPolicy.unauthenticated_userid',
@@ -126,9 +132,12 @@ class TestBaseView(BaseTestCase):
             self.assertEqual(res, True)
 
     def test_user_is_editor(self):
-        request = self.DummyRequest()
-        res = BaseView(request).user_is_editor()
-        self.assertEqual(res, False)
+        with patch('pyramid.authentication.'
+                   'AuthTktAuthenticationPolicy.unauthenticated_userid',
+                   return_value='Unexisting'):
+            request = self.DummyRequest()
+            res = BaseView(request).user_is_editor()
+            self.assertEqual(res, False)
 
         with patch('pyramid.authentication.'
                    'AuthTktAuthenticationPolicy.unauthenticated_userid',
@@ -151,9 +160,12 @@ class TestBaseView(BaseTestCase):
             self.assertEqual(res, False)
 
     def test_user_is_contributor(self):
-        request = self.DummyRequest()
-        res = BaseView(request).user_is_contributor()
-        self.assertEqual(res, False)
+        with patch('pyramid.authentication.'
+                   'AuthTktAuthenticationPolicy.unauthenticated_userid',
+                   return_value='Unexisting'):
+            request = self.DummyRequest()
+            res = BaseView(request).user_is_contributor()
+            self.assertEqual(res, False)
 
         with patch('pyramid.authentication.'
                    'AuthTktAuthenticationPolicy.unauthenticated_userid',
@@ -270,6 +282,8 @@ class TestBaseView(BaseTestCase):
 class TestBaseUserView(BaseTestCase):
 
     def test___init__(self):
+        self.config.testing_securitypolicy(userid='Unexisting',
+                                           permissive=True)
         request = testing.DummyRequest()
         request.matched_route = EmptyClass()
         request.matched_route.name = 'test'
@@ -279,13 +293,15 @@ class TestBaseUserView(BaseTestCase):
         except exc.HTTPClientError, e:
             self.assertEqual(str(e), 'root path not defined')
 
+        self.config.testing_securitypolicy(userid='Bob',
+                                           permissive=True)
         request.matched_route.name = 'test'
-        self.config.testing_securitypolicy(userid='Bob', permissive=True)
         res = BaseUserView(request)
         self.assertTrue(res.root_path)
         self.assertTrue(res)
 
     def test___init___bad_user(self):
+        self.config.testing_securitypolicy(userid='Bob', permissive=True)
         request = testing.DummyRequest()
         request.matched_route = EmptyClass()
         request.matched_route.name = 'test'
@@ -297,7 +313,6 @@ class TestBaseUserView(BaseTestCase):
             self.assertEqual(str(e), "The user doesn't exist")
 
         # Current user
-        self.config.testing_securitypolicy(userid='Bob', permissive=True)
         request.matchdict['login'] = 'Bob'
         res = BaseUserView(request)
         self.assertEqual(res.current_user, res.logged_user)

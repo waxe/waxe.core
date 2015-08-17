@@ -1,4 +1,5 @@
 import importlib
+import transaction
 from pyramid.security import has_permission
 from pyramid.renderers import render
 from pyramid.view import view_defaults
@@ -45,6 +46,20 @@ class BaseView(JSONView):
         super(BaseView, self).__init__(request)
         self.logged_user_login = security.get_userid_from_request(self.request)
         self.logged_user = security.get_user(self.logged_user_login)
+        if not self.logged_user_login:
+            # We should always be logged
+            raise exc.HTTPUnauthorized()
+
+        if not self.logged_user:
+            # Insert a new user
+            self.logged_user = models.User(login=self.logged_user_login)
+            # Also create the user config
+            self.logged_user.config = models.UserConfig(
+                tree_position=models.LAYOUT_DEFAULTS['tree_position'],
+                readonly_position=models.LAYOUT_DEFAULTS['readonly_position']
+            )
+            models.DBSession.add(self.logged_user)
+
         self.current_user = self.logged_user
         self.root_path = None
         if self.current_user and self.current_user.config:

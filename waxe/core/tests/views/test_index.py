@@ -1,5 +1,6 @@
 import os
 from pyramid import testing
+import pyramid.httpexceptions as exc
 import json
 from ..testing import BaseTestCase, WaxeTestCase, login_user
 from waxe.core.views.index import IndexView, IndexUserView
@@ -30,7 +31,8 @@ class TestIndexView(BaseTestCase):
         request.context = security.RootFactory(request)
         return request
 
-    def test__profile_no_user(self):
+    @login_user('Unexisting')
+    def test__profile_unexisting_user(self):
         request = self.DummyRequest()
         request.matched_route = EmptyClass()
         request.matched_route.name = 'route_json'
@@ -40,7 +42,7 @@ class TestIndexView(BaseTestCase):
         expected = {
             'logins': [],
             'has_file': False,
-            'login': None,
+            'login': 'Unexisting',
             'layout_tree_position': 'west',
             'layout_readonly_position': 'south'
         }
@@ -92,14 +94,6 @@ class TestIndexView(BaseTestCase):
             'layout_tree_position': 'tree',
             'layout_readonly_position': 'readonly'
         }
-        self.assertEqual(res, expected)
-
-    def test_last_files_no_current_user(self):
-        request = testing.DummyRequest()
-        request.custom_route_path = lambda *args, **kw: '/filepath'
-        request.route_path = lambda *args, **kw: '/filepath'
-        res = IndexView(request).last_files()
-        expected = {}
         self.assertEqual(res, expected)
 
     @login_user('Bob')
