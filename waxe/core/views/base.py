@@ -53,12 +53,15 @@ class BaseView(JSONView):
         if not self.logged_user:
             # Insert a new user
             self.logged_user = models.User(login=self.logged_user_login)
+            models.DBSession.add(self.logged_user)
+
+        if not self.logged_user.config:
             # Also create the user config
             self.logged_user.config = models.UserConfig(
                 tree_position=models.LAYOUT_DEFAULTS['tree_position'],
                 readonly_position=models.LAYOUT_DEFAULTS['readonly_position']
             )
-            models.DBSession.add(self.logged_user)
+            models.DBSession.add(self.logged_user.config)
 
         self.current_user = self.logged_user
         self.root_path = None
