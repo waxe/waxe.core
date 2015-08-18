@@ -115,8 +115,7 @@ class BaseView(JSONView):
         :rtype: list of str
         """
         lis = []
-        if (hasattr(self.logged_user, 'config') and
-           self.logged_user.config and self.logged_user.config.root_path):
+        if self.logged_user.config.root_path:
             lis += [self.logged_user.login]
 
         if self.user_is_admin():
@@ -145,9 +144,7 @@ class BaseView(JSONView):
     def logged_user_profile(self):
         """Get the profile of the logged user
         """
-        has_file = False
-        if self.logged_user and self.logged_user.config:
-            has_file = bool(self.logged_user.config.root_path)
+        has_file = bool(self.logged_user.config.root_path)
         dic = {
             'login': self.logged_user_login,
             'has_file': has_file,
@@ -157,8 +154,8 @@ class BaseView(JSONView):
             'logins': [],
         }
 
-        if self.logged_user and self.logged_user.config:
-            config = self.logged_user.config
+        config = self.logged_user.config
+        if config:
             dic['layout_tree_position'] = config.tree_position
             dic['layout_readonly_position'] = config.readonly_position
 
@@ -215,9 +212,6 @@ class BaseUserView(BaseView):
         return self.current_user.get_search_dirname(settings['whoosh.path'])
 
     def add_opened_file(self, path):
-        if not self.logged_user:
-            # User is authenticated but not in the DB
-            return False
         iduser_owner = None
         if self.logged_user != self.current_user:
             iduser_owner = self.current_user.iduser
@@ -225,9 +219,6 @@ class BaseUserView(BaseView):
         self.logged_user.add_opened_file(path, iduser_owner=iduser_owner)
 
     def add_commited_file(self, path):
-        if not self.logged_user:
-            # User is authenticated but not in the DB
-            return False
         iduser_commit = None
         if self.logged_user != self.current_user:
             iduser_commit = self.current_user.iduser
@@ -239,7 +230,7 @@ class BaseUserView(BaseView):
         if not dirname:
             return None
         uc = self.current_user.config
-        if not uc or not uc.root_path:
+        if not uc.root_path:
             return None
         if not paths:
             paths = browser.get_all_files(self.extensions, uc.root_path, uc.root_path)[1]
@@ -249,7 +240,6 @@ class BaseUserView(BaseView):
 
         # Since we commit the task we need to re-bound the user to the session
         # to make sure we can reuse self.logged_user
-        if self.logged_user:
-            # For example if we use ldap authentication, self.logged_user can
-            # be None if the user is not in the DB.
-            models.DBSession.add(self.logged_user)
+        # For example if we use ldap authentication, self.logged_user can
+        # be None if the user is not in the DB.
+        models.DBSession.add(self.logged_user)

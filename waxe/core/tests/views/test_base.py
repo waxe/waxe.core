@@ -341,13 +341,6 @@ class TestBaseUserView(BaseTestCase):
         request.matched_route = EmptyClass()
         request.matched_route.name = 'test'
 
-        # No logged user
-        self.config.testing_securitypolicy(userid='Bob', permissive=True)
-        view = BaseUserView(request)
-        view.logged_user = None
-        res = view.add_opened_file('/tmp')
-        self.assertEqual(res, False)
-
         self.config.testing_securitypolicy(userid='Bob', permissive=True)
         view = BaseUserView(request)
         res = view.add_opened_file('/tmp')
@@ -374,13 +367,6 @@ class TestBaseUserView(BaseTestCase):
         request = testing.DummyRequest()
         request.matched_route = EmptyClass()
         request.matched_route.name = 'test'
-
-        # No logged user
-        self.config.testing_securitypolicy(userid='Bob', permissive=True)
-        view = BaseUserView(request)
-        view.logged_user = None
-        res = view.add_commited_file('/tmp')
-        self.assertEqual(res, False)
 
         self.config.testing_securitypolicy(userid='Bob', permissive=True)
         view = BaseUserView(request)

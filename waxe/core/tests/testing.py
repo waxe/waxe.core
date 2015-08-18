@@ -86,6 +86,7 @@ class DBTestCase(unittest.TestCase):
         self.role_admin = Role(name="admin")
         DBSession.add(self.role_admin)
         self.user_admin = User(login="Admin", password=SECRET_ADMIN)
+        self.user_admin.config = UserConfig()
         self.user_admin.roles = [self.role_admin]
         DBSession.add(self.user_admin)
 
