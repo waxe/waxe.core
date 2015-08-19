@@ -298,7 +298,6 @@ class PysvnVersioning(object):
         diffs = []
         contents = []
         lis = self.full_status(path)
-        d = diff.HtmlDiff()
         for so in lis:
             if so.status == STATUS_CONFLICTED:
                 continue
@@ -321,21 +320,6 @@ class PysvnVersioning(object):
                 'relpath': so.relpath,
             })
         return contents
-
-    def full_diff(self, path=None):
-        contents = self.full_diff_content(path=path)
-        d = diff.HtmlDiff()
-        diffs = []
-        for dic in contents:
-            old_content = dic['left']
-            new_content = dic['right']
-            diffs += [(
-                dic['relpath'],
-                d.make_table(
-                    old_content.decode('utf-8').splitlines(),
-                    new_content.decode('utf-8').splitlines())
-            )]
-        return diffs
 
     def get_commitable_files(self, path=None):
         lis = self.full_status(path)
