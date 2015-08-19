@@ -148,12 +148,6 @@ class VersioningView(BaseUserView):
             'can_commit': can_commit
         }
 
-        content = render('blocks/versioning_full_diff.mak', {
-            'files': lis,
-            'can_commit': can_commit,
-        }, self.request)
-        return content
-
     @view_config(route_name='versioning_update_json')
     def update(self):
         relpath = self.request.GET.get('path', '')
