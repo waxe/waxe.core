@@ -35,11 +35,6 @@ ROLE_CONTRIBUTOR = 'contributor'
 VERSIONING_PATH_STATUS_ALLOWED = 'allowed'
 VERSIONING_PATH_STATUS_FORBIDDEN = 'forbidden'
 
-LAYOUT_DEFAULTS = {
-    'tree_position': 'west',
-    'readonly_position': 'south'
-}
-
 MAX_FILE_NUMBER = 10
 
 
@@ -189,16 +184,6 @@ class UserConfig(Base):
               twf.PasswordField,
               'view_widget': tws.NoWidget}
     )
-
-    # Should be east or west
-    tree_position = Column(String(255),
-                           nullable=False,
-                           default=LAYOUT_DEFAULTS['tree_position'])
-
-    # Should be north or south
-    readonly_position = Column(String(255),
-                               nullable=False,
-                               default=LAYOUT_DEFAULTS['readonly_position'])
 
     def get_tws_view_html(self):
         return 'path: %s <br /> Versioning: %s' % (

@@ -57,10 +57,7 @@ class BaseView(JSONView):
 
         if not self.logged_user.config:
             # Also create the user config
-            self.logged_user.config = models.UserConfig(
-                tree_position=models.LAYOUT_DEFAULTS['tree_position'],
-                readonly_position=models.LAYOUT_DEFAULTS['readonly_position']
-            )
+            self.logged_user.config = models.UserConfig()
             models.DBSession.add(self.logged_user.config)
 
         self.current_user = self.logged_user
@@ -151,16 +148,8 @@ class BaseView(JSONView):
         dic = {
             'login': self.logged_user_login,
             'has_file': has_file,
-            'layout_tree_position': models.LAYOUT_DEFAULTS['tree_position'],
-            'layout_readonly_position': models.LAYOUT_DEFAULTS[
-                'readonly_position'],
             'logins': [],
         }
-
-        config = self.logged_user.config
-        if config:
-            dic['layout_tree_position'] = config.tree_position
-            dic['layout_readonly_position'] = config.readonly_position
 
         logins = self.get_editable_logins()
         if logins:

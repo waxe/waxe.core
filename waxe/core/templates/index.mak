@@ -34,7 +34,7 @@
   </div>
 </div>
 
-<div class="ui-layout-${layout_tree_position}">
+<div class="ui-layout-east">
   <div id="tree-container">
     <div id="tree"></div>
   </div>

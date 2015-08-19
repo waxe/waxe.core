@@ -43,8 +43,6 @@ class TestIndexView(BaseTestCase):
             'logins': [],
             'has_file': False,
             'login': 'Unexisting',
-            'layout_tree_position': 'west',
-            'layout_readonly_position': 'south'
         }
         self.assertEqual(res, expected)
 
@@ -60,8 +58,6 @@ class TestIndexView(BaseTestCase):
             'logins': ['Fred'],
             'has_file': True,
             'login': 'Fred',
-            'layout_tree_position': 'west',
-            'layout_readonly_position': 'south'
         }
         self.assertEqual(res, expected)
 
@@ -77,22 +73,16 @@ class TestIndexView(BaseTestCase):
             'logins': ['Bob'],
             'has_file': True,
             'login': 'Bob',
-            'layout_tree_position': 'west',
-            'layout_readonly_position': 'south'
         }
         self.assertEqual(res, expected)
 
         self.user_fred.roles = [self.role_editor, self.role_contributor]
-        self.user_bob.config.tree_position = 'tree'
-        self.user_bob.config.readonly_position = 'readonly'
 
         res = IndexView(request).profile()
         expected = {
             'logins': ['Bob', 'Fred'],
             'has_file': True,
             'login': 'Bob',
-            'layout_tree_position': 'tree',
-            'layout_readonly_position': 'readonly'
         }
         self.assertEqual(res, expected)
 
