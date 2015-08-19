@@ -14,6 +14,7 @@ var waxe = waxe || {};
         this.auto_save_interval = null;
         this.auto_save_time = 1000 * 60;
         this.load(jstreeData);
+        this.STATUS_UPDATED = 'updated';
     };
 
     Form.STATUS_UPDATED = 'updated';
@@ -45,7 +46,8 @@ var waxe = waxe || {};
                 var d = $(document);
                 d.message.apply(d, arguments);
             },
-            treeContainerSelector: waxe.layout.SELECTORS.center
+            formContainerSelector: '#xml-editor-form-container',
+            treeContainerSelector: '#xml-editor-tree-container'
         });
         this.$element.on('change.contenteditablesync', 'textarea', function() {
             that.status = that.STATUS_UPDATED;
@@ -53,7 +55,7 @@ var waxe = waxe || {};
         this.$element.on('field_change.xmltool', function(){
             that.status = that.STATUS_UPDATED;
         });
-        this.auto_save();
+        // this.auto_save();
         return true;
     };
 
@@ -106,13 +108,18 @@ var waxe = waxe || {};
         }
     };
 
-    $(document).ready(function(){
-        var data = null;
-        if (typeof jstree_data !== 'undefined') {
-            data = jstree_data;
-            waxe.layout.showTree();
-        }
-        waxe.form = new Form(data);
-    });
+    waxe.Form = Form;
+
+    // $(document).ready(function(){
+    //     console.log('document is ready');
+    //     var data = null;
+    //     if (typeof jstree_data !== 'undefined') {
+    //         data = jstree_data;
+    //         waxe.layout.showTree();
+    //     }
+    //     waxe.form = new Form(data);
+    //     console.log(waxe.form);
+    // });
+
 
 })(jQuery, waxe);

@@ -49,7 +49,7 @@ def add_doc(writer, path):
     )
 
 
-def incremental_index(dirname, paths):
+def incremental_index(dirname, paths, force=False):
     """Update the existing index
     """
     ix = index.open_dir(dirname)
@@ -65,7 +65,7 @@ def incremental_index(dirname, paths):
         # Loop over the stored fields in the index
         for fields in searcher.all_stored_fields():
             indexed_path = fields['path']
-            if indexed_path not in paths:
+            if not force and indexed_path not in paths:
                 # The files to index should be passed.
                 # For performance reason we often make partial indexation.
                 continue
@@ -115,11 +115,11 @@ def clean_index(dirname, paths):
     writer.commit()
 
 
-def do_index(dirname, paths):
+def do_index(dirname, paths, force=False):
     """Create index if it doesn't exist or update it if exists
     """
     if os.path.exists(dirname):
-        incremental_index(dirname, paths)
+        incremental_index(dirname, paths, force)
         return
     clean_index(dirname, paths)
 

@@ -1,55 +1,79 @@
 import urlparse
 from pyramid.view import view_config
 from pyramid.httpexceptions import HTTPBadRequest, HTTPFound
+import pyramid.httpexceptions as exc
 from pyramid.renderers import render
 from ..models import User
-from base import JSONHTTPBadRequest, BaseView, BaseUserView
+from .. import browser
+from .. import models
+from base import (
+    BaseView,
+    BaseUserView,
+)
 
 
-class IndexView(BaseUserView):
+class IndexView(BaseView):
 
-    @view_config(route_name='redirect', permission='edit')
-    def redirect(self):
-        location = self.request.custom_route_path('home')
-        if self.request.query_string:
-            location += '?%s' % self.request.query_string
-        return HTTPFound(location=location)
-
-
-class BadRequestView(BaseView):
-
-    @view_config(context=JSONHTTPBadRequest, renderer='json', route_name=None)
-    @view_config(context=HTTPBadRequest, renderer='index.mak', route_name=None)
-    def bad_request(self):
-        """This view is called when there is no selected account and the logged
-        user has nothing to edit.
+    @view_config(route_name='profile', permission='authenticated')
+    def profile(self):
+        """Get the profile of the user
         """
-        logins = self.get_editable_logins()
-        if not logins:
-            if self.user_is_admin():
-                link = self.request.route_path('admin_home')
-                return self._response(
-                    {'content': 'Go to your <a href="%s">admin interface</a> '
-                                'to insert a new user' % link})
-            return self._response(
-                {'content': 'There is a problem with your configuration, '
-                            'please contact your administrator with '
-                            'the following message: '
-                            'Edit the user named \'%s\' '
-                            'and set the root_path in the config.' %
-                            self.logged_user.login})
+        return self.logged_user_profile()
 
-        qs = self.request.query_string
-        qs = urlparse.parse_qsl(qs)
-        content = render('blocks/login_selection.mak',
-                         {'logins': logins,
-                          'qs': qs,
-                          'last_files': self._get_last_files()
-                         },
-                         self.request)
-        return self._response({'content': content})
+    @view_config(route_name='last_files', permission='authenticated')
+    def last_files(self):
+        if not self.current_user:
+            # User is authenticated but not in the DB
+            return {}
+        opened_files = self.current_user.opened_files[::-1]
+        opened_files = [
+            {'path': f.path,
+             'user': f.user_owner and f.user_owner.login or ''}
+            for f in opened_files]
+        commited_files = self.current_user.commited_files[::-1]
+        commited_files = [
+            {'path': f.path,
+             'user': f.user_owner and f.user_owner.login or ''}
+            for f in commited_files]
+        return {
+            'opened_files': opened_files,
+            'commited_files': commited_files
+        }
+
+
+class IndexUserView(BaseUserView):
+
+    @view_config(route_name='account_profile', permission='edit')
+    def account_profile(self):
+        """Get the profile of the user
+        """
+        config = self.current_user.config
+        if not config:
+            return {}
+        templates_path = None
+        if config.root_template_path:
+            templates_path = browser.relative_path(config.root_template_path,
+                                                   self.root_path)
+        dic = {
+            'login': self.current_user.login,
+            'has_template_files': bool(config.root_template_path),
+            'templates_path': templates_path,
+            'has_versioning': self.has_versioning(),
+            'has_search': ('whoosh.path' in self.request.registry.settings),
+            'has_xml_renderer': ('waxe.renderers' in
+                                 self.request.registry.settings),
+            'dtd_urls': self.request.registry.settings['dtd_urls'].split(),
+        }
+        res = {'account_profile': dic}
+        if self.req_get.get('full'):
+            res['user_profile'] = self.logged_user_profile()
+        return res
 
 
 def includeme(config):
-    config.add_route('redirect', '/')
+    config.add_route('profile', '/profile.json')
+    config.add_route('last_files', '/last-files.json')
+    # TODO: remove hardcoding path
+    config.add_route('account_profile',
+                     '/account/{login}/account-profile.json')
     config.scan(__name__)

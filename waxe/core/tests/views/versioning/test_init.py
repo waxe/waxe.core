@@ -7,6 +7,7 @@ import difflib
 from subprocess import Popen, PIPE
 from pyramid import testing
 from pyramid.exceptions import Forbidden
+import pyramid.httpexceptions as exc
 from webob.multidict import MultiDict
 from mock import patch, MagicMock
 import pysvn
@@ -145,9 +146,11 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
     def setUp(self):
         super(TestVersioningView, self).setUp()
         self.config.registry.settings.update({
-            'authentication.cookie.secret': 'scrt',
-            'authentication.cookie.callback': ('waxe.core.security.'
-                                               'get_user_permissions')
+            'pyramid_auth.cookie.secret': 'scrt',
+            'pyramid_auth.cookie.callback': ('waxe.core.security.'
+                                             'get_user_permissions'),
+            'pyramid_auth.cookie.validate_function': (
+                'waxe.core.security.validate_password'),
         })
         self.config.include('pyramid_auth')
 
@@ -236,30 +239,47 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
         self.user_bob.config.root_path = self.client_dir
         request = self.DummyRequest()
         res = self.ClassView(request).status()
-        self.assertTrue('file1.xml' in res['content'])
-        self.assertTrue('file3.xml' in res['content'])
-        self.assertTrue('file4.xml' in res['content'])
-        self.assertTrue('value="Generate diff"' in res['content'])
-        self.assertTrue('value="Commit"' in res['content'])
+        expected = {
+            'uncommitables': [],
+            'conflicteds': [],
+            'others': [
+                {
+                    'status': 'modified',
+                    'relpath': u'file1.xml'
+                },
+                {
+                    'status': 'unversioned',
+                    'relpath': u'file3.xml'
+                },
+                {
+                    'status': 'added',
+                    'relpath': u'file4.xml'
+                }
+            ]
+        }
+        self.assertEqual(res, expected)
 
     @login_user('Bob')
     def test_diff(self):
         self.user_bob.config.root_path = self.client_dir
         request = self.DummyRequest()
-        res = self.ClassView(request).diff()
-        expected = 'No filename given'
-        self.assertEqual(res['error_msg'], expected)
+        try:
+            self.ClassView(request).diff()
+            assert(False)
+        except exc.HTTPClientError, e:
+            self.assertEqual(str(e), 'No filename given')
 
         request = self.DummyRequest(params={'path': 'unexisting.xml'})
-        res = self.ClassView(request).diff()
-        expected = 'File unexisting.xml doesn\'t exist'
-        self.assertEqual(res['error_msg'], expected)
+        try:
+            self.ClassView(request).diff()
+            assert(False)
+        except exc.HTTPClientError, e:
+            self.assertEqual(str(e), 'File unexisting.xml doesn\'t exist')
 
         request = self.DummyRequest(params={'path': 'file1.xml'})
         res = self.ClassView(request).diff()
-        content = res['content']
         expected = (
-            '<pre>Index: file1.xml\n'
+            'Index: file1.xml\n'
             '===================================='
             '===============================\n'
             '--- file1.xml\t(revision 1)\n'
@@ -269,137 +289,123 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
             '\ No newline at end of file\n'
             '+Hello world\n'
             '\ No newline at end of file\n'
-            '</pre>'
         )
-        self.assertTrue(expected in content)
-        self.assertTrue('data-href="/versioning_prepare_commit_json"'
-                        in content)
-        self.assertTrue('data-href="/versioning_revert_json"'
-                        in content)
+        self.assertTrue(expected in res['diff'])
+        self.assertEqual(res['can_commit'], True)
 
         with patch('waxe.core.views.versioning.views.VersioningView.can_commit', return_value=False):
             res = self.ClassView(request).diff()
-            content = res['content']
-            self.assertTrue(expected in content)
-            self.assertFalse('data-href="/versioning_prepare_commit_json"'
-                             in content)
-            self.assertTrue('data-href="/versioning_revert_json"'
-                            in content)
+            self.assertTrue(expected in res['diff'])
+            self.assertEqual(res['can_commit'], False)
 
         with patch('waxe.core.views.versioning.helper.PysvnVersioning.diff',
                    return_value=[]):
             res = self.ClassView(request).diff()
-            self.assertTrue('The file is not modified!' in res['content'])
+            self.assertEqual(res, {})
 
     @login_user('Bob')
     def test_revert(self):
         self.user_bob.config.root_path = self.client_dir
         request = self.DummyRequest()
-        res = self.ClassView(request).revert()
-        expected = {'error_msg': 'No filename given'}
-        self.assertEqual(res, expected)
+        try:
+            self.ClassView(request).revert()
+        except exc.HTTPClientError, e:
+            expected = 'No filename given'
+            self.assertEqual(str(e), expected)
 
-        request = self.DummyRequest(params={'path': 'nonexisting.xml'})
-        res = self.ClassView(request).revert()
-        expected = 'File nonexisting.xml doesn\'t exist'
-        self.assertEqual(res['error_msg'], expected)
+        request = self.DummyRequest()
+        request.POST = MultiDict(path='nonexisting.xml')
+        try:
+            self.ClassView(request).revert()
+        except exc.HTTPClientError, e:
+            expected = 'File nonexisting.xml doesn\'t exist'
+            self.assertEqual(str(e), expected)
 
-        request = self.DummyRequest(params={'path': 'file1.xml'})
+        request = self.DummyRequest()
+        request.POST = MultiDict(path='file1.xml')
         res = self.ClassView(request).revert()
-        expected = {
-            'info_msg': 'The modification has been reverted!',
-            'redirect_url': '/edit_json',
-        }
-        self.assertEqual(res, expected)
+        self.assertEqual(res, 'Files reverted')
 
     @login_user('Bob')
     def test_full_diff(self):
         self.user_bob.config.root_path = self.client_dir
         request = self.DummyRequest()
-        request.POST = MultiDict()
-        res = self.ClassView(request).full_diff()
-        expected = 'You should provide at least one filename.'
-        self.assertEqual(res['error_msg'], expected)
+        request.GET = MultiDict()
+        try:
+            self.ClassView(request).full_diff()
+            assert(False)
+        except exc.HTTPClientError, e:
+            expected = 'No filename given'
+            self.assertEqual(str(e), expected)
 
         request = self.DummyRequest(root_path=self.client_dir,
                                     params={'filenames': 'file1.xml'})
-        request.POST = MultiDict({'filenames': 'file1.xml'})
+        request.GET = MultiDict({'paths': 'file1.xml'})
         res = self.ClassView(request).full_diff()
-        self.assertTrue('class="diff"' in res['content'])
-        self.assertEqual(res['content'].count('diff_from'), 1)
-        self.assertTrue('name="submit" ' in res['content'])
+        expected = {
+            'can_commit': True,
+            'diffs': [
+                {
+                    'right': u'Hello world',
+                    'relpath': u'file1.xml',
+                    'left': u'Hello'
+                }
+            ]
+        }
+        self.assertEqual(res, expected)
 
         request = self.DummyRequest(root_path=self.client_dir,
                                     params={'filenames': 'file3.xml'})
-        request.POST = MultiDict({'filenames': 'file3.xml'})
+        request.GET = MultiDict({'paths': 'file3.xml'})
         res = self.ClassView(request).full_diff()
-        self.assertTrue('class="diff"' in res['content'])
-        self.assertEqual(res['content'].count('diff_from'), 1)
-        self.assertTrue('name="submit" ' in res['content'])
+        expected = {
+            'can_commit': True,
+            'diffs': [
+                {
+                    'right': u'Hello',
+                    'relpath': u'file3.xml',
+                    'left': ''
+                }
+            ]
+        }
+        self.assertEqual(res, expected)
 
         request = self.DummyRequest(root_path=self.client_dir,
                                     params={'filenames': 'file3.xml'})
-        request.POST = MultiDict({'filenames': 'file3.xml'})
+        request.GET = MultiDict({'paths': 'file3.xml'})
         self.user_bob.roles = [self.role_contributor]
         res = self.ClassView(request).full_diff()
-        self.assertTrue('class="diff"' in res['content'])
-        self.assertEqual(res['content'].count('diff_from'), 1)
-        self.assertTrue('name="submit" ' not in res['content'])
+        expected = {
+            'can_commit': False,
+            'diffs': [
+                {
+                    'right': u'Hello',
+                    'relpath': u'file3.xml',
+                    'left': u''
+                }
+            ]
+        }
+        self.assertEqual(res, expected)
 
-        request.POST = MultiDict([('filenames', 'file1.xml'),
-                                 ('filenames', 'file3.xml')])
+        request.GET = MultiDict([('paths', 'file1.xml'),
+                                 ('paths', 'file3.xml')])
         res = self.ClassView(request).full_diff()
-        self.assertTrue('class="diff"' in res['content'])
-        self.assertEqual(res['content'].count('diff_from'), 2)
-        self.assertTrue('name="submit" ' not in res['content'])
-
-    @login_user('Bob')
-    def test_status_post(self):
-        self.user_bob.config.root_path = self.client_dir
-        request = self.DummyRequest()
-        request.POST = MultiDict()
-        res = self.ClassView(request).status_post()
-        expected = 'You should provide at least one filename.'
-        self.assertEqual(res['error_msg'], expected)
-
-        # Revert
-        request.POST = MultiDict([('filenames', 'file1.xml'),
-                                 ('filenames', 'file3.xml'),
-                                 ('submit', 'Revert')])
-        res = self.ClassView(request).status_post()
-        self.assertEqual(res['info_msg'], 'The files have been reverted!')
-
-        # Remove
-        request.POST = MultiDict([('filenames', 'file1.xml'),
-                                 ('filenames', 'file3.xml'),
-                                 ('submit', 'Remove')])
-        res = self.ClassView(request).status_post()
-        self.assertEqual(res['info_msg'], 'The files have been removed!')
-
-        # Commit
-        request.POST = MultiDict([('filenames', 'file1.xml'),
-                                 ('filenames', 'file3.xml'),
-                                 ('submit', 'Commit')])
-        res = self.ClassView(request).status_post()
-        self.assertTrue('Choose the files you want to commit' in res['modal'])
-
-        # Diff
-        request.POST = MultiDict([('filenames', 'file1.xml'),
-                                 ('filenames', 'file3.xml'),
-                                 ('submit', 'Generate diff')])
-        res = self.ClassView(request).status_post()
-        self.assertTrue('<form data-action="/versioning_update_texts_json"'
-                        in res['content'])
-
-        # Unsupported method
-        request.POST = MultiDict([('filenames', 'file1.xml'),
-                                 ('filenames', 'file3.xml'),
-                                 ('submit', 'Unsupported')])
-        try:
-            res = self.ClassView(request).status_post()
-            assert(False)
-        except Exception, e:
-            self.assertEqual(str(e), 'Unsupported method')
+        expected = {
+            'can_commit': False,
+            'diffs': [
+                {
+                    'right': u'Hello world',
+                    'relpath': u'file1.xml',
+                    'left': u'Hello'
+                },
+                {
+                    'right': u'Hello',
+                    'relpath': u'file3.xml',
+                    'left': u''
+                }
+            ]
+        }
+        self.assertEqual(res, expected)
 
     @login_user('Bob')
     def test_commit(self):
@@ -408,22 +414,28 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                 self.user_bob.config.root_path = self.client_dir
                 request = self.DummyRequest(root_path=self.client_dir)
                 request.POST = MultiDict()
-                res = self.ClassView(request).commit()
-                expected = "No file selected!"
-                self.assertEqual(res['error_msg'], expected)
+                try:
+                    self.ClassView(request).commit()
+                    assert(False)
+                except exc.HTTPClientError, e:
+                    expected = "No filename given"
+                    self.assertEqual(str(e), expected)
 
                 request = self.DummyRequest(root_path=self.client_dir)
-                request.POST = MultiDict(path='test.xml')
-                res = self.ClassView(request).commit()
-                expected = "No commit message!"
-                self.assertEqual(res['error_msg'], expected)
-                request.POST = MultiDict(path='test.xml',
+                request.POST = MultiDict(paths='test.xml')
+                try:
+                    self.ClassView(request).commit()
+                    assert(False)
+                except exc.HTTPClientError, e:
+                    expected = "No commit message"
+                    self.assertEqual(str(e), expected)
+                request.POST = MultiDict(paths='test.xml',
                                          msg='my commit message')
 
                 with patch('waxe.core.views.versioning.helper.PysvnVersioning.commit', return_value=True):
                     self.assertEqual(len(self.user_bob.commited_files), 0)
                     res = self.ClassView(request).commit()
-                    self.assertEqual(res, self.ClassView(request).status())
+                    self.assertEqual(res, 'Files commited')
                     self.assertEqual(len(self.user_bob.commited_files), 1)
                     iduser_commit = self.user_bob.commited_files[0].iduser_commit
                     self.assertEqual(iduser_commit, None)
@@ -433,36 +445,47 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
                     view.current_user = self.user_fred
                     self.assertEqual(len(self.user_fred.commited_files), 0)
                     res = view.commit()
-                    self.assertEqual(res, view.status())
-                    self.assertEqual(len(self.user_fred.commited_files), 1)
-                    iduser_commit = self.user_fred.commited_files[0].iduser_commit
-                    self.assertEqual(iduser_commit, self.user_bob.iduser)
+                    self.assertEqual(res, 'Files commited')
+                    self.assertEqual(len(self.user_fred.commited_files), 0)
+                    self.assertEqual(len(self.user_bob.commited_files), 2)
+                    # New file is inserted first
+                    iduser_commit = self.user_bob.commited_files[0].iduser_commit
+                    self.assertEqual(iduser_commit, self.user_fred.iduser)
 
                 with patch('waxe.core.views.versioning.helper.PysvnVersioning.commit', side_effect=Exception('Error')):
-                    res = self.ClassView(request).commit()
-                    expected = 'Error during the commit Error'
-                    self.assertEqual(res['error_msg'], expected)
+                    try:
+                        self.ClassView(request).commit()
+                        assert(False)
+                    except exc.HTTPClientError, e:
+                        expected = 'Commit failed: Error'
+                        self.assertEqual(str(e), expected)
 
                 with patch('waxe.core.views.versioning.views.VersioningView.can_commit', return_value=False):
-                    res = self.ClassView(request).commit()
-                    expected = (
-                        'You don\'t have the permission '
-                        'to commit: test.xml')
-                    self.assertEqual(res['error_msg'], expected)
+                    try:
+                        self.ClassView(request).commit()
+                        assert(False)
+                    except exc.HTTPClientError, e:
+                        expected = (
+                            'You don\'t have the permission '
+                            'to commit: test.xml')
+                        self.assertEqual(str(e), expected)
 
                 # No permission
                 self.user_bob.roles = []
                 try:
                     res = self.ClassView(request).commit()
                     assert(False)
-                except Exception, e:
+                except AssertionError, e:
                     self.assertEqual(str(e), 'You are not a contributor')
 
                 self.user_bob.roles = [self.role_contributor]
                 try:
                     res = self.ClassView(request).commit()
-                except Forbidden, e:
-                    self.assertEqual(str(e), 'Restricted area')
+                except exc.HTTPClientError, e:
+                    expected = (
+                        'You don\'t have the permission '
+                        'to commit: test.xml')
+                    self.assertEqual(str(e), expected)
 
     def test_can_commit(self):
         user = User(login='user1', password='pass1')
@@ -530,178 +553,20 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
             res = view.can_commit('/home/test/folder1.xml')
             self.assertEqual(res, True)
 
-    @login_user('Bob')
-    def test_prepare_commit(self):
-        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
-        self.user_bob.config.root_path = path
-        request = self.DummyRequest(params={})
-        res = self.ClassView(request).prepare_commit()
-        expected = 'No file to commit in /'
-        self.assertEqual(res['info_msg'], expected)
-
-        self.user_bob.config.root_path = self.client_dir
-        res = self.ClassView(request).prepare_commit()
-        self.assertTrue('data-action="/versioning_commit_json"'
-                        in res['modal'])
-        expected = (
-            '<label>'
-            '<input type="checkbox" checked="checked" '
-            'name="path" value="file1.xml"/>file1.xml</label>')
-        self.assertTrue(expected in res['modal'])
-
-    @login_user('Bob')
-    def test_update_texts(self):
-        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
-        self.user_bob.config.root_path = path
-        request = self.DummyRequest(params={})
-        res = self.ClassView(request).update_texts()
-        expected = 'Missing parameters!'
-        self.assertEqual(res['error_msg'], expected)
-
-        request = self.DummyRequest(
-            params={
-                'data:0:filecontent': 'content of the file 1',
-                'data:0:filename': 'thefilename1.xml',
-                'data:1:filecontent': 'content of the file 2',
-                'data:1:filename': 'thefilename2.xml',
-            })
-
-        def raise_func(*args, **kw):
-            raise Exception('My error')
-
-        with patch('xmltool.load_string') as m:
-            m.side_effect = raise_func
-            res = self.ClassView(request).update_texts()
-            expected = (
-                'thefilename1.xml: My error<br />'
-                'thefilename2.xml: My error')
-            self.assertEqual(res['error_msg'],  expected)
-
-        filecontent = open(os.path.join(path, 'file1.xml'), 'r').read()
-        filecontent = filecontent.replace('exercise.dtd',
-                                          os.path.join(path, 'exercise.dtd'))
-        request = self.DummyRequest(
-            params={'data:0:filecontent': filecontent,
-                    'data:0:filename': 'thefilename.xml'})
-        request.custom_route_path = lambda *args, **kw: '/filepath'
-
-        with patch('xmltool.elements.Element.write', return_value=None):
-            res = self.ClassView(request).update_texts()
-            expected = 'Files updated'
-            self.assertEqual(res['info_msg'],  expected)
-
-            request.params['submit'] = 'Commit'
-            res = self.ClassView(request).update_texts()
-            self.assertTrue('breadcrumb' in res)
-            self.assertEqual(res['versioning'], True)
-            self.assertEqual(res['editor_login'], 'Bob')
-            self.assertTrue('class="modal' in res['modal'])
-            self.assertTrue('commit message' in res['modal'])
-
 
 class TestVersioningViewFakeRepo(BaseTestCase, CreateRepo):
 
     def setUp(self):
         super(TestVersioningViewFakeRepo, self).setUp()
         self.config.registry.settings.update({
-            'authentication.cookie.secret': 'scrt',
-            'authentication.cookie.callback': ('waxe.core.security.'
-                                               'get_user_permissions')
+            'pyramid_auth.no_routes': 'true',
+            'pyramid_auth.cookie.secret': 'scrt',
+            'pyramid_auth.cookie.callback': ('waxe.core.security.'
+                                             'get_user_permissions'),
+            'pyramid_auth.cookie.validate_function': (
+                'waxe.core.security.validate_password'),
         })
         self.config.include('pyramid_auth')
-
-    @login_user('Bob')
-    def test_edit_conflict(self):
-        class C(object): pass
-        self.user_bob.config.root_path = self.client_dir
-        file1 = os.path.join(self.client_dir, 'file1.xml')
-        open(file1, 'w').write('Hello')
-        request = testing.DummyRequest()
-        request.context = security.RootFactory(request)
-        request.matched_route = C()
-        request.matched_route.name = 'route'
-        request.route_path = lambda *args, **kw: '/%s' % args[0]
-        expected = 'A filename should be provided'
-        res = VersioningView(request).edit_conflict()
-        self.assertEqual(res['error_msg'], expected)
-
-        request = testing.DummyRequest(params={'path': 'file1.xml'})
-        request.matched_route = C()
-        request.matched_route.name = 'route'
-        request.custom_route_path = lambda *args, **kw: '/%s/filepath' % args[0]
-        res = VersioningView(request).edit_conflict()
-        expected = '<form data-action="/versioning_update_conflict_json/filepath'
-        self.assertTrue(expected in res['content'])
-        expected = '<textarea class="codemirror" name="filecontent">'
-        self.assertTrue(expected in res['content'])
-        expected = ('<input type="hidden" id="_xml_filename" '
-                    'name="filename" value="file1.xml" />')
-        self.assertTrue(expected in res['content'])
-
-    @login_user('Bob')
-    def test_update_conflict(self):
-        class C(object): pass
-        self.user_bob.config.root_path = self.client_dir
-        file1 = os.path.join(self.client_dir, 'file1.xml')
-        open(file1, 'w').write('Hello')
-        self.client.add(file1)
-        self.client.checkin([file1], 'Initial commit')
-        # Create a conflict
-        self.client.checkout('file://%s' % self.repo, 'svn_waxe_client1')
-        open(os.path.join('svn_waxe_client1', 'file1.xml'), 'w').write('Hello Bob')
-        self.client.checkin([os.path.join('svn_waxe_client1', 'file1.xml')],
-                            'create conflict')
-        open(file1, 'w').write('Hello Fred')
-        self.client.update(self.client_dir)
-        o = helper.PysvnVersioning(None, ['.xml'], None, None, self.client_dir,
-                                   False)
-        s = o.empty_status(file1)
-        self.assertEqual(s.status, helper.STATUS_CONFLICTED)
-
-        request = testing.DummyRequest(params={})
-        request.context = security.RootFactory(request)
-        request.matched_route = C()
-        request.matched_route.name = 'route'
-        request.route_path = lambda *args, **kw: '/%s' % args[0]
-        res = VersioningView(request).update_conflict()
-        expected = 'Missing parameters!'
-        self.assertEqual(res['error_msg'], expected)
-
-        request = testing.DummyRequest(
-            params={'filecontent': 'content of the file',
-                    'filename': 'file1.xml'})
-        request.context = security.RootFactory(request)
-        request.custom_route_path = lambda *args, **kw: '/filepath'
-        request.matched_route = C()
-        request.matched_route.name = 'route'
-        request.route_path = lambda *args, **kw: '/%s' % args[0]
-
-        def raise_func(*args, **kw):
-            raise Exception('My error')
-
-        with patch('xmltool.load_string') as m:
-            m.side_effect = raise_func
-            res = VersioningView(request).update_conflict()
-            expected = 'The conflict is not resolved: My error'
-            self.assertEqual(res['error_msg'],  expected)
-
-        filecontent = open(file1, 'r').read()
-        request = testing.DummyRequest(
-            params={'filecontent': filecontent,
-                    'filename': 'file1.xml'})
-        request.context = security.RootFactory(request)
-        request.custom_route_path = lambda *args, **kw: '/filepath'
-        request.matched_route = C()
-        request.matched_route.name = 'route'
-        request.route_path = lambda *args, **kw: '/%s' % args[0]
-
-        m = MagicMock()
-        with patch('xmltool.load_string', return_value=m):
-            res = VersioningView(request).update_conflict()
-            s = o.empty_status(file1)
-            self.assertEqual(s.status, helper.STATUS_MODIFED)
-            expected = 'List of commitable files'
-            self.assertTrue(expected in res['content'])
 
     @login_user('Fred')
     def test_update(self):
@@ -721,7 +586,7 @@ class TestVersioningViewFakeRepo(BaseTestCase, CreateRepo):
         request.matched_route.name = 'route'
 
         res = VersioningView(request).update()
-        self.assertTrue('The repository was already updated' in res['content'])
+        self.assertEqual(res, [])
 
         # Create a conflict
         self.client.checkout('file://%s' % self.repo, 'svn_waxe_client1')
@@ -730,10 +595,13 @@ class TestVersioningViewFakeRepo(BaseTestCase, CreateRepo):
                             'create conflict')
         self.client.update(self.client_dir)
 
-        res = VersioningView(request).update()
-        expected_error_msg = ('You can\'t update the repository, '
-                              'you have to fix the conflicts first')
-        self.assertEqual(res['error_msg'], expected_error_msg)
+        try:
+            VersioningView(request).update()
+            assert(False)
+        except exc.HTTPClientError, e:
+            expected = ('You can\'t update the repository, '
+                        'you have to fix the conflicts first')
+            self.assertEqual(str(e), expected)
 
         self.client.revert(os.path.join(self.client_dir, 'file1.xml'))
 
@@ -743,36 +611,38 @@ class TestVersioningViewFakeRepo(BaseTestCase, CreateRepo):
         self.client.add(client1file)
         self.client.checkin([client1file], 'New file')
         res = VersioningView(request).update()
-        self.assertTrue('label-added' in res['content'])
-        self.assertTrue('client1file.xml' in res['content'])
+        expected = [
+            {'status': 'added', 'path': 'client1file.xml', 'addLink': True}
+        ]
+        self.assertEqual(res, expected)
 
         # Update modify
         open(client1file, 'w').write('Hello Bob content')
         self.client.checkin([client1file], 'Update file')
         res = VersioningView(request).update()
-        self.assertTrue('label-modified' in res['content'])
-        self.assertTrue('client1file.xml' in res['content'])
+        expected = [
+            {'status': 'modified', 'path': 'client1file.xml', 'addLink': True}
+        ]
+        self.assertEqual(res, expected)
 
         # Update delete
         self.client.remove(client1file)
         self.client.checkin([client1file], 'Delete file')
         res = VersioningView(request).update()
-        self.assertTrue('label-deleted' in res['content'])
-        self.assertTrue('client1file.xml' in res['content'])
+        expected = [
+            {'status': 'deleted', 'path': 'client1file.xml', 'addLink': False}
+        ]
+        self.assertEqual(res, expected)
 
 
 class FunctionalTestViewsNoVersioning(WaxeTestCase):
 
     def test_404(self):
         for url in [
-            '/account/Bob/versioning/status',
-            '/account/Bob/versioning/status.json',
-            '/account/Bob/versioning/full-diff',
-            '/account/Bob/versioning/full-diff.json',
-            '/account/Bob/versioning/update',
-            '/account/Bob/versioning/update.json',
-            '/account/Bob/versioning/commit.json',
-            '/account/Bob/versioning/update-texts.json',
+            '/api/1/account/Bob/versioning/status.json',
+            '/api/1/account/Bob/versioning/full-diff.json',
+            '/api/1/account/Bob/versioning/update.json',
+            '/api/1/account/Bob/versioning/commit.json',
         ]:
             self.testapp.get(url, status=404)
 
@@ -782,26 +652,17 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
 
     def test_forbidden(self):
         for url in [
-            '/account/Bob/versioning/status',
-            '/account/Bob/versioning/status.json',
-            '/account/Bob/versioning/full-diff',
-            '/account/Bob/versioning/full-diff.json',
-            '/account/Bob/versioning/update',
-            '/account/Bob/versioning/update.json',
-            '/account/Bob/versioning/commit.json',
-            '/account/Bob/versioning/update-texts.json',
+            '/api/1/account/Bob/versioning/status.json',
+            '/api/1/account/Bob/versioning/full-diff.json',
+            '/api/1/account/Bob/versioning/update.json',
+            '/api/1/account/Bob/versioning/commit.json',
         ]:
-            res = self.testapp.get(url, status=302)
-            self.assertTrue('http://localhost/login?next=' in res.location)
-            res = res.follow()
-            self.assertEqual(res.status, "200 OK")
-            self.assertTrue('<form' in res.body)
-            self.assertTrue('Login' in res.body)
+            self.testapp.get(url, status=401)
 
     @login_user('Bob')
-    def test_short_status(self):
+    def test_short_status_json(self):
         self.user_bob.config = UserConfig(root_path=self.client_dir)
-        res = self.testapp.get('/account/Bob/versioning/short-status.json',
+        res = self.testapp.get('/api/1/account/Bob/versioning/short-status.json',
                                status=200)
         expected = {
             'file3.xml': helper.STATUS_UNVERSIONED,
@@ -811,141 +672,44 @@ class FunctionalPysvnTestViews(WaxeTestCaseVersioning, CreateRepo2):
         self.assertEqual(json.loads(res.body), expected)
 
     @login_user('Bob')
-    def test_status(self):
-        self.user_bob.config = UserConfig(root_path=self.client_dir)
-        res = self.testapp.get('/account/Bob/versioning/status', status=200)
-        self.assertTrue(res.body)
-        self.assertTrue('file1.xml' in res.body)
-
-    @login_user('Bob')
     def test_status_json(self):
         self.user_bob.config = UserConfig(root_path=self.client_dir)
-        res = self.testapp.get('/account/Bob/versioning/status.json', status=200)
+        res = self.testapp.get('/api/1/account/Bob/versioning/status.json', status=200)
         self.assertTrue(res.body)
         self.assertTrue('file1.xml' in res.body)
         self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
                         res._headerlist)
-
-    @login_user('Bob')
-    def test__full_diff(self):
-        self.user_bob.config = UserConfig(root_path=self.client_dir)
-        res = self.testapp.get('/account/Bob/versioning/full-diff', status=200)
-        self.assertTrue('You should provide at least one filename' in res.body)
-
-        res = self.testapp.post('/account/Bob/versioning/full-diff', status=200)
-        self.assertTrue('You should provide at least one filename' in res.body)
-
-        res = self.testapp.post('/account/Bob/versioning/full-diff', status=200,
-                                params={'filenames': 'file1.xml'})
-        self.assertTrue('diff' in res.body)
 
     @login_user('Bob')
     def test_full_diff_json(self):
         self.user_bob.config = UserConfig(root_path=self.client_dir)
-        res = self.testapp.get('/account/Bob/versioning/full-diff.json', status=200)
-        self.assertTrue('You should provide at least one filename' in res.body)
+        res = self.testapp.get('/api/1/account/Bob/versioning/full-diff.json',
+                               status=400)
+        self.assertEqual(res.body,
+                         '"No filename given"')
 
-        res = self.testapp.post('/account/Bob/versioning/full-diff.json', status=200)
-        self.assertTrue('You should provide at least one filename' in res.body)
+        res = self.testapp.post('/api/1/account/Bob/versioning/full-diff.json',
+                                status=400)
+        self.assertEqual(res.body,
+                         '"No filename given"')
 
-        res = self.testapp.post('/account/Bob/versioning/full-diff.json', status=200,
-                                params={'filenames': 'file1.xml'})
+        res = self.testapp.get('/api/1/account/Bob/versioning/full-diff.json', status=200,
+                               params={'paths': 'file1.xml'})
         self.assertTrue('diff' in res.body)
-        self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
-                        res._headerlist)
 
     @login_user('Bob')
     def test_commit_json(self):
         self.user_bob.config = UserConfig(root_path=self.client_dir)
-        res = self.testapp.post('/account/Bob/versioning/commit.json',
-                                status=200)
-        self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
-                        res._headerlist)
-        expected = {
-            "error_msg": "No file selected!",
-            'breadcrumb': ('<li><a data-href="/account/Bob/explore.json?path=" '
-                           'href="/account/Bob/explore?path=">root</a></li>')
-        }
-        self.assertEqual(json.loads(res.body), expected)
-
-    @login_user('Bob')
-    def test_update(self):
-        self.user_bob.config = UserConfig(root_path=self.client_dir,
-                                          versioning_password='secret_bob')
-        res = self.testapp.get('/account/Bob/versioning/update', status=200)
-        self.assertTrue('The repository was already updated!' in res.body)
+        res = self.testapp.post('/api/1/account/Bob/versioning/commit.json',
+                                status=400)
+        self.assertEqual(res.body, '"No filename given"')
 
     @login_user('Bob')
     def test_update_json(self):
         self.user_bob.config = UserConfig(root_path=self.client_dir,
                                           versioning_password='secret_bob')
-        res = self.testapp.get('/account/Bob/versioning/update.json', status=200)
-        self.assertTrue('The repository was already updated!' in res.body)
-        self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
-                        res._headerlist)
-
-    @login_user('Bob')
-    def test_update_texts(self):
-        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
-        self.user_bob.config.root_path = path
-        res = self.testapp.post('/account/Bob/versioning/update-texts', status=200)
-        self.assertTrue("Missing parameters!" in res.body)
-
-    @login_user('Bob')
-    def test_update_texts_json(self):
-        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
-        self.user_bob.config.root_path = path
-        res = self.testapp.post('/account/Bob/versioning/update-texts.json', status=200)
-        self.assertTrue(('Content-Type', 'application/json; charset=UTF-8') in
-                        res._headerlist)
-        expected = {
-            "error_msg": "Missing parameters!",
-            'breadcrumb': ('<li><a data-href="/account/Bob/explore.json?path=" '
-                           'href="/account/Bob/explore?path=">root</a></li>')
-        }
-        self.assertEqual(json.loads(res.body), expected)
-
-    @login_user('Bob')
-    def test_edit_conflict(self):
-        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
-        self.user_bob.config.root_path = path
-        res = self.testapp.post('/account/Bob/versioning/edit-conflict',
-                                status=200)
-        self.assertTrue("A filename should be provided" in res.body)
-
-    @login_user('Bob')
-    def test_edit_conflict_json(self):
-        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
-        self.user_bob.config.root_path = path
-        res = self.testapp.post('/account/Bob/versioning/edit-conflict.json',
-                                status=200)
-        expected = {
-            "error_msg": "A filename should be provided",
-            'breadcrumb': ('<li><a data-href="/account/Bob/explore.json?path=" '
-                           'href="/account/Bob/explore?path=">root</a></li>')
-        }
-        self.assertEqual(json.loads(res.body), expected)
-
-    @login_user('Bob')
-    def test_update_conflict(self):
-        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
-        self.user_bob.config.root_path = path
-        res = self.testapp.post('/account/Bob/versioning/update-conflict',
-                                status=200)
-        self.assertTrue("Missing parameters!" in res.body)
-
-    @login_user('Bob')
-    def test_update_conflict_json(self):
-        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
-        self.user_bob.config.root_path = path
-        res = self.testapp.post('/account/Bob/versioning/update-conflict.json',
-                                status=200)
-        expected = {
-            "error_msg": "Missing parameters!",
-            'breadcrumb': ('<li><a data-href="/account/Bob/explore.json?path=" '
-                           'href="/account/Bob/explore?path=">root</a></li>')
-        }
-        self.assertEqual(json.loads(res.body), expected)
+        res = self.testapp.get('/api/1/account/Bob/versioning/update.json', status=200)
+        self.assertEqual(json.loads(res.body), [])
 
 
 class TestHelper(CreateRepo):
@@ -1195,11 +959,10 @@ class TestHelper(CreateRepo):
         self.assertTrue('Deleted file ' in res[0])
         self.assertTrue('New file ' in res[1])
 
-    def test_full_diff(self):
-        difflib.HtmlDiff._default_prefix = 0
+    def test_full_diff_content(self):
         o = helper.PysvnVersioning(None, ['.xml'], None, None, self.client_dir,
                                   False)
-        self.assertEqual(o.full_diff(), [])
+        self.assertEqual(o.full_diff_content(), [])
         folder1 = os.path.join(self.client_dir, 'folder1')
         folder2 = os.path.join(folder1, 'folder2')
         os.mkdir(folder1)
@@ -1210,58 +973,76 @@ class TestHelper(CreateRepo):
         self.client.add(folder1)
         self.client.checkin([folder1], 'Add folder')
         open(file1, 'w').write('Hello World')
-        res = o.full_diff('folder1/file1.xml')
+        res = o.full_diff_content('folder1/file1.xml')
         self.assertEqual(len(res), 1)
-        relpath, html = res[0]
-        self.assertEqual(relpath, 'folder1/file1.xml')
-        self.assertTrue('<span class="diff_sub">Hello</span>' in html)
-        self.assertTrue('<span class="diff_add">Hello World</span>' in html)
-
-        difflib.HtmlDiff._default_prefix = 0
-        res1 = o.full_diff()
-        self.assertEqual(res, res1)
+        expected = [
+            {
+                'right': u'Hello World',
+                'relpath': u'folder1/file1.xml',
+                'left': u'Hello'
+            }
+        ]
+        self.assertEqual(res, expected)
 
         # Unversioned files are not taken into account
         open(file2, 'w').write('Hello')
-        difflib.HtmlDiff._default_prefix = 0
-        res2 = o.full_diff()
-        self.assertEqual(res[0], res2[0])
-        relpath, html = res2[1]
-        self.assertEqual(relpath, 'folder1/folder2/file2.xml')
-        self.assertTrue('<span class="diff_add">Hello</span>' in html)
+        res2 = o.full_diff_content()
+        expected = [
+            {
+                'right': u'Hello World',
+                'relpath': u'folder1/file1.xml',
+                'left': u'Hello'
+            },
+            {
+                'right': u'Hello',
+                'relpath': u'folder1/folder2/file2.xml',
+                'left': u''
+            }
+        ]
+        self.assertEqual(res2, expected)
 
-        difflib.HtmlDiff._default_prefix = 0
-        res3 = o.full_diff('folder1/folder2/file2.xml')
-        self.assertEqual(len(res3), 1)
-        relpath, html = res3[0]
-        self.assertEqual(relpath, 'folder1/folder2/file2.xml')
-        self.assertTrue('<span class="diff_add">Hello</span>' in html)
+        res3 = o.full_diff_content('folder1/folder2/file2.xml')
+        expected = [
+            {
+                'right': u'Hello',
+                'relpath': u'folder1/folder2/file2.xml',
+                'left': u''
+            }
+        ]
+        self.assertEqual(res3, expected)
 
         self.client.add(file2)
-        difflib.HtmlDiff._default_prefix = 0
-        res = o.full_diff()
-        self.assertEqual(len(res), 2)
-        relpath, html = res[0]
-        self.assertEqual(relpath, 'folder1/file1.xml')
-        self.assertTrue('<span class="diff_sub">Hello</span>' in html)
-        self.assertTrue('<span class="diff_add">Hello World</span>' in html)
-
-        relpath, html = res[1]
-        self.assertEqual(relpath, 'folder1/folder2/file2.xml')
-        self.assertTrue('<span class="diff_add">Hello</span>' in html)
+        res = o.full_diff_content()
+        expected = [
+            {
+                'right': u'Hello World',
+                'relpath': u'folder1/file1.xml',
+                'left': u'Hello'
+            },
+            {
+                'right': u'Hello',
+                'relpath': u'folder1/folder2/file2.xml',
+                'left': u''
+            }
+        ]
+        self.assertEqual(res, expected)
 
         self.client.revert(file1)
         self.client.remove(file1)
-        difflib.HtmlDiff._default_prefix = 0
-        res = o.full_diff()
-        self.assertEqual(len(res), 2)
-        relpath, html = res[0]
-        self.assertEqual(relpath, 'folder1/file1.xml')
-        self.assertTrue('<span class="diff_sub">Hello</span>' in html)
-
-        relpath, html = res[1]
-        self.assertEqual(relpath, 'folder1/folder2/file2.xml')
-        self.assertTrue('<span class="diff_add">Hello</span>' in html)
+        res = o.full_diff_content()
+        expected = [
+            {
+                'right': u'',
+                'relpath': u'folder1/file1.xml',
+                'left': u'Hello'
+            },
+            {
+                'right': u'Hello',
+                'relpath': u'folder1/folder2/file2.xml',
+                'left': u''
+            }
+        ]
+        self.assertEqual(res, expected)
 
     def test_get_commitable_files(self):
         o = helper.PysvnVersioning(None, ['.xml'], None, None, self.client_dir,

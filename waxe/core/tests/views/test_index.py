@@ -1,20 +1,14 @@
+import os
 from pyramid import testing
-from ..testing import WaxeTestCase, login_user, BaseTestCase
+import pyramid.httpexceptions as exc
+import json
+from ..testing import BaseTestCase, WaxeTestCase, login_user
+from waxe.core.views.index import IndexView, IndexUserView
 from waxe.core import security
-from waxe.core.models import (
-    DBSession,
-    User,
-    UserConfig,
-)
-
-from waxe.core.views.index import (
-    IndexView,
-    BadRequestView,
-    HTTPBadRequest,
-)
+from waxe.core.models import UserOpenedFile, UserCommitedFile
 
 
-class C(object):
+class EmptyClass(object):
     pass
 
 
@@ -23,106 +17,209 @@ class TestIndexView(BaseTestCase):
     def setUp(self):
         super(TestIndexView, self).setUp()
         self.config.registry.settings.update({
-            'versioning': True,
-            'authentication.cookie.secret': 'scrt',
-            'authentication.cookie.callback': ('waxe.core.security.'
-                                               'get_user_permissions')
+            'pyramid_auth.no_routes': 'true',
+            'pyramid_auth.cookie.secret': 'scrt',
+            'pyramid_auth.cookie.callback': ('waxe.core.security.'
+                                             'get_user_permissions'),
+            'pyramid_auth.cookie.validate_function': (
+                'waxe.core.security.validate_password'),
         })
         self.config.include('pyramid_auth')
-        self.user_fred.config.use_versioning = True
-        self.user_bob.config.use_versioning = True
 
-    @login_user('Bob')
-    def test_redirect(self):
-        request = testing.DummyRequest()
-        request.route_path = lambda *args, **kw: (
-            ('/%s' % args[0])
-            + '/%(login)s' % kw)
-        res = IndexView(request).redirect()
-        self.assertEqual(res.status, "302 Found")
-        self.assertEqual(res.location, '/home/Bob')
-
-    def test_redirect_not_logged(self):
-        request = testing.DummyRequest()
-        request.route_path = lambda *args, **kw: (
-            ('/%s' % args[0])
-            + '/%(login)s' % kw)
-        request.matched_route = C()
-        request.matched_route.name = 'route'
-        try:
-            IndexView(request).redirect()
-            assert(False)
-        except HTTPBadRequest, e:
-            self.assertEqual(str(e), 'root path not defined')
-
-    @login_user('Admin')
-    def test_bad_request(self):
+    def DummyRequest(self):
         request = testing.DummyRequest()
         request.context = security.RootFactory(request)
-        request.route_path = lambda *args, **kw: '/%s' % args[0]
-        request.matched_route = C()
+        return request
+
+    @login_user('Unexisting')
+    def test__profile_unexisting_user(self):
+        request = self.DummyRequest()
+        request.matched_route = EmptyClass()
         request.matched_route.name = 'route_json'
-        dic = BadRequestView(request).bad_request()
-        self.assertEqual(len(dic), 1)
-        expected = ('Go to your <a href="/admin_home">'
-                    'admin interface</a> to insert a new user')
-        self.assertEqual(dic['content'], expected)
+        request.registry.settings['dtd_urls'] = 'http://dtd_url'
 
-        editor = User(login='editor', password='pass1')
-        editor.roles = [self.role_editor]
-        editor.config = UserConfig(root_path='/path')
-        DBSession.add(editor)
-
-        self.user_bob.roles += [self.role_editor]
-        request.route_path = lambda *args, **kw: '/editorpath'
-        dic = BadRequestView(request).bad_request()
-        self.maxDiff = None
-        expected = (
-            u'Please select the account you want to use:'
-            '\n<br />\n<br />\n'
-            '<ul class="list-unstyled">'
-            '\n  <li>\n    '
-            '<a href="/editorpath">Bob</a>\n  '
-            '</li>\n  '
-            '<li>\n    '
-            '<a href="/editorpath">editor</a>\n  '
-            '</li>\n</ul>\n')
-        self.assertEqual(len(dic), 1)
-        self.assertTrue(expected in dic['content'])
+        res = IndexView(request).profile()
+        expected = {
+            'logins': [],
+            'has_file': False,
+            'login': 'Unexisting',
+        }
+        self.assertEqual(res, expected)
 
     @login_user('Fred')
-    def test_bad_request_not_admin(self):
+    def test__profile_editor(self):
+        request = self.DummyRequest()
+        request.matched_route = EmptyClass()
+        request.matched_route.name = 'route_json'
+        request.registry.settings['dtd_urls'] = 'http://dtd_url'
+
+        res = IndexView(request).profile()
+        expected = {
+            'logins': ['Fred'],
+            'has_file': True,
+            'login': 'Fred',
+        }
+        self.assertEqual(res, expected)
+
+    @login_user('Bob')
+    def test__profile_admin(self):
+        request = self.DummyRequest()
+        request.matched_route = EmptyClass()
+        request.matched_route.name = 'route'
+        request.registry.settings['dtd_urls'] = 'http://dtd_url'
+
+        res = IndexView(request).profile()
+        expected = {
+            'logins': ['Bob'],
+            'has_file': True,
+            'login': 'Bob',
+        }
+        self.assertEqual(res, expected)
+
+        self.user_fred.roles = [self.role_editor, self.role_contributor]
+
+        res = IndexView(request).profile()
+        expected = {
+            'logins': ['Bob', 'Fred'],
+            'has_file': True,
+            'login': 'Bob',
+        }
+        self.assertEqual(res, expected)
+
+    @login_user('Bob')
+    def test_last_files(self):
+        request = testing.DummyRequest()
+        request.custom_route_path = lambda *args, **kw: '/filepath'
+        request.route_path = lambda *args, **kw: '/filepath'
+        res = IndexView(request).last_files()
+        expected = {
+            'opened_files': [],
+            'commited_files': [],
+        }
+        self.assertEqual(res, expected)
+
+        request.current_user = self.user_bob
+        self.user_bob.opened_files = [UserOpenedFile(path='/path')]
+        res = IndexView(request).last_files()
+        expected = {
+            'opened_files': [{'path': '/path', 'user': ''}],
+            'commited_files': [],
+        }
+        self.assertEqual(res, expected)
+
+        self.user_bob.opened_files[0].user_owner = self.user_fred
+        res = IndexView(request).last_files()
+        expected = {
+            'opened_files': [{'path': '/path', 'user': 'Fred'}],
+            'commited_files': [],
+        }
+        self.assertEqual(res, expected)
+
+        self.user_bob.commited_files = [UserCommitedFile(path='/cpath')]
+        res = IndexView(request).last_files()
+        expected = {
+            'opened_files': [{'path': '/path', 'user': 'Fred'}],
+            'commited_files': [{'path': '/cpath', 'user': ''}],
+        }
+        self.assertEqual(res, expected)
+
+
+class TestIndexUserView(BaseTestCase):
+
+    def setUp(self):
+        super(TestIndexUserView, self).setUp()
+        self.config.registry.settings.update({
+            'pyramid_auth.no_routes': 'true',
+            'pyramid_auth.cookie.secret': 'scrt',
+            'pyramid_auth.cookie.callback': ('waxe.core.security.'
+                                             'get_user_permissions'),
+            'pyramid_auth.cookie.validate_function': (
+                'waxe.core.security.validate_password'),
+        })
+        self.config.include('pyramid_auth')
+
+    def DummyRequest(self):
         request = testing.DummyRequest()
         request.context = security.RootFactory(request)
-        request.route_path = lambda *args, **kw: '/%s' % args[0]
-        request.matched_route = C()
+        return request
+
+    @login_user('Fred')
+    def test_account_profile_editor(self):
+        request = self.DummyRequest()
+        request.matched_route = EmptyClass()
         request.matched_route.name = 'route_json'
-        self.user_fred.config.root_path = ''
-        dic = BadRequestView(request).bad_request()
-        self.assertEqual(len(dic), 1)
-        expected = 'There is a problem with your configuration'
-        self.assertTrue(expected in dic['content'])
+        request.registry.settings['dtd_urls'] = 'http://dtd_url'
+
+        res = IndexUserView(request).account_profile()
+        expected = {
+            'account_profile': {
+                'templates_path': None,
+                'has_versioning': False,
+                'dtd_urls': ['http://dtd_url'],
+                'has_search': False,
+                'login': 'Fred',
+                'has_template_files': False,
+                'has_xml_renderer': False
+            }
+        }
+        self.assertEqual(res, expected)
+
+        request.registry.settings['whoosh.path'] = 'search_path'
+        request.registry.settings['waxe.renderers'] = 'render'
+        path = os.path.join(os.getcwd(), 'waxe', 'core', 'tests', 'files')
+        self.user_fred.config.root_path = path
+        self.user_fred.config.root_template_path = os.path.join(path,
+                                                                'folder1')
+        res = IndexUserView(request).account_profile()
+        expected = {
+            'account_profile': {
+                'templates_path': 'folder1',
+                'has_versioning': False,
+                'dtd_urls': ['http://dtd_url'],
+                'has_search': True,
+                'login': 'Fred',
+                'has_template_files': True,
+                'has_xml_renderer': True
+            }
+        }
+        self.assertEqual(res, expected)
+
+        request.GET = {'full': True}
+        res = IndexUserView(request).account_profile()
+        self.assertTrue('account_profile' in res)
+        self.assertTrue('user_profile' in res)
 
 
 class FunctionalTestIndexView(WaxeTestCase):
 
-    def test_redirect_forbidden(self):
-        res = self.testapp.get('/', status=302)
-        self.assertEqual(
-            res.location,
-            'http://localhost/login?next=http%3A%2F%2Flocalhost%2F')
-        res = res.follow()
-        self.assertEqual(res.status, "200 OK")
-        self.assertTrue('<form' in res.body)
-        self.assertTrue('Login' in res.body)
+    def test_forbidden(self):
+        self.testapp.get('/api/1/profile.json', status=401)
+        self.testapp.get('/api/1/last-files.json', status=401)
 
     @login_user('Admin')
-    def test_redirect(self):
-        res = self.testapp.get('/', status=302)
-        self.assertEqual(
-            res.location,
-            'http://localhost/account/Admin/')
-        res = res.follow()
-        expected = ('Go to your <a href="/admin">'
-                    'admin interface</a> to insert a new user')
-        self.assertTrue(expected in res.body)
+    def test_profile(self):
+        res = self.testapp.get('/api/1/profile.json', status=200)
+        dic = json.loads(res.body)
+        self.assertTrue('login' in dic)
+
+    @login_user('Admin')
+    def test_last_files(self):
+        res = self.testapp.get('/api/1/last-files.json', status=200)
+        dic = json.loads(res.body)
+        expected = {
+            'opened_files': [],
+            'commited_files': [],
+        }
+        self.assertEqual(dic, expected)
+
+
+class FunctionalTestIndexUserView(WaxeTestCase):
+
+    def test_forbidden(self):
+        self.testapp.get('/api/1/account/admin/account-profile.json', status=401)
+
+    @login_user('Bob')
+    def test_account_profile(self):
+        res = self.testapp.get('/api/1/account/Bob/account-profile.json',
+                               status=200)
+        self.assertTrue(res)

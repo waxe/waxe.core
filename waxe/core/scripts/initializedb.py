@@ -21,7 +21,7 @@ from ..models import (
     ROLE_CONTRIBUTOR,
 )
 
-import taskq.models as taskqm
+import sqla_taskq.models as taskqm
 
 
 def usage(argv):

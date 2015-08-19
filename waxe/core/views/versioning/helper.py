@@ -1,8 +1,7 @@
 import os
 import locale
 import pysvn
-from waxe.core import browser
-from waxe.core import diff
+from waxe.core import browser, diff, utils
 import tempfile
 import importlib
 
@@ -127,6 +126,12 @@ class StatusObject(object):
             if getattr(self, p) != getattr(other, p):
                 return False
         return True
+
+    def to_dict(self):
+        return {
+            'relpath': self.relpath,
+            'status': self.status
+        }
 
 
 class PysvnVersioning(object):
@@ -288,10 +293,11 @@ class PysvnVersioning(object):
                 diffs += [s]
         return diffs
 
-    def full_diff(self, path=None):
+
+    def full_diff_content(self, path=None):
         diffs = []
+        contents = []
         lis = self.full_status(path)
-        d = diff.HtmlDiff()
         for so in lis:
             if so.status == STATUS_CONFLICTED:
                 continue
@@ -307,13 +313,13 @@ class PysvnVersioning(object):
                 old_rev = pysvn.Revision(pysvn.opt_revision_kind.number,
                                          info.revision.number)
                 old_content = self.client.cat(so.abspath, old_rev)
-            diffs += [(
-                so.relpath,
-                d.make_table(
-                    old_content.decode('utf-8').splitlines(),
-                    new_content.decode('utf-8').splitlines())
-            )]
-        return diffs
+
+            contents.append({
+                'left': utils.safe_str(old_content),
+                'right': utils.safe_str(new_content),
+                'relpath': so.relpath,
+            })
+        return contents
 
     def get_commitable_files(self, path=None):
         lis = self.full_status(path)

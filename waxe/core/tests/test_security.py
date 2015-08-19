@@ -1,28 +1,7 @@
 from pyramid import testing
 from .. import security
 from .testing import BaseTestCase
-from ..models import UserConfig, User, Group, DBSession
-import logging
-
-
-class MockLoggingHandler(logging.Handler):
-    """Mock logging handler to check for expected logs."""
-
-    def __init__(self, *args, **kwargs):
-        self.reset()
-        logging.Handler.__init__(self, *args, **kwargs)
-
-    def emit(self, record):
-        self.messages[record.levelname.lower()].append(record.getMessage())
-
-    def reset(self):
-        self.messages = {
-            'debug': [],
-            'info': [],
-            'warning': [],
-            'error': [],
-            'critical': [],
-        }
+from ..models import Group
 
 
 class TestSecurity(BaseTestCase):
@@ -38,15 +17,6 @@ class TestSecurity(BaseTestCase):
         self.assertEqual(security.get_user('bob'), None)
         self.assertEqual(security.get_user('nonexisting'), None)
 
-    def test_get_user_logging(self):
-        user = User(login='Bob', password='pass1')
-        DBSession.add(user)
-        handler = MockLoggingHandler()
-        logging.getLogger().addHandler(handler)
-        self.assertEqual(security.get_user('Bob'), None)
-        self.assertEqual(handler.messages['error'],
-                         ['Multiple rows were found for one()'])
-
     def test_validate_password(self):
         request = testing.DummyRequest()
         self.assertEqual(security.validate_password(request,
@@ -56,7 +26,8 @@ class TestSecurity(BaseTestCase):
         self.assertEqual(security.validate_password(request,
                                                     'Bob', 'toto'), False)
         self.assertEqual(security.validate_password(request,
-                                                    'Bob', 'secret_bob'), True)
+                                                    'Bob', 'secret_bob'),
+                         self.user_bob)
 
     def test_get_user_permissions(self):
         request = testing.DummyRequest()

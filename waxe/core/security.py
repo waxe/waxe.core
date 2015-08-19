@@ -1,4 +1,9 @@
-from pyramid.security import Everyone, Allow, unauthenticated_userid
+from pyramid.security import (
+    Everyone,
+    Allow,
+    unauthenticated_userid,
+    Authenticated
+)
 import sqlalchemy.orm.exc as sqla_exc
 import logging
 import bcrypt
@@ -11,6 +16,7 @@ log = logging.getLogger(__name__)
 class RootFactory(object):
     __acl__ = [
         (Allow, Everyone, 'view'),
+        (Allow, Authenticated, 'authenticated'),
         (Allow, 'role:%s' % ROLE_ADMIN, ['admin', 'edit']),
         (Allow, 'role:%s' % ROLE_EDITOR, ['editor', 'edit']),
         (Allow, 'role:%s' % ROLE_CONTRIBUTOR, ['contributor', 'edit']),
@@ -42,10 +48,12 @@ def validate_password(request, login, password):
         # A define and valid password can't be empty
         return False
     try:
-        return bcrypt.hashpw(password, user.password) == user.password
+        if (bcrypt.hashpw(password, user.password) == user.password):
+            return user
     except ValueError:
         # Can fail if the value in the DB is not bcrypted.
-        return False
+        pass
+    return False
 
 
 def get_user_permissions(login, request):

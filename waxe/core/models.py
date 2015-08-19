@@ -7,6 +7,7 @@ from sqlalchemy import (
     ForeignKey,
     Table,
     Boolean,
+    UniqueConstraint,
 )
 
 from sqlalchemy.orm import (
@@ -34,11 +35,6 @@ ROLE_CONTRIBUTOR = 'contributor'
 VERSIONING_PATH_STATUS_ALLOWED = 'allowed'
 VERSIONING_PATH_STATUS_FORBIDDEN = 'forbidden'
 
-LAYOUT_DEFAULTS = {
-    'tree_position': 'west',
-    'readonly_position': 'south'
-}
-
 MAX_FILE_NUMBER = 10
 
 
@@ -47,6 +43,7 @@ user_role = Table(
     Base.metadata,
     Column('iduser', Integer, ForeignKey('user.iduser')),
     Column('idrole', Integer, ForeignKey('role.idrole')),
+    UniqueConstraint('iduser', 'idrole', name='uc_user_role_iduser_idrole')
 )
 
 
@@ -54,12 +51,14 @@ user_group = Table(
     'user_group',
     Base.metadata,
     Column('iduser', Integer, ForeignKey('user.iduser')),
-    Column('idgroup', Integer, ForeignKey('groups.idgroup')),
+    Column('idgroup', Integer, ForeignKey('group.idgroup')),
+    UniqueConstraint('iduser', 'idgroup', name='uc_user_group_iduser_idgroup')
 )
 
 
 class Group(Base):
-    __tablename__ = 'groups'
+    __table_args__ = (
+        UniqueConstraint('name', name='uc_group_name'),)
 
     idgroup = Column(Integer,
                      nullable=False,
@@ -70,6 +69,8 @@ class Group(Base):
 
 
 class Role(Base):
+    __table_args__ = (
+        UniqueConstraint('name', name='uc_role_name'),)
 
     idrole = Column(Integer,
                     nullable=False,
@@ -83,6 +84,8 @@ class Role(Base):
 
 
 class User(Base):
+    __table_args__ = (
+        UniqueConstraint('login', name='uc_user_login'),)
 
     iduser = Column(Integer,
                     nullable=False,
@@ -133,7 +136,7 @@ class User(Base):
 
     def add_opened_file(self, path, iduser_owner=None):
         for f in self.opened_files:
-            if path == f.path:
+            if path == f.path and iduser_owner == f.iduser_owner:
                 # Remove occurence of the same path
                 # We should not have more than one occurence since we don't
                 # insert any duplicate.
@@ -148,7 +151,7 @@ class User(Base):
 
     def add_commited_file(self, path, iduser_commit=None):
         for f in self.commited_files:
-            if path == f.path:
+            if path == f.path and f.iduser_commit == iduser_commit:
                 # Remove occurence of the same path
                 # We should not have more than one occurence since we don't
                 # insert any duplicate.
@@ -181,16 +184,6 @@ class UserConfig(Base):
               twf.PasswordField,
               'view_widget': tws.NoWidget}
     )
-
-    # Should be east or west
-    tree_position = Column(String(255),
-                           nullable=False,
-                           default=LAYOUT_DEFAULTS['tree_position'])
-
-    # Should be north or south
-    readonly_position = Column(String(255),
-                               nullable=False,
-                               default=LAYOUT_DEFAULTS['readonly_position'])
 
     def get_tws_view_html(self):
         return 'path: %s <br /> Versioning: %s' % (
@@ -237,13 +230,18 @@ class UserCommitedFile(Base):
                                   nullable=False,
                                   primary_key=True)
     iduser = Column(Integer, ForeignKey('user.iduser'))
+    # TODO: rename iduser_commit in iduser_owner. Also perhaps we can merge
+    # table UserOpenedFile and UserCommitedFile
     iduser_commit = Column(Integer, ForeignKey('user.iduser'))
     path = Column(String(255), nullable=False)
 
     user = relationship('User',
                         foreign_keys=[iduser],
                         backref=backref("commited_files"))
-
+    user_owner = relationship(
+        'User',
+        foreign_keys=[iduser_commit],
+    )
 
 
 def get_editors():

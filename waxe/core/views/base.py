@@ -1,32 +1,69 @@
-import os
 import importlib
-from pyramid.httpexceptions import HTTPBadRequest
+import transaction
 from pyramid.security import has_permission
 from pyramid.renderers import render
+from pyramid.view import view_defaults
+import pyramid.httpexceptions as exc
 from .. import security, models, search, browser
-from taskq.models import Task
+from sqla_taskq.models import Task
 
 
-NAV_EDIT = 'edit'
-NAV_EDIT_TEXT = 'edit_text'
-NAV_DIFF = 'diff'
+@view_defaults(renderer='json')
+class JSONView(object):
+
+    def __init__(self, request):
+        self.request = request
+
+    @property
+    def req_get(self):
+        return self.request.GET
+
+    @property
+    def req_post(self):
+        if self.request.POST:
+            return self.request.POST
+        if self.request.body:
+            # Angular post the data as body
+            return self.request.json_body
+        return {}
+
+    def req_post_getall(self, key):
+        if self.request.POST:
+            return self.request.POST.getall(key)
+        if self.request.body:
+            # Angular post the data as body
+            # The value as json should already be a list
+            return self.request.json_body.get(key)
+        return {}
 
 
-class JSONHTTPBadRequest(HTTPBadRequest):
-    pass
-
-
-class BaseView(object):
+class BaseView(JSONView):
     """All the Waxe views should inherit from this one. It doesn't make any
     validation, it can be used anywhere
     """
 
     def __init__(self, request):
-        self.request = request
+        super(BaseView, self).__init__(request)
         self.logged_user_login = security.get_userid_from_request(self.request)
         self.logged_user = security.get_user(self.logged_user_login)
+        if not self.logged_user_login:
+            # We should always be logged
+            raise exc.HTTPUnauthorized()
+
+        if not self.logged_user:
+            # Insert a new user
+            self.logged_user = models.User(login=self.logged_user_login)
+            models.DBSession.add(self.logged_user)
+
+        if not self.logged_user.config:
+            # Also create the user config
+            self.logged_user.config = models.UserConfig()
+            models.DBSession.add(self.logged_user.config)
+
         self.current_user = self.logged_user
         self.root_path = None
+        if self.current_user and self.current_user.config:
+            self.root_path = self.current_user.config.root_path
         self.extensions = self.request.registry.settings['waxe.extensions']
 
         def custom_route_path(request):
@@ -40,21 +77,6 @@ class BaseView(object):
         request.set_property(custom_route_path,
                              'custom_route_path',
                              reify=True)
-
-    def _get_last_files(self):
-        """This function should be defined here since we need use it for the
-        user without config or config.root_path.
-        """
-        if not self.current_user:
-            # User is authenticated but not in the DB
-            return ''
-        opened_files = self.current_user.opened_files[::-1]
-        commited_files = self.current_user.commited_files[::-1]
-        html = render('blocks/last_files.mak',
-                      {'opened_files': opened_files,
-                       'commited_files': commited_files},
-                      self.request)
-        return html
 
     def user_is_admin(self):
         """Check if the logged user is admin.
@@ -86,16 +108,6 @@ class BaseView(object):
                               self.request.context,
                               self.request)
 
-    def _is_json(self):
-        """Check the current request is a json one.
-
-        :return: True if it's a json request
-        :rtype: bool
-
-        .. note:: We assume the json route names always end with '_json'
-        """
-        return self.request.matched_route.name.endswith('_json')
-
     def get_editable_logins(self):
         """Get the editable login by the logged user.
 
@@ -103,8 +115,7 @@ class BaseView(object):
         :rtype: list of str
         """
         lis = []
-        if (hasattr(self.logged_user, 'config') and
-           self.logged_user.config and self.logged_user.config.root_path):
+        if self.logged_user.config.root_path:
             lis += [self.logged_user.login]
 
         if self.user_is_admin():
@@ -130,120 +141,29 @@ class BaseView(object):
                 return True
         return False
 
-    def _get_xmltool_transform(self):
-        """Before writing XML, we can call a function to transform it.
+    def logged_user_profile(self):
+        """Get the profile of the logged user
         """
-        if 'waxe.xml.xmltool.transform' not in self.request.registry.settings:
-            return None
-        func = self.request.registry.settings['waxe.xml.xmltool.transform']
-        mod, func = func.rsplit('.', 1)
-        return getattr(importlib.import_module(mod), func)
+        has_file = bool(self.logged_user.config.root_path)
+        dic = {
+            'login': self.logged_user_login,
+            'has_file': has_file,
+            'logins': [],
+        }
 
-    def _response(self, dic):
-        """Update the given dic for non json request with some data needed in
-        the navbar.
-
-        :param dic: a dict containing some data for the reponse
-        :type dic: dict
-        :return: the given dict updated if needed
-        :rtype: dict
-        """
-        if self._is_json():
-            return dic
-
-        editor_login = self.logged_user_login
-        dic['root_template_path'] = None
-        if self.current_user:
-            editor_login = self.current_user.login
-            config = self.current_user.config
-            if config:
-                dic['root_template_path'] = config.root_template_path
-        dic['editor_login'] = editor_login
-        # Layout option
-        if self.logged_user and self.logged_user.config:
-            config = self.logged_user.config
-            dic['layout_tree_position'] = config.tree_position
-            dic['layout_readonly_position'] = config.readonly_position
-        else:
-            default = models.LAYOUT_DEFAULTS
-            dic['layout_tree_position'] = default['tree_position']
-            dic['layout_readonly_position'] = default['readonly_position']
-
-        logins = [l for l in self.get_editable_logins() if l != editor_login]
+        logins = self.get_editable_logins()
         if logins:
             dic['logins'] = logins
 
-        dic['versioning'] = self.has_versioning()
-        dic['search'] = ('whoosh.path' in self.request.registry.settings)
-        # Assume we have an XML renderer if we have renderer defined
-        dic['xml_renderer'] = ('waxe.renderers' in
-                               self.request.registry.settings)
         return dic
 
 
-class NavigationView(BaseView):
-
-    def _generate_link_tag(self, name, relpath, route_name,
-                           data_href_name='data-href', extra_attrs=None):
-        """Generate HTML a with the ajax and natural href.
-        """
-        attrs = []
-        if route_name:
-            data_href_link = self.request.custom_route_path(
-                '%s_json' % route_name, _query=[('path', relpath)])
-
-            href_link = self.request.custom_route_path(
-                route_name, _query=[('path', relpath)])
-
-            attrs += [
-                (data_href_name, data_href_link),
-                ('href', href_link),
-            ]
-        else:
-            attrs += [('href', '#')]
-
-        if extra_attrs:
-            attrs += extra_attrs
-
-        attrs_str = ''.join([' %s="%s"' % (k, v) for k, v in attrs])
-        return '<a%s>%s</a>' % (
-            attrs_str,
-            name
-        )
-
-    def _get_breadcrumb_data(self, relpath, rootpath=None):
-        tple = []
-        while relpath and relpath != rootpath:
-            name = os.path.basename(relpath)
-            tple += [(name, relpath)]
-            relpath = os.path.dirname(relpath)
-
-        tple += [('root', rootpath or '')]
-        tple.reverse()
-        return tple
-
-    def _get_breadcrumb(self, relpath, route_name='explore',
-                        data_href_name='data-href', force_link=False,
-                        rootpath=None):
-        tple = self._get_breadcrumb_data(relpath, rootpath)
-        html = []
-        for index, (name, relpath) in enumerate(tple):
-            if index == len(tple) - 1 and not force_link:
-                html += ['<li class="active">%s</li>' % (name)]
-            else:
-                html += ['<li>%s</li>' % (
-                    self._generate_link_tag(
-                        name, relpath,
-                        route_name=route_name,
-                        data_href_name=data_href_name)
-                )]
-        return ''.join(html)
-
-
-class BaseUserView(NavigationView):
+@view_defaults(renderer='json', permission='edit')
+class BaseUserView(BaseView):
     """Base view which check that the current user has a root path. It's to
     check he has some files to edit!
     """
+    # TODO: improve the error messages
     def __init__(self, request):
         super(BaseUserView, self).__init__(request)
 
@@ -252,20 +172,16 @@ class BaseUserView(NavigationView):
             logins = self.get_editable_logins()
             if login:
                 if login not in logins:
-                    if self._is_json():
-                        raise JSONHTTPBadRequest('The user doesn\'t exist')
-                    raise HTTPBadRequest('The user doesn\'t exist')
+                    raise exc.HTTPClientError("The user doesn't exist")
                 user = models.User.query.filter_by(login=login).one()
                 self.current_user = user
 
+        self.root_path = None
         if self.current_user and self.current_user.config:
             self.root_path = self.current_user.config.root_path
 
-        if (not self.root_path and
-                request.matched_route.name != 'redirect'):
-            if self._is_json():
-                raise JSONHTTPBadRequest('root path not defined')
-            raise HTTPBadRequest('root path not defined')
+        if not self.root_path:
+            raise exc.HTTPClientError("root path not defined")
 
     def get_versioning_obj(self, commit=False):
         """Get the versioning object. For now only svn is supported.
@@ -284,28 +200,29 @@ class BaseUserView(NavigationView):
         settings = self.request.registry.settings
         if 'whoosh.path' not in settings:
             return None
+
         return self.current_user.get_search_dirname(settings['whoosh.path'])
 
     def add_opened_file(self, path):
-        if not self.logged_user:
-            # User is authenticated but not in the DB
-            return False
         iduser_owner = None
         if self.logged_user != self.current_user:
-            if self.logged_user.config and self.logged_user.config.root_path:
-                # Don't store the last edited files from another account if
-                # there is an account for the logged user.
-                return False
             iduser_owner = self.current_user.iduser
 
         self.logged_user.add_opened_file(path, iduser_owner=iduser_owner)
+
+    def add_commited_file(self, path):
+        iduser_commit = None
+        if self.logged_user != self.current_user:
+            iduser_commit = self.current_user.iduser
+
+        self.logged_user.add_commited_file(path, iduser_commit=iduser_commit)
 
     def add_indexation_task(self, paths=None):
         dirname = self.get_search_dirname()
         if not dirname:
             return None
         uc = self.current_user.config
-        if not uc or not uc.root_path:
+        if not uc.root_path:
             return None
         if not paths:
             paths = browser.get_all_files(self.extensions, uc.root_path, uc.root_path)[1]
@@ -315,33 +232,6 @@ class BaseUserView(NavigationView):
 
         # Since we commit the task we need to re-bound the user to the session
         # to make sure we can reuse self.logged_user
-        if self.logged_user:
-            # For example if we use ldap authentication, self.logged_user can
-            # be None if the user is not in the DB.
-            models.DBSession.add(self.logged_user)
-
-    def _get_nav_editor(self, filename, kind):
-        """Navs to display XML or Source when we edit a file
-        """
-        html = []
-        lis = [
-            ('XML', 'edit', NAV_EDIT),
-            ('Source', 'edit_text', NAV_EDIT_TEXT),
-        ]
-        if self.has_versioning():
-            lis += [('Diff', 'versioning_diff', NAV_DIFF)]
-
-        for name, route, k in lis:
-            li_class = ''
-            attrs = ''
-            if kind == k:
-                li_class = ' class="active"'
-            else:
-                attrs = ' href="%s" data-href="%s"' % (
-                    self.request.custom_route_path(route,
-                                                   _query=[('path', filename)]),
-                    self.request.custom_route_path('%s_json' % route,
-                                                   _query=[('path', filename)]),
-                )
-            html += ['<li%s><a%s>%s</a></li>' % (li_class, attrs, name)]
-        return '<ul class="nav nav-tabs">%s</ul>' % ''.join(html)
+        # For example if we use ldap authentication, self.logged_user can
+        # be None if the user is not in the DB.
+        models.DBSession.add(self.logged_user)
