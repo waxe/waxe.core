@@ -97,14 +97,15 @@ class TestFileManagerView(LoggedBobTestCase):
                 self.assertEqual(res['nb_items'], 0)
 
             return_value = ([
-                (os.path.join(path, 'file1.xml'), 'Excerpt of the file1')
+                {'path': os.path.join(path, 'file1.xml'),
+                 'tag': 'tag',
+                 'excerpt': 'Excerpt of the file1'}
             ], 1)
             with patch('waxe.core.search.do_search', return_value=return_value):
                 res = FileManagerView(request).search()
                 self.assertEqual(res['nb_items'], 1)
                 self.assertEqual(len(res['results']), 1)
-                expected = [('file1.xml', 'Excerpt of the file1')]
-                self.assertEqual(res['results'], expected)
+                self.assertEqual(res['results'], return_value[0])
 
     def test_remove(self):
         class C(object): pass

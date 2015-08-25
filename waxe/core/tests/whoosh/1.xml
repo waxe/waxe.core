@@ -1,1 +1,5 @@
-<tag>File 1</tag>
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE root SYSTEM "whoosh.dtd">
+<root>
+    <tag>File 1</tag>
+</root>

@@ -1,0 +1,3 @@
+<!ELEMENT root (tag?,text?)>
+<!ELEMENT tag (#PCDATA)>
+<!ELEMENT text (#PCDATA)>

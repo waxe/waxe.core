@@ -42,7 +42,11 @@ class TestSearch(unittest.TestCase):
                 dic[field['path']] = field['content']
         self.assertEqual(len(dic), 5)
 
-        content = 'New file'
+        content = '''<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE root SYSTEM "whoosh.dtd">
+<root>
+    <tag>New file</tag>
+</root>'''
         newfile = os.path.join(filepath, 'newfile.xml')
         open(newfile, 'w').write(content)
         try:
@@ -54,12 +58,12 @@ class TestSearch(unittest.TestCase):
                 for field in searcher.all_stored_fields():
                     newdic[field['path']] = field['content']
             self.assertEqual(len(newdic), 6)
-            self.assertEqual(newdic[newfile], content)
+            self.assertEqual(newdic[newfile], 'New file')
             newdic.pop(newfile)
             self.assertEqual(dic, newdic)
 
             # Update file
-            open(newfile, 'w').write(content + ' updated')
+            open(newfile, 'w').write(content.replace('file', 'file updated'))
             search.incremental_index(indexpath, paths + [newfile])
             newdic = {}
             ix = index.open_dir(indexpath)
@@ -67,7 +71,7 @@ class TestSearch(unittest.TestCase):
                 for field in searcher.all_stored_fields():
                     newdic[field['path']] = field['content']
             self.assertEqual(len(newdic), 6)
-            self.assertEqual(newdic[newfile], content + ' updated')
+            self.assertEqual(newdic[newfile], 'New file updated')
             newdic.pop(newfile)
             self.assertEqual(dic, newdic)
 
@@ -151,24 +155,36 @@ class TestSearch(unittest.TestCase):
 
         res = search.do_search(indexpath, 'file')
         expected = ([
-            (os.path.join(filepath, '1.xml'),
-             u'<b class="match term0">File</b> 1'),
-            (os.path.join(filepath, '2.xml'),
-             u'<b class="match term0">File</b> 2'),
-            (os.path.join(filepath, 'sub/1.xml'),
-             u'<b class="match term0">File</b> 1')
+            {
+                'path': os.path.join(filepath, '1.xml'),
+                'tag': 'tag',
+                'excerpt': u'<b class="match term0">File</b> 1'},
+            {
+                'path': os.path.join(filepath, '2.xml'),
+                'tag': 'text',
+                'excerpt': u'<b class="match term0">File</b> 2'},
+            {
+                'path': os.path.join(filepath, 'sub/1.xml'),
+                'tag': 'tag',
+                'excerpt': u'<b class="match term0">File</b> 1'}
         ], 3)
         self.assertEqual(res, expected)
 
         # Make sure it searches in sub folder when we pass abspath
         res = search.do_search(indexpath, 'file', abspath=filepath)
         expected = ([
-            (os.path.join(filepath, '1.xml'),
-             u'<b class="match term0">File</b> 1'),
-            (os.path.join(filepath, '2.xml'),
-             u'<b class="match term0">File</b> 2'),
-            (os.path.join(filepath, 'sub/1.xml'),
-             u'<b class="match term0">File</b> 1')
+            {
+                'path': os.path.join(filepath, '1.xml'),
+                'tag': 'tag',
+                'excerpt': u'<b class="match term0">File</b> 1'},
+            {
+                'path': os.path.join(filepath, '2.xml'),
+                'tag': 'text',
+                'excerpt': u'<b class="match term0">File</b> 2'},
+            {
+                'path': os.path.join(filepath, 'sub/1.xml'),
+                'tag': 'tag',
+                'excerpt': u'<b class="match term0">File</b> 1'}
         ], 3)
         self.assertEqual(res, expected)
 
@@ -178,29 +194,62 @@ class TestSearch(unittest.TestCase):
             'file',
             abspath=os.path.join(filepath, 'sub'))
         expected = ([
-            (os.path.join(filepath, 'sub/1.xml'),
-             u'<b class="match term0">File</b> 1')
+            {
+                'path': os.path.join(filepath, 'sub/1.xml'),
+                'tag': 'tag',
+                'excerpt': u'<b class="match term0">File</b> 1'}
         ], 1)
         self.assertEqual(res, expected)
 
         res = search.do_search(indexpath, u'Téster')
         expected = ([
-            (os.path.join(filepath, u'é-iso.xml'),
-             u'<b class="match term0">Téster</b> les accents à risque'),
-            (os.path.join(filepath, u'é.xml'),
-             u'<b class="match term0">Téster</b> les accents à risque'),
+            {
+                'path': os.path.join(filepath, u'é-iso.xml'),
+                'tag': 'text',
+                'excerpt': (u'<b class="match term0">Téster</b>'
+                            u' les accents à risque')},
+            {
+                'path': os.path.join(filepath, u'é.xml'),
+                'tag': 'text',
+                'excerpt': (u'<b class="match term0">Téster</b>'
+                            u' les accents à risque')},
         ], 2)
         self.assertEqual(res, expected)
 
         res = search.do_search(indexpath, u'tester')
         expected = ([
-            (os.path.join(filepath, u'é-iso.xml'),
-             u'<b class="match term0">Téster</b> les accents à risque'),
-            (os.path.join(filepath, u'é.xml'),
-             u'<b class="match term0">Téster</b> les accents à risque'),
+            {
+                'path': os.path.join(filepath, u'é-iso.xml'),
+                'tag': 'text',
+                'excerpt': (u'<b class="match term0">Téster</b>'
+                            u' les accents à risque')},
+            {
+                'path': os.path.join(filepath, u'é.xml'),
+                'tag': 'text',
+                'excerpt': (u'<b class="match term0">Téster</b> '
+                            u'les accents à risque')},
         ], 2)
         self.assertEqual(res, expected)
 
         # The XML tags are not indexed
         res = search.do_search(indexpath, 'text')
         self.assertEqual(res, ([], 0))
+
+        # Unexisting tag
+        res = search.do_search(indexpath, u'tester AND tag:test')
+        self.assertEqual(res, ([], 0))
+
+        res = search.do_search(indexpath, u'tester AND tag:text')
+        expected = ([
+            {
+                'path': os.path.join(filepath, u'é-iso.xml'),
+                'tag': 'text',
+                'excerpt': (u'<b class="match term0">Téster</b>'
+                            u' les accents à risque')},
+            {
+                'path': os.path.join(filepath, u'é.xml'),
+                'tag': 'text',
+                'excerpt': (u'<b class="match term0">Téster</b> '
+                            u'les accents à risque')},
+        ], 2)
+        self.assertEqual(res, expected)

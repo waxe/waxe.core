@@ -4,7 +4,10 @@ from whoosh.analysis import PathTokenizer, StemmingAnalyzer, CharsetFilter
 from whoosh.support.charset import accent_map
 from whoosh import index
 from whoosh.qparser import QueryParser, FuzzyTermPlugin
-import re
+import xmltool
+
+import logging
+log = logging.getLogger(__name__)
 
 
 HITS_PER_PAGE = 20
@@ -14,6 +17,8 @@ def get_schema():
     analyser = StemmingAnalyzer() | CharsetFilter(accent_map)
     return Schema(
         path=ID(analyzer=PathTokenizer(), stored=True),
+        ext=TEXT(stored=True),
+        tag=TEXT(stored=True),
         content=TEXT(analyser, stored=True, chars=True),
         time=STORED,
     )
@@ -35,18 +40,25 @@ def to_unicode(s):
 def add_doc(writer, path):
     """Index file
     """
-    content = open(path, "r").read()
-    content = to_unicode(content)
+    try:
+        obj = xmltool.load(path)
+    except Exception, e:
+        log.error("Can't load %s: %s" % (path, e))
+        return False
     path = to_unicode(path)
-    # Remove the XML tags
-    content = re.sub(r'\s*<[^>/]*?>', ' ', content)
-    content = re.sub(r'<[^>]*?>\s*', ' ', content)
+
     modtime = os.path.getmtime(path)
-    writer.add_document(
-        path=path,
-        content=content,
-        time=modtime,
-    )
+    filename, ext = os.path.splitext(path)
+    for sub in obj.walk():
+        if not getattr(sub, 'text', None):
+            continue
+        writer.add_document(
+            path=path,
+            tag=unicode(sub.tagname),
+            ext=ext,
+            content=unicode(sub.text),
+            time=modtime,
+        )
 
 
 def incremental_index(dirname, paths, force=False):
@@ -140,8 +152,13 @@ def do_search(dirname, expr, abspath=None, page=1):
     lis = []
     nb = 0
     with ix.searcher() as searcher:
-        results = searcher.search_page(q, page, pagelen=HITS_PER_PAGE, terms=True)
+        results = searcher.search_page(
+            q, page, pagelen=HITS_PER_PAGE, terms=True)
         nb = len(results)
         for hit in results:
-            lis += [(hit['path'], hit.highlights("content"))]
+            lis += [{
+                'path': hit['path'],
+                'tag': hit['tag'],
+                'excerpt': hit.highlights("content"),
+            }]
     return lis, nb

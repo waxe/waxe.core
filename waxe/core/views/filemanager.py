@@ -80,6 +80,13 @@ class FileManagerView(BaseUserView):
         if not search:
             raise exc.HTTPClientError('Nothing to search')
 
+        filetype = self.req_get.get('filetype')
+        tag = self.req_get.get('tag')
+        if filetype:
+            search += ' AND ext:%s' % filetype
+        if tag:
+            search += ' AND tag:%s' % tag
+
         path = self.req_get.get('path') or ''
         page_num = self.req_get.get('page') or 1
         try:
@@ -92,13 +99,12 @@ class FileManagerView(BaseUserView):
             abspath = browser.absolute_path(path, self.root_path)
         res, nb_hits = mod_search.do_search(
             dirname, search, abspath=abspath, page=page_num)
-        lis = []
+
         if res:
-            for path, excerpt in res:
-                path = browser.relative_path(path, self.root_path)
-                lis += [(path, excerpt)]
+            for dic in res:
+                dic['path'] = browser.relative_path(dic['path'], self.root_path)
         return {
-            'results': lis,
+            'results': res,
             'nb_items': nb_hits,
             'items_per_page': mod_search.HITS_PER_PAGE,
         }
