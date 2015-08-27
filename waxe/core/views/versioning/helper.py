@@ -1,7 +1,7 @@
 import os
 import locale
 import pysvn
-from waxe.core import browser, diff, utils
+from waxe.core import browser, utils
 import tempfile
 import importlib
 
