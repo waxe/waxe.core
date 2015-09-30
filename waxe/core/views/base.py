@@ -1,11 +1,9 @@
-import importlib
-import transaction
 from pyramid.security import has_permission
-from pyramid.renderers import render
 from pyramid.view import view_defaults
 import pyramid.httpexceptions as exc
-from .. import security, models, search, browser
-from sqla_taskq.models import Task
+from .. import security, models, browser
+import sqla_taskq.models as taskqm
+from waxe.search import elastic
 
 
 @view_defaults(renderer='json')
@@ -198,10 +196,10 @@ class BaseUserView(BaseView):
 
     def get_search_dirname(self):
         settings = self.request.registry.settings
-        if 'whoosh.path' not in settings:
+        if 'waxe.search.index_name_prefix' not in settings:
             return None
 
-        return self.current_user.get_search_dirname(settings['whoosh.path'])
+        return self.current_user.get_search_dirname()
 
     def add_opened_file(self, path):
         iduser_owner = None
@@ -217,18 +215,42 @@ class BaseUserView(BaseView):
 
         self.logged_user.add_commited_file(path, iduser_commit=iduser_commit)
 
+    # TODO: Move the search logic in waxe.search
+    def _get_search_index(self):
+        user_index_name = self.get_search_dirname()
+        if not user_index_name:
+            raise exc.HTTPInternalServerError('The search is not available')
+
+        settings = self.request.registry.settings
+        index_name_prefix = settings.get('waxe.search.index_name_prefix')
+        return index_name_prefix + user_index_name
+
+    def _get_search_url(self):
+        settings = self.request.registry.settings
+        if 'waxe.search.url' not in settings:
+            raise exc.HTTPInternalServerError('The search is not available')
+
+        return settings['waxe.search.url']
+
     def add_indexation_task(self, paths=None):
+        # TODO: put paths required, we should always have it
         dirname = self.get_search_dirname()
         if not dirname:
             return None
         uc = self.current_user.config
         if not uc.root_path:
             return None
+
         if not paths:
             paths = browser.get_all_files(self.extensions, uc.root_path, uc.root_path)[1]
-        Task.create(search.do_index, [dirname, paths],
-                    owner=str(self.current_user.iduser),
-                    unique_key='search_%i' % self.current_user.iduser)
+        url = self._get_search_url()
+        index_name = self._get_search_index()
+
+        taskqm.Task.create(
+            elastic.partial_index,
+            [url, index_name, paths, uc.root_path],
+            owner=str(uc.user.iduser),
+            unique_key='search_%i' % uc.user.iduser)
 
         # Since we commit the task we need to re-bound the user to the session
         # to make sure we can reuse self.logged_user

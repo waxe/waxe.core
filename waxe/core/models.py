@@ -129,10 +129,10 @@ class User(Base):
     def is_admin(self):
         return self.has_role(ROLE_ADMIN)
 
-    def get_search_dirname(self, whoosh_path):
+    def get_search_dirname(self):
         if not self.config or not self.config.root_path:
             return None
-        return os.path.join(whoosh_path, 'user-%s' % self.iduser)
+        return 'user-%s' % self.iduser
 
     def add_opened_file(self, path, iduser_owner=None):
         for f in self.opened_files:

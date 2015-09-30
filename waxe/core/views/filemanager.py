@@ -4,7 +4,7 @@ from itertools import izip_longest
 from pyramid.view import view_config
 import pyramid.httpexceptions as exc
 from base import BaseUserView
-from .. import browser, search as mod_search, events
+from .. import browser, events
 
 
 class FileManagerView(BaseUserView):
@@ -70,45 +70,6 @@ class FileManagerView(BaseUserView):
             'link': relpath
         }
 
-    @view_config(route_name='search_json')
-    def search(self):
-        dirname = self.get_search_dirname()
-        if not dirname or not os.path.exists(dirname):
-            raise exc.HTTPInternalServerError('The search is not available')
-
-        search = self.req_get.get('search')
-        if not search:
-            raise exc.HTTPClientError('Nothing to search')
-
-        filetype = self.req_get.get('filetype')
-        tag = self.req_get.get('tag')
-        if filetype:
-            search += ' AND ext:%s' % filetype
-        if tag:
-            search += ' AND tag:%s' % tag
-
-        path = self.req_get.get('path') or ''
-        page_num = self.req_get.get('page') or 1
-        try:
-            page_num = int(page_num)
-        except ValueError:
-            page_num = 1
-
-        abspath = None
-        if path:
-            abspath = browser.absolute_path(path, self.root_path)
-        res, nb_hits = mod_search.do_search(
-            dirname, search, abspath=abspath, page=page_num)
-
-        if res:
-            for dic in res:
-                dic['path'] = browser.relative_path(dic['path'], self.root_path)
-        return {
-            'results': res,
-            'nb_items': nb_hits,
-            'items_per_page': mod_search.HITS_PER_PAGE,
-        }
-
     @view_config(route_name='remove_json')
     def remove(self):
         # TODO: use DELETE method
@@ -139,6 +100,5 @@ class FileManagerView(BaseUserView):
 def includeme(config):
     config.add_route('explore_json', '/explore.json')
     config.add_route('create_folder_json', '/create-folder.json')
-    config.add_route('search_json', '/search.json')
     config.add_route('remove_json', '/remove.json')
     config.scan(__name__)

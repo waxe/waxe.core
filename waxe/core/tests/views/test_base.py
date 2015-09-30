@@ -331,10 +331,11 @@ class TestBaseUserView(BaseTestCase):
         res = view.get_search_dirname()
         self.assertEqual(res, None)
 
-        request.registry.settings['whoosh.path'] = '/tmp/fake'
+        request.registry.settings[
+            'waxe.search.index_name_prefix'] = 'waxe-search'
         view = BaseUserView(request)
         res = view.get_search_dirname()
-        self.assertEqual(res, '/tmp/fake/user-2')
+        self.assertEqual(res, 'user-2')
 
     def test_add_opened_file(self):
         request = testing.DummyRequest()

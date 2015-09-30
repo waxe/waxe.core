@@ -68,45 +68,6 @@ class TestFileManagerView(LoggedBobTestCase):
             except OSError:
                 pass
 
-    def test_search(self):
-        class C(object): pass
-        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
-        self.user_bob.config.root_path = path
-
-        request = testing.DummyRequest(params={'search': 'new_folder'})
-        request.matched_route = C()
-        request.matched_route.name = 'route_json'
-        request.custom_route_path = lambda *args, **kw: '/filepath'
-
-        try:
-            res = FileManagerView(request).search()
-            assert(False)
-        except exc.HTTPInternalServerError, e:
-            self.assertEqual(str(e), 'The search is not available')
-
-        request.registry.settings['whoosh.path'] = '/tmp/fake'
-        try:
-            res = FileManagerView(request).search()
-            assert(False)
-        except exc.HTTPInternalServerError, e:
-            self.assertEqual(str(e), 'The search is not available')
-
-        with patch('os.path.exists', return_value=True):
-            with patch('waxe.core.search.do_search', return_value=(None, 0)):
-                res = FileManagerView(request).search()
-                self.assertEqual(res['nb_items'], 0)
-
-            return_value = ([
-                {'path': os.path.join(path, 'file1.xml'),
-                 'tag': 'tag',
-                 'excerpt': 'Excerpt of the file1'}
-            ], 1)
-            with patch('waxe.core.search.do_search', return_value=return_value):
-                res = FileManagerView(request).search()
-                self.assertEqual(res['nb_items'], 1)
-                self.assertEqual(len(res['results']), 1)
-                self.assertEqual(res['results'], return_value[0])
-
     def test_remove(self):
         class C(object): pass
         path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
@@ -154,8 +115,6 @@ class TestFunctionalTestFileManagerView(WaxeTestCase):
     def test_permissions(self):
         self.testapp.get('/api/1/account/Bob/explore.json', status=401)
         self.testapp.get('/api/1/account/Bob/create-folder.json', status=401)
-        self.testapp.get('/api/1/account/Bob/search.json', status=401)
-        self.testapp.get('/api/1/account/Bob/remove.json', status=401)
 
     @login_user('Admin')
     def test_explore_json_admin(self):
@@ -198,9 +157,3 @@ class TestFunctionalTestFileManagerView(WaxeTestCase):
                 os.rmdir(os.path.join(path, 'new_folder'))
             except OSError:
                 pass
-
-    @login_user('Bob')
-    def test_search_json(self):
-        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
-        self.user_bob.config.root_path = path
-        self.testapp.get('/api/1/account/Bob/search.json', status=500)

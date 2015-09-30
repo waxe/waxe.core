@@ -78,10 +78,10 @@ class TestUser(WaxeTestCase):
         self.assertFalse(self.user_fred.is_admin())
 
     def test_get_search_dirname(self):
-        res = self.user_fred.get_search_dirname('/tmp/fake')
-        self.assertEqual(res, '/tmp/fake/user-None')
+        res = self.user_fred.get_search_dirname()
+        self.assertEqual(res, 'user-None')
         self.user_fred.config = None
-        res = self.user_fred.get_search_dirname('/tmp/fake')
+        res = self.user_fred.get_search_dirname()
         self.assertEqual(res, None)
 
     def test_add_opened_file(self):
