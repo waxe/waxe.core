@@ -37,7 +37,7 @@ def absolute_path(relpath, root_path):
     ;return: the absolute path from given relpath according to root_path
     :rtype: str
     """
-    relpath = os.path.normpath(relpath)
+    relpath = os.path.normpath(relpath) if relpath else ''
     root_path = os.path.normpath(root_path)
     abspath = os.path.normpath(os.path.join(root_path, relpath))
     if not abspath.startswith(root_path):

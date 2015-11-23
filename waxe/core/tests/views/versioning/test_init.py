@@ -27,7 +27,11 @@ from waxe.core.models import (
     VERSIONING_PATH_STATUS_FORBIDDEN,
 )
 
-from waxe.core.views.versioning.views import VersioningView
+from waxe.core.views.versioning.views import (
+    VersioningView,
+    on_before_delete,
+    on_before_move
+)
 from waxe.core.views.versioning import helper
 
 
@@ -552,6 +556,93 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
             self.assertEqual(res, True)
             res = view.can_commit('/home/test/folder1.xml')
             self.assertEqual(res, True)
+
+    @login_user('Bob')
+    def test_on_before_delete(self):
+        self.user_bob.config.root_path = self.client_dir
+        request = self.DummyRequest()
+        view = self.ClassView(request)
+        view, files = on_before_delete(view, ['file3.xml', 'file4.xml'])
+        # All the files has been handled
+        self.assertEqual(files, [])
+        res = self.ClassView(request).short_status()
+        expected = {
+            'file1.xml': helper.STATUS_MODIFED
+        }
+        self.assertEqual(res, expected)
+
+        folder2 = os.path.join(self.client_dir, 'folder2')
+        os.mkdir(folder2)
+        open(os.path.join(folder2, 'newfile.xml'), 'w').write('hello')
+
+        view, files = on_before_delete(view,
+                                       ['file1.xml', 'folder1', 'folder2'])
+        self.assertEqual(files, [])
+        res = self.ClassView(request).short_status()
+        expected = {
+            'file1.xml': helper.STATUS_DELETED,
+            'folder1': helper.STATUS_DELETED
+        }
+        self.assertEqual(res, expected)
+        self.assertFalse(os.path.exists(folder2))
+
+    @login_user('Bob')
+    def test_on_before_move(self):
+        self.user_bob.config.root_path = self.client_dir
+        request = self.DummyRequest()
+        view = self.ClassView(request)
+        file3 = os.path.join(self.client_dir, 'file3.xml')
+        file4 = os.path.join(self.client_dir, 'file4.xml')
+        view, files, dest = on_before_move(
+            view, [file3, file4],
+            os.path.join(self.client_dir, 'folder1'))
+        # All the files has been handled
+        self.assertEqual(files, [file3])
+        vobj = view.get_versioning_obj()
+        res = vobj.full_status()
+        dic = {}
+        for r in res:
+            dic[r.relpath] = r.status
+
+        expected = {
+            'file1.xml': helper.STATUS_MODIFED,
+            'file3.xml': helper.STATUS_UNVERSIONED,
+            'folder1/file4.xml': helper.STATUS_ADDED,
+        }
+        self.assertEqual(dic, expected)
+
+        folder2 = os.path.join(self.client_dir, 'folder2')
+        os.mkdir(folder2)
+
+        file1 = os.path.join(self.client_dir, 'file1.xml')
+        try:
+            view, files = on_before_move(
+                view,
+                [file1], folder2)
+            assert(False)
+        except Exception, e:
+            self.assertEqual(
+                str(e),
+                ("Can't move file to destination. "
+                 "Please check destination status.")
+            )
+
+        view, files, dest = on_before_move(
+            view, [file1],
+            os.path.join(self.client_dir, 'folder1'))
+
+        res = vobj.full_status()
+        dic = {}
+        for r in res:
+            dic[r.relpath] = r.status
+
+        expected = {
+            'file1.xml': helper.STATUS_DELETED,
+            'file3.xml': helper.STATUS_UNVERSIONED,
+            'folder1/file4.xml': helper.STATUS_ADDED,
+            'folder1/file1.xml': helper.STATUS_ADDED,
+        }
+        self.assertEqual(dic, expected)
 
 
 class TestVersioningViewFakeRepo(BaseTestCase, CreateRepo):
@@ -1310,6 +1401,47 @@ class TestHelper(CreateRepo):
         s = o.empty_status(new_file)
         self.assertFalse(os.path.exists(file1))
         self.assertEqual(s.status, helper.STATUS_NORMAL)
+
+    def test_move(self):
+        o = helper.PysvnVersioning(None, ['.xml'], None, None, self.client_dir,
+                                  False)
+        self.assertEqual(o.get_commitable_files(), [])
+        file1 = os.path.join(self.client_dir, 'file1.xml')
+        folder1 = os.path.join(self.client_dir, 'folder1')
+        os.mkdir(folder1)
+        open(file1, 'w').write('Hello')
+        self.client.add(file1)
+        s = o.empty_status(file1)
+        self.assertEqual(s.status, helper.STATUS_ADDED)
+
+        # Can't move the file since the folder is not versioned
+        try:
+            o.move(file1, folder1)
+            assert(False)
+        except pysvn.ClientError, e:
+            self.assertTrue('is not a directory' in str(e))
+
+        self.client.add(folder1)
+        o.move(file1, folder1)
+        newfile1 = os.path.join(self.client_dir, 'folder1', 'file1.xml')
+        s = o.empty_status(newfile1)
+        self.assertEqual(s.status, helper.STATUS_ADDED)
+
+        self.assertEqual(os.path.exists(file1), False)
+
+        o.move(newfile1, self.client_dir)
+        s = o.empty_status(file1)
+        self.assertEqual(s.status, helper.STATUS_ADDED)
+        self.assertEqual(os.path.exists(file1), True)
+
+        # Test with a commited file
+        self.client.checkin([file1], 'Initial commit')
+        o.move(file1, folder1)
+        s = o.empty_status(newfile1)
+        self.assertEqual(s.status, helper.STATUS_ADDED)
+        s = o.empty_status(file1)
+        self.assertEqual(s.status, helper.STATUS_DELETED)
+        self.assertEqual(os.path.exists(file1), False)
 
     def test_has_conflict(self):
         o = helper.PysvnVersioning(None, ['.xml'], None, None, self.client_dir,

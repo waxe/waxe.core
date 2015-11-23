@@ -16,7 +16,7 @@ def exception_view(context, request):
     """Returns HTTP error responses as json
     """
     request.response.status = context._status
-    return str(context)
+    return unicode(context)
 
 
 @view_config(context=HTTPForbidden, renderer='json')

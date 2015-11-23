@@ -43,6 +43,10 @@ class TestBrowser(unittest.TestCase):
         abspath = browser.absolute_path(relpath, root_path)
         self.assertEqual(abspath, os.path.join(root_path, 'folder1'))
 
+        relpath = ''
+        abspath = browser.absolute_path(relpath, root_path)
+        self.assertEqual(abspath, root_path)
+
         relpath = 'folder1/file.xml'
         abspath = browser.absolute_path(relpath, root_path)
         self.assertEqual(abspath, os.path.join(root_path, 'folder1/file.xml'))

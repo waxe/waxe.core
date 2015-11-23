@@ -416,11 +416,20 @@ class PysvnVersioning(object):
         self.client.revert(abspath)
 
     def remove(self, path):
-        """Revert the modification on the given path (filename)
+        """Remove the given path
         """
         abspath = browser.absolute_path(path, self.root_path)
         # force=True, also delete local file
         self.client.remove(abspath, force=True)
+
+    def move(self, path, newpath):
+        """Revert the modification on the given path (filename)
+
+        .. note:: path and newpath should be absolute path
+        """
+        newpath = os.path.join(newpath, os.path.basename(path))
+        # force=True, also move modified files
+        self.client.move(path, newpath, force=True)
 
     def has_conflict(self, path=None):
         lis = self.full_status(path)

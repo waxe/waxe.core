@@ -26,6 +26,39 @@ def on_updated_conflicted(view, path):
             'Conflict\'s resolution failed: %s' % str(e))
 
 
+def on_before_delete(view, paths):
+    vobj = view.get_versioning_obj()
+    if not vobj:
+        return
+
+    for path in paths:
+        vobj.remove(path)
+
+    return view, []
+
+
+def on_before_move(view, paths, newpath):
+    vobj = view.get_versioning_obj()
+    if not vobj:
+        return
+
+    s = vobj.empty_status(newpath)
+    if s.status not in [helper.STATUS_ADDED,
+                        helper.STATUS_MODIFED,
+                        helper.STATUS_NORMAL]:
+        raise Exception(
+            "Can't move file to destination. Please check destination status.")
+
+    todo_paths = []
+    for path in paths:
+        if vobj.empty_status(path).status == helper.STATUS_UNVERSIONED:
+            todo_paths += [path]
+        else:
+            vobj.move(path, newpath)
+
+    return view, todo_paths, newpath
+
+
 class VersioningView(BaseUserView):
 
     def can_commit(self, path):
@@ -260,3 +293,5 @@ def includeme(config):
     config.scan(__name__)
 
     events.on('updated_conflicted.txt', on_updated_conflicted)
+    events.on('before_delete', on_before_delete)
+    events.on('before_move', on_before_move)

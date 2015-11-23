@@ -35,9 +35,10 @@ def trigger(eventname, *args, **kw):
             continue
         for callback in callbacks:
             res = callback(*args, **kw)
-            if res is not None:
-                args = res
-                kw = {}
+            if res is None:
+                break
+            args = res
+            kw = {}
     return res
 
 

@@ -20,13 +20,13 @@ class TestFileManagerView(LoggedBobTestCase):
         expected = [
             {
                 'status': None,
-                'link': u'folder1',
+                'path': u'folder1',
                 'type': 'folder',
                 'name': u'folder1'
             },
             {
                 'status': None,
-                'link': u'file1.xml',
+                'path': u'file1.xml',
                 'type': 'file',
                 'name': u'file1.xml'
             }]
@@ -73,7 +73,7 @@ class TestFileManagerView(LoggedBobTestCase):
         path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
         self.user_bob.config.root_path = path
 
-        request = testing.DummyRequest()
+        request = testing.DummyRequest(GET=MultiDict())
         request.matched_route = C()
         request.matched_route.name = 'route_json'
         request.custom_route_path = lambda *args, **kw: '/filepath'
@@ -85,7 +85,7 @@ class TestFileManagerView(LoggedBobTestCase):
             self.assertEqual(str(e), 'No filename given')
 
         request = testing.DummyRequest(
-            post=MultiDict([
+            GET=MultiDict([
                 ('paths', 'unexisting1.xml'),
                 ('paths', 'unexisting2.xml')
             ]))
@@ -100,14 +100,102 @@ class TestFileManagerView(LoggedBobTestCase):
             )
             self.assertEqual(str(e), expected)
 
+        os.mkdir(os.path.join(path, 'newfolder'))
         request = testing.DummyRequest(
-            post=MultiDict([
-                ('paths', 'file1.xml'),
+            GET=MultiDict([
+                ('paths', 'newfolder'),
             ]))
 
-        with patch('os.remove', return_value=True):
-            res = FileManagerView(request).remove()
-            self.assertEqual(res, True)
+        res = FileManagerView(request).remove()
+        self.assertEqual(res, True)
+
+        with open(os.path.join(path, 'newfile.xml'), 'w') as f:
+            f.write('empty')
+        request = testing.DummyRequest(
+            GET=MultiDict([
+                ('paths', 'newfile.xml'),
+            ]))
+
+        res = FileManagerView(request).remove()
+        self.assertEqual(res, True)
+
+    def test_move(self):
+        class C(object): pass
+        path = os.path.join(os.getcwd(), 'waxe/core/tests/files')
+        self.user_bob.config.root_path = path
+
+        request = testing.DummyRequest(GET=MultiDict())
+        request.matched_route = C()
+        request.matched_route.name = 'route_json'
+        request.custom_route_path = lambda *args, **kw: '/filepath'
+
+        try:
+            FileManagerView(request).move()
+            assert(False)
+        except exc.HTTPClientError, e:
+            self.assertEqual(str(e), 'No filename given')
+
+        request = testing.DummyRequest(
+            post=MultiDict([
+                ('paths', 'unexisting1.xml'),
+                ('paths', 'unexisting2.xml')
+            ]))
+
+        try:
+            FileManagerView(request).move()
+            assert(False)
+        except exc.HTTPClientError, e:
+            self.assertEqual(str(e), 'No destination given')
+
+        request = testing.DummyRequest(
+            post=MultiDict([
+                ('paths', 'unexisting1.xml'),
+                ('paths', 'unexisting2.xml'),
+                ('newpath', '')
+            ]))
+
+        try:
+            FileManagerView(request).move()
+            assert(False)
+        except exc.HTTPClientError, e:
+            expected = (
+                "Can't move the following filenames: "
+                "unexisting1.xml, unexisting2.xml"
+            )
+            self.assertEqual(str(e), expected)
+
+        os.mkdir(os.path.join(path, 'newfolder'))
+        request = testing.DummyRequest(
+            post=MultiDict([
+                ('paths', 'newfolder'),
+                ('newpath', 'folder1')
+            ]))
+
+        res = FileManagerView(request).move()
+        self.assertEqual(res, True)
+
+        try:
+            FileManagerView(request).move()
+            assert(False)
+        except exc.HTTPClientError, e:
+            expected = (
+                "Can't move the following filenames: "
+                "newfolder"
+            )
+            self.assertEqual(str(e), expected)
+        os.rmdir(os.path.join(path, 'folder1', 'newfolder'))
+
+        with open(os.path.join(path, 'newfile.xml'), 'w') as f:
+            f.write('empty')
+        request = testing.DummyRequest(
+            post=MultiDict([
+                ('paths', 'newfile.xml'),
+                ('newpath', 'folder1')
+            ]))
+
+        res = FileManagerView(request).move()
+        self.assertEqual(res, True)
+        os.remove(os.path.join(path, 'folder1', 'newfile.xml'))
 
 
 class TestFunctionalTestFileManagerView(WaxeTestCase):

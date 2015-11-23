@@ -1,5 +1,6 @@
 import os
 import math
+import shutil
 from itertools import izip_longest
 from pyramid.view import view_config
 import pyramid.httpexceptions as exc
@@ -29,7 +30,7 @@ class FileManagerView(BaseUserView):
             lis += [{
                 'name': os.path.basename(folder),
                 'type': 'folder',
-                'link': folder,
+                'path': folder,
                 # status will be updated in js
                 'status': None,
             }]
@@ -37,13 +38,13 @@ class FileManagerView(BaseUserView):
             lis += [{
                 'name': os.path.basename(filename),
                 'type': 'file',
-                'link': filename,
+                'path': filename,
                 # status will be updated in js
                 'status': None,
             }]
         # We want to order alphabetically by columns
         n = int(math.ceil(len(lis) / 2.0))
-        return list(sum(izip_longest(lis[:n], lis[n:]), ()))
+        return filter(bool, list(sum(izip_longest(lis[:n], lis[n:]), ())))
 
     @view_config(route_name='create_folder_json')
     def create_folder(self):
@@ -67,14 +68,13 @@ class FileManagerView(BaseUserView):
         return {
             'name': name,
             'type': 'folder',
-            'link': relpath
+            'path': relpath
         }
 
-    @view_config(route_name='remove_json')
+    @view_config(route_name='remove_json', request_method='DELETE')
     def remove(self):
-        # TODO: use DELETE method
-        # And also support to delete folder
-        filenames = self.req_post_getall('paths')
+        # TODO: we should make try/catch and returns the really deleted files
+        filenames = self.req_get.getall('paths')
         if not filenames:
             raise exc.HTTPClientError('No filename given')
 
@@ -82,7 +82,7 @@ class FileManagerView(BaseUserView):
         errors = []
         for filename in filenames:
             absfilename = browser.absolute_path(filename, self.root_path)
-            if not os.path.isfile(absfilename):
+            if not os.path.isfile(absfilename) and not os.path.isdir(absfilename):
                 errors += [filename]
             absfilenames += [absfilename]
 
@@ -90,10 +90,64 @@ class FileManagerView(BaseUserView):
             raise exc.HTTPClientError(
                 "The following filenames don't exist: %s" % ', '.join(errors))
 
+        res = events.trigger('before_delete', view=self, paths=absfilenames)
+        if res:
+            view, absfilenames = res
+
         for absfilename in absfilenames:
-            os.remove(absfilename)
+            # TODO: be sure it works for folders
+            if os.path.isdir(absfilename):
+                os.rmdir(absfilename)
+            else:
+                os.remove(absfilename)
 
         events.trigger('deleted', view=self, paths=filenames)
+        return True
+
+    @view_config(route_name='move_json', request_method='POST')
+    def move(self):
+        # TODO: we should make try/catch and returns the really deleted files
+        filenames = self.req_post_getall('paths')
+        if not filenames:
+            raise exc.HTTPClientError('No filename given')
+
+        newpath = self.req_post.get('newpath')
+        if newpath is None:
+            raise exc.HTTPClientError('No destination given')
+
+        newabsfilename = browser.absolute_path(newpath, self.root_path)
+        if not os.path.isdir(newabsfilename):
+            raise exc.HTTPClientError("Destination doesn't exist")
+
+        absfilenames = []
+        errors = []
+        for filename in filenames:
+            absfilename = browser.absolute_path(filename, self.root_path)
+            if (not os.path.isfile(absfilename) and
+               not os.path.isdir(absfilename)):
+                errors += [filename]
+            else:
+                newf = os.path.join(newpath, os.path.basename(filename))
+                if os.path.exists(newf):
+                    errors += [filename]
+
+            absfilenames += [absfilename]
+
+        if errors:
+            raise exc.HTTPClientError(
+                "Can't move the following filenames: %s" % ', '.join(errors))
+
+        res = events.trigger(
+            'before_move', view=self,
+            paths=absfilenames, newpath=newabsfilename)
+
+        if res:
+            view, absfilenames, newpath = res
+
+        for absfilename in absfilenames:
+            shutil.move(absfilename, newabsfilename)
+
+        events.trigger('moved', view=self, paths=filenames)
         return True
 
 
@@ -101,4 +155,5 @@ def includeme(config):
     config.add_route('explore_json', '/explore.json')
     config.add_route('create_folder_json', '/create-folder.json')
     config.add_route('remove_json', '/remove.json')
+    config.add_route('move_json', '/files/move.json')
     config.scan(__name__)
