@@ -137,9 +137,13 @@ class FileManagerView(BaseUserView):
             raise exc.HTTPClientError(
                 "Can't move the following filenames: %s" % ', '.join(errors))
 
-        res = events.trigger(
-            'before_move', view=self,
-            paths=absfilenames, newpath=newabsfilename)
+        try:
+            res = events.trigger(
+                'before_move', view=self,
+                paths=absfilenames, newpath=newabsfilename)
+        except Exception, e:
+            error = str(e).replace(self.root_path, '')
+            raise exc.HTTPClientError(error)
 
         if res:
             view, absfilenames, newpath = res
@@ -154,6 +158,6 @@ class FileManagerView(BaseUserView):
 def includeme(config):
     config.add_route('explore_json', '/explore.json')
     config.add_route('create_folder_json', '/create-folder.json')
-    config.add_route('remove_json', '/remove.json')
+    config.add_route('remove_json', '/files.json')
     config.add_route('move_json', '/files/move.json')
     config.scan(__name__)
