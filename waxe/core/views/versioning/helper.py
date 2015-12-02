@@ -174,11 +174,15 @@ class PysvnVersioning(object):
             if not short and status == STATUS_UNVERSIONED and isdir:
                 # For full status we want to get all the files under an
                 # unversioned folder
-                # NOTE: we don't get the folders here since we don't care of
-                # the empty ones
-                for sf in browser.get_all_files(self.extensions, f.path,
-                                                abspath,
-                                                relative=False)[1]:
+                # Add the folder: the user should be able to commit empty file
+                # to be able to move files in.
+                if f.path != self.root_path:
+                    relpath = browser.relative_path(f.path, self.root_path)
+                    lis += [StatusObject(f.path, relpath, STATUS_UNVERSIONED)]
+                for sf in sum(browser.get_all_files(self.extensions,
+                                                    f.path,
+                                                    abspath,
+                                                    relative=False), []):
                     relpath = browser.relative_path(sf, self.root_path)
                     lis += [StatusObject(sf, relpath, STATUS_UNVERSIONED)]
                 continue
@@ -361,11 +365,16 @@ class PysvnVersioning(object):
             abspath = browser.absolute_path(path, self.root_path)
             if self.empty_status(abspath).status != STATUS_UNVERSIONED:
                 continue
+
             for dirpath in self.unversioned_parents(abspath):
                 # add the unversioned directory
                 self.client.add(dirpath, depth=pysvn.depth.empty)
                 abspaths += [dirpath]
-            self.client.add(abspath)
+
+            if os.path.isdir(abspath):
+                self.client.add(abspath, depth=pysvn.depth.empty)
+            else:
+                self.client.add(abspath)
             abspaths += [abspath]
         return abspaths
 
@@ -384,8 +393,7 @@ class PysvnVersioning(object):
         abspaths = []
         for path in paths:
             abspath = browser.absolute_path(path, self.root_path)
-            if os.path.isfile(abspath):
-                abspaths += [abspath]
+            abspaths += [abspath]
             if self.empty_status(abspath).status == STATUS_CONFLICTED:
                 errors += ['Can\'t commit conflicted file: %s' % path]
 

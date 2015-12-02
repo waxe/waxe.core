@@ -111,9 +111,6 @@ class VersioningView(BaseUserView):
         uncommitables = []
         tmps = []
         for so in lis:
-            if os.path.isdir(so.abspath):
-                # For now don't allow action on folder
-                continue
             if so.status == helper.STATUS_CONFLICTED:
                 conflicteds += [so.to_dict()]
                 conflicteds_abspath += [so.abspath]
@@ -258,18 +255,24 @@ class VersioningView(BaseUserView):
 
         vobj = self.get_versioning_obj()
         errors = []
+        versionings = {}
         for filename in filenames:
             absfilename = browser.absolute_path(filename, self.root_path)
-            if not os.path.isfile(absfilename):
+            # Check if the file exists by doing a status since a file can be
+            # deleted
+            so = vobj.status(filename)
+            if not so:
                 errors += ['File %s doesn\'t exist' % filename]
+            else:
+                versionings[filename] = so[0]
 
         if errors:
             raise exc.HTTPClientError('<br />'.join(errors))
 
         for filename in filenames:
             absfilename = browser.absolute_path(filename, self.root_path)
-            so = vobj.status(filename)[0]
-            if so.status == helper.STATUS_UNVERSIONED:
+            so = vobj.status(filename)
+            if versionings[filename].status == helper.STATUS_UNVERSIONED:
                 os.remove(absfilename)
             else:
                 vobj.revert(filename)
