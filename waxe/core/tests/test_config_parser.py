@@ -39,6 +39,13 @@ class TestConfigParser(unittest.TestCase):
             expected = [(['.xml'], Class1), (['.txt'], Class2)]
             self.assertEqual(res, expected)
 
+        settings = {propname: 'Class1\nClass2#.js,css\n'}
+        with mock.patch('importlib.import_module',
+                        side_effect=fake_import_module):
+            res = config_parser._parse_waxe_modules(settings, propname)
+            expected = [(['.xml'], Class1), (['.js', '.css'], Class2)]
+            self.assertEqual(res, expected)
+
         settings = {propname: 'Class1\nClass2\nClass3'}
         with mock.patch('importlib.import_module',
                         side_effect=fake_import_module):

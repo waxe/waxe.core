@@ -5,11 +5,18 @@ def _parse_waxe_modules(settings, propname):
     modules = filter(bool, settings.get(propname, '').split('\n'))
     lis = []
     for mod in modules:
-        m = importlib.import_module(mod)
         if '#' in mod:
             mod, ext = mod.split('#')
-            exts = ext.split(',')
+            m = importlib.import_module(mod)
+            splits = ext.split(',')
+            exts = []
+            for e in splits:
+                e = e.strip()
+                if not e.startswith('.'):
+                    e = '.%s' % e
+                exts.append(e)
         else:
+            m = importlib.import_module(mod)
             exts = m.EXTENSIONS
 
         lis += [(exts, m)]
