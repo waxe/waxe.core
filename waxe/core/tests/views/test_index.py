@@ -149,6 +149,7 @@ class TestIndexUserView(BaseTestCase):
         request.matched_route = EmptyClass()
         request.matched_route.name = 'route_json'
         request.registry.settings['dtd_urls'] = 'http://dtd_url'
+        request.registry.settings['waxe_editors'] = []
 
         res = IndexUserView(request).account_profile()
         expected = {
@@ -159,7 +160,8 @@ class TestIndexUserView(BaseTestCase):
                 'has_search': False,
                 'login': 'Fred',
                 'has_template_files': False,
-                'has_xml_renderer': False
+                'has_xml_renderer': False,
+                'editors': {},
             }
         }
         self.assertEqual(res, expected)
@@ -179,7 +181,37 @@ class TestIndexUserView(BaseTestCase):
                 'has_search': True,
                 'login': 'Fred',
                 'has_template_files': True,
-                'has_xml_renderer': True
+                'has_xml_renderer': True,
+                'editors': {},
+            }
+        }
+        self.assertEqual(res, expected)
+
+        class Editor(object):
+            ROUTE_PREFIX = 'prefix'
+
+        class JSEditor(object):
+            ROUTE_PREFIX = 'js'
+
+        request.registry.settings['waxe_editors'] = [
+            (['.xml', '.html'], Editor),
+            (['.js'], JSEditor)
+        ]
+        res = IndexUserView(request).account_profile()
+        expected = {
+            'account_profile': {
+                'templates_path': 'folder1',
+                'has_versioning': False,
+                'dtd_urls': ['http://dtd_url'],
+                'has_search': True,
+                'login': 'Fred',
+                'has_template_files': True,
+                'has_xml_renderer': True,
+                'editors': {
+                    '.xml': 'prefix',
+                    '.html': 'prefix',
+                    '.js': 'js',
+                },
             }
         }
         self.assertEqual(res, expected)

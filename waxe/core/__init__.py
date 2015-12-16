@@ -83,6 +83,7 @@ def main(global_config, **settings):
     # TODO: extensions should be split in both: editor and renderer
     extensions = sum([exts for exts, mod in waxe_editors], [])
     settings['waxe.extensions'] = extensions
+    settings['waxe_editors'] = waxe_editors
 
     session_factory = UnencryptedCookieSessionFactoryConfig(
         settings['session.key'])

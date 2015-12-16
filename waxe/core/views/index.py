@@ -54,6 +54,11 @@ class IndexUserView(BaseUserView):
         if config.root_template_path:
             templates_path = browser.relative_path(config.root_template_path,
                                                    self.root_path)
+
+        dic = {}
+        for exts, editor in self.request.registry.settings['waxe_editors']:
+            for ext in exts:
+                dic[ext] = editor.ROUTE_PREFIX
         dic = {
             'login': self.current_user.login,
             'has_template_files': bool(config.root_template_path),
@@ -63,6 +68,7 @@ class IndexUserView(BaseUserView):
             'has_xml_renderer': ('waxe.renderers' in
                                  self.request.registry.settings),
             'dtd_urls': self.request.registry.settings['dtd_urls'].split(),
+            'editors': dic,
         }
         res = {'account_profile': dic}
         if self.req_get.get('full'):
