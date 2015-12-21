@@ -113,10 +113,13 @@ def get_svn_client(request, current_user, logged_user, commit):
 
 class StatusObject(object):
 
-    def __init__(self, abspath, relpath, status):
+    def __init__(self, abspath, relpath, status, type_=None):
         self.abspath = abspath
         self.relpath = relpath
         self.status = status
+        self.type = type_
+        if not self.type:
+            self.type = 'folder' if os.path.isdir(self.abspath) else 'file'
 
     def __repr__(self):
         return '<%s: %s>' % (self.relpath.encode('utf-8'), self.status)
@@ -129,8 +132,11 @@ class StatusObject(object):
 
     def to_dict(self):
         return {
+            # Alias in waiting we remove relpath
+            'path': self.relpath,
             'relpath': self.relpath,
-            'status': self.status
+            'status': self.status,
+            'type': self.type,
         }
 
 

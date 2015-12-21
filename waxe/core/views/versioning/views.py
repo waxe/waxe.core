@@ -196,6 +196,8 @@ class VersioningView(BaseUserView):
                 'Please try again.' % str(e)
             )
 
+        # TODO: we should add folder/file like in filemanager
+        # TODO: don't know how to get type of deleted files/folders
         files = [
             {
                 'status': status,
