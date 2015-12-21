@@ -21,6 +21,8 @@ class FileManagerView(BaseUserView):
             folders, filenames = browser.get_files(self.extensions, abspath,
                                                    root_path, relative=True)
         except IOError, e:
+            if os.path.isfile(abspath):
+                raise exc.HTTPFound()
             # TODO: make sure we don't have absolute url in the error message.
             raise exc.HTTPNotFound(str(e))
 
