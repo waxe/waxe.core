@@ -8,7 +8,13 @@ import sqlalchemy.orm.exc as sqla_exc
 import logging
 import bcrypt
 
-from .models import User, ROLE_ADMIN, ROLE_EDITOR, ROLE_CONTRIBUTOR
+from .models import (
+    User,
+    ROLE_ADMIN,
+    ROLE_EDITOR,
+    ROLE_CONTRIBUTOR,
+    ROLE_SUPERVISOR
+)
 
 log = logging.getLogger(__name__)
 
@@ -20,9 +26,11 @@ class RootFactory(object):
         (Allow, 'role:%s' % ROLE_ADMIN, ['admin', 'edit']),
         (Allow, 'role:%s' % ROLE_EDITOR, ['editor', 'edit']),
         (Allow, 'role:%s' % ROLE_CONTRIBUTOR, ['contributor', 'edit']),
+        (Allow, 'role:%s' % ROLE_SUPERVISOR, ['supervisor']),
         (Allow, 'ldap:waxe_admin', ['admin', 'edit']),
         (Allow, 'ldap:waxe_editor', ['editor', 'edit']),
         (Allow, 'ldap:waxe_contributor', ['contributor', 'edit']),
+        (Allow, 'ldap:waxe_supervisor', ['supervisor']),
     ]
 
     def __init__(self, request):

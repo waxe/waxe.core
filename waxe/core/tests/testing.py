@@ -19,6 +19,7 @@ from ..models import (
     Role,
     ROLE_EDITOR,
     ROLE_CONTRIBUTOR,
+    ROLE_SUPERVISOR,
 )
 
 
@@ -83,6 +84,8 @@ class DBTestCase(unittest.TestCase):
         DBSession.add(self.role_editor)
         self.role_contributor = Role(name=ROLE_CONTRIBUTOR)
         DBSession.add(self.role_contributor)
+        self.role_supervisor = Role(name=ROLE_SUPERVISOR)
+        DBSession.add(self.role_supervisor)
         self.role_admin = Role(name="admin")
         DBSession.add(self.role_admin)
         self.user_admin = User(login="Admin", password=SECRET_ADMIN)

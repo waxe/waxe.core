@@ -177,6 +177,24 @@ class TestBaseView(BaseTestCase):
             res = BaseView(request).user_is_contributor()
             self.assertEqual(res, True)
 
+    def test_user_is_supervisor(self):
+        with patch('pyramid.authentication.'
+                   'AuthTktAuthenticationPolicy.unauthenticated_userid',
+                   return_value='Unexisting'):
+            request = self.DummyRequest()
+            res = BaseView(request).user_is_supervisor()
+            self.assertEqual(res, False)
+
+        with patch('pyramid.authentication.'
+                   'AuthTktAuthenticationPolicy.unauthenticated_userid',
+                   return_value=self.user_bob.login):
+            res = BaseView(request).user_is_supervisor()
+            self.assertEqual(res, False)
+
+            self.user_bob.roles = [self.role_supervisor]
+            res = BaseView(request).user_is_supervisor()
+            self.assertEqual(res, True)
+
     def test_get_editable_logins_admin(self):
         request = self.DummyRequest()
         with patch('pyramid.authentication.'
@@ -259,6 +277,22 @@ class TestBaseView(BaseTestCase):
                    return_value=self.user_fred.login):
             res = BaseView(request).get_editable_logins()
             self.assertEqual(res, [self.user_fred.login])
+
+    def test_get_editable_logins_supervisor(self):
+        self.user_fred.roles = [self.role_supervisor]
+        request = self.DummyRequest()
+        with patch('pyramid.authentication.'
+                   'AuthTktAuthenticationPolicy.unauthenticated_userid',
+                   return_value=self.user_fred.login):
+            res = BaseView(request).get_editable_logins()
+            self.assertEqual(res, [self.user_fred.login])
+
+        self.user_bob.roles += [self.role_contributor]
+        with patch('pyramid.authentication.'
+                   'AuthTktAuthenticationPolicy.unauthenticated_userid',
+                   return_value=self.user_fred.login):
+            res = BaseView(request).get_editable_logins()
+            self.assertEqual(res, [self.user_bob.login, self.user_fred.login])
 
     @login_user('Bob')
     def test_has_versioning(self):

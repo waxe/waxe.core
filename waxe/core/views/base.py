@@ -106,6 +106,16 @@ class BaseView(JSONView):
                               self.request.context,
                               self.request)
 
+    def user_is_supervisor(self):
+        """Check if the logged user is supervisor.
+
+        :return: True if the logged user is supervisor
+        :rtype: bool
+        """
+        return has_permission('supervisor',
+                              self.request.context,
+                              self.request)
+
     def get_editable_logins(self):
         """Get the editable login by the logged user.
 
@@ -116,7 +126,7 @@ class BaseView(JSONView):
         if self.logged_user.config.root_path:
             lis += [self.logged_user.login]
 
-        if self.user_is_admin():
+        if self.user_is_admin() or self.user_is_supervisor():
             contributors = models.get_contributors()
             editors = models.get_editors()
             for user in (editors + contributors):

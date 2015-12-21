@@ -31,6 +31,7 @@ Base = extended_declarative_base(DBSession)
 ROLE_ADMIN = 'admin'
 ROLE_EDITOR = 'editor'
 ROLE_CONTRIBUTOR = 'contributor'
+ROLE_SUPERVISOR = 'supervisor'
 
 VERSIONING_PATH_STATUS_ALLOWED = 'allowed'
 VERSIONING_PATH_STATUS_FORBIDDEN = 'forbidden'
