@@ -249,15 +249,21 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
             'others': [
                 {
                     'status': 'modified',
-                    'relpath': u'file1.xml'
+                    'relpath': u'file1.xml',
+                    'path': u'file1.xml',
+                    'type': 'file',
                 },
                 {
                     'status': 'unversioned',
-                    'relpath': u'file3.xml'
+                    'relpath': u'file3.xml',
+                    'path': u'file3.xml',
+                    'type': 'file',
                 },
                 {
                     'status': 'added',
-                    'relpath': u'file4.xml'
+                    'relpath': u'file4.xml',
+                    'path': u'file4.xml',
+                    'type': 'file',
                 }
             ]
         }
