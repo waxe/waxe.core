@@ -14,7 +14,8 @@ matrix:
       env: PYTHON_VERSION="2.6"
 
 before_install:
-    - sudo apt-get install -qq python-svn
+    - sudo apt-get update -q
+    - sudo apt-get install -y python-svn
     - ln -s /usr/lib/python$PYTHON_VERSION/dist-packages/pysvn $VIRTUAL_ENV/lib/python$PYTHON_VERSION/site-packages/
 install:
     - python setup.py install
