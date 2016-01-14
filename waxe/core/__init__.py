@@ -84,6 +84,7 @@ def main(global_config, **settings):
     extensions = sum([exts for exts, mod in waxe_editors], [])
     settings['waxe.extensions'] = extensions
     settings['waxe_editors'] = waxe_editors
+    settings['waxe_renderers'] = waxe_renderers
 
     session_factory = UnencryptedCookieSessionFactoryConfig(
         settings['session.key'])
