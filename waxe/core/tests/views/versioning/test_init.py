@@ -404,14 +404,39 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
             'can_commit': False,
             'diffs': [
                 {
+                    'right': u'Hello',
+                    'relpath': u'file3.xml',
+                    'left': u''
+                },
+                {
                     'right': u'Hello world',
                     'relpath': u'file1.xml',
                     'left': u'Hello'
-                },
+                }
+            ]
+        }
+        self.assertEqual(res, expected)
+
+        # We can also make a diff on folder
+        request.GET = MultiDict([('paths', '')])
+        res = self.ClassView(request).full_diff()
+        expected = {
+            'can_commit': False,
+            'diffs': [
                 {
                     'right': u'Hello',
                     'relpath': u'file3.xml',
                     'left': u''
+                },
+                {
+                    'right': u'Hello',
+                    'relpath': u'file4.xml',
+                    'left': u''
+                },
+                {
+                    'right': u'Hello world',
+                    'relpath': u'file1.xml',
+                    'left': u'Hello'
                 }
             ]
         }

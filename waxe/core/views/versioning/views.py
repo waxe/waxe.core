@@ -160,9 +160,20 @@ class VersioningView(BaseUserView):
     def full_diff(self):
         """Editable diff of all the files
         """
-        filenames = self.request.GET.getall('paths')
-        if not filenames:
+        req_filenames = self.request.GET.getall('paths')
+        if not req_filenames:
             raise exc.HTTPClientError('No filename given')
+
+        filenames = set()
+        for f in req_filenames:
+            absfilename = browser.absolute_path(f, self.root_path)
+            if os.path.isdir(absfilename):
+                folders, fnames = browser.get_files(
+                    self.extensions, absfilename,
+                    self.root_path, relative=True, root_only=False)
+                filenames |= set(fnames)
+            else:
+                filenames.add(f)
 
         vobj = self.get_versioning_obj()
         lis = []
