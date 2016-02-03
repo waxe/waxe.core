@@ -136,7 +136,7 @@ class BaseView(JSONView):
             for user in contributors:
                 lis += [user.login]
 
-        return list(set(lis))
+        return sorted(set(lis))
 
     def has_versioning(self):
         """Returns True if the current_user root path is versionned and he can
