@@ -5,3 +5,6 @@
 <!ELEMENT b2 (text2+)>
 <!ELEMENT text1 (#PCDATA)>
 <!ELEMENT text2 (#PCDATA)>
+
+
+<!ATTLIST b1 idb1 ID #IMPLIED>
