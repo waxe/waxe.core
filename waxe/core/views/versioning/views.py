@@ -1,4 +1,5 @@
 import os.path
+import shutil
 import pyramid_logging
 import xmltool
 from pyramid.renderers import render
@@ -284,9 +285,16 @@ class VersioningView(BaseUserView):
 
         for filename in filenames:
             absfilename = browser.absolute_path(filename, self.root_path)
-            so = vobj.status(filename)
             if versionings[filename].status == helper.STATUS_UNVERSIONED:
-                os.remove(absfilename)
+                if os.path.isdir(absfilename):
+                    shutil.rmtree(absfilename)
+                elif os.path.isfile(absfilename):
+                    os.remove(absfilename)
+                else:
+                    # Since we don't check if a file is in a deleted directory
+                    # we don't handle this case. (We already check later in
+                    # this function if the file exists)
+                    pass
             else:
                 vobj.revert(filename)
 

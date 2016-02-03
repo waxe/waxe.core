@@ -97,9 +97,8 @@ class FileManagerView(BaseUserView):
             view, absfilenames = res
 
         for absfilename in absfilenames:
-            # TODO: be sure it works for folders
             if os.path.isdir(absfilename):
-                os.rmdir(absfilename)
+                shutil.rmtree(absfilename)
             else:
                 os.remove(absfilename)
 

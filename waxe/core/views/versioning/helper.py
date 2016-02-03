@@ -161,6 +161,8 @@ class PysvnVersioning(object):
                 if status == STATUS_UNVERSIONED:
                     # The root path is unversioned so all children are
                     # unversioned
+                    relpath = browser.relative_path(f.path, self.root_path)
+                    lis += [StatusObject(f.path, relpath, STATUS_UNVERSIONED)]
                     for sf in sum(browser.get_files(self.extensions, f.path,
                                                     abspath,
                                                     relative=False), []):

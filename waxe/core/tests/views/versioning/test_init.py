@@ -336,6 +336,18 @@ class TestVersioningView(BaseTestCase, CreateRepo2):
         res = self.ClassView(request).revert()
         self.assertEqual(res, 'Files reverted')
 
+        # No versioned folder
+        folder = os.path.join(self.client_dir, 'folder_notversioned')
+        f = os.path.join(folder, 'file1.xml')
+        os.mkdir(folder)
+        open(f, 'w').write('Hello')
+
+        request = self.DummyRequest()
+        request.POST = MultiDict(path='folder_notversioned')
+        res = self.ClassView(request).revert()
+        self.assertEqual(res, 'Files reverted')
+        self.assertFalse(os.path.exists(folder))
+
     @login_user('Bob')
     def test_full_diff(self):
         self.user_bob.config.root_path = self.client_dir
@@ -1600,6 +1612,7 @@ class TestHelperNoRepo(unittest.TestCase):
                                   False)
         res = o._status(abspath, changes)
         expected = [
+            helper.StatusObject(self.client_dir, '.', helper.STATUS_UNVERSIONED),
             helper.StatusObject(folder1, 'folder1', helper.STATUS_UNVERSIONED),
             helper.StatusObject(folder2, 'folder2', helper.STATUS_UNVERSIONED),
             helper.StatusObject(file1, 'file1.xml', helper.STATUS_UNVERSIONED),
@@ -1633,6 +1646,8 @@ class TestHelperNoRepo(unittest.TestCase):
         ])
 
         expected = [
+            helper.StatusObject(folder1, 'folder1',
+                                helper.STATUS_UNVERSIONED),
             helper.StatusObject(sub11, 'folder1/sub11',
                                 helper.STATUS_UNVERSIONED),
         ]
