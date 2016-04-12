@@ -26,11 +26,11 @@ class RootFactory(object):
         (Allow, 'role:%s' % ROLE_ADMIN, ['admin', 'edit']),
         (Allow, 'role:%s' % ROLE_EDITOR, ['editor', 'edit']),
         (Allow, 'role:%s' % ROLE_CONTRIBUTOR, ['contributor', 'edit']),
-        (Allow, 'role:%s' % ROLE_SUPERVISOR, ['supervisor']),
+        (Allow, 'role:%s' % ROLE_SUPERVISOR, ['supervisor', 'edit']),
         (Allow, 'ldap:waxe_admin', ['admin', 'edit']),
         (Allow, 'ldap:waxe_editor', ['editor', 'edit']),
         (Allow, 'ldap:waxe_contributor', ['contributor', 'edit']),
-        (Allow, 'ldap:waxe_supervisor', ['supervisor']),
+        (Allow, 'ldap:waxe_supervisor', ['supervisor', 'edit']),
     ]
 
     def __init__(self, request):
