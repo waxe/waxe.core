@@ -41,6 +41,9 @@ module.exports = function(grunt) {
             'libs/js/jquery.autosize.js',
             'libs/codemirror/codemirror.js',
             'libs/codemirror/xml.js',
+            'libs/codemirror/search.js',
+            'libs/codemirror/searchcursor.js',
+            'libs/codemirror/dialog.js',
             'bower_components/jquery.contenteditablesync/src/*.js',
             'src/jquery.filebrowser.js',
             'src/ajax.js',
@@ -98,7 +101,8 @@ module.exports = function(grunt) {
             files: {
                 "../waxe/core/static/css/<%= pkg.name %>.css": [
                     "css/*.less",
-                    "libs/codemirror/codemirror.css"
+                    "libs/codemirror/codemirror.css",
+                    "libs/codemirror/dialog.css"
                 ]
             }
         },
@@ -110,7 +114,8 @@ module.exports = function(grunt) {
             files: {
                 "../waxe/core/static/css/<%= pkg.name %>.min.css": [
                     "css/*.less",
-                    "libs/codemirror/codemirror.css"
+                    "libs/codemirror/codemirror.css",
+                    "libs/codemirror/dialog.css"
                 ]
             }
         }
