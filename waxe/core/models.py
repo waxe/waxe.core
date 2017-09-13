@@ -67,6 +67,7 @@ class Group(Base):
                      primary_key=True)
     name = Column(String(255),
                   nullable=False)
+    owner_iduser = Column(Integer, ForeignKey('user.iduser'))
 
 
 class Role(Base):
@@ -109,8 +110,8 @@ class User(Base):
                          secondary=user_role,
                          backref='users')
     groups = relationship('Group',
-                          secondary=user_group,
-                          backref='users')
+                          primaryjoin='Group.owner_iduser==User.iduser',
+                          backref='user', uselist=False)
     config = relationship('UserConfig',
                           backref=backref("user", uselist=False))
     versioning_paths = relationship('VersioningPath',

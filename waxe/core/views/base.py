@@ -132,6 +132,8 @@ class BaseView(JSONView):
             for user in (editors + contributors):
                 lis += [user.login]
         elif self.user_is_editor():
+            print 'GROUPS', self.logged_user.groups
+            # TODO: add custom permission here
             contributors = models.get_contributors()
             for user in contributors:
                 lis += [user.login]

@@ -68,7 +68,12 @@ class VersioningView(BaseUserView):
         if self.user_is_admin():
             return True
 
+        if self.user_is_supervisor():
+            return True
+
         if self.user_is_editor():
+            # TODO: editor can commit in its repo.
+            # He needs special permission to commit in other repo.
             return True
 
         assert self.user_is_contributor(), 'You are not a contributor'

@@ -19,7 +19,7 @@ requires = [
     'SQLAlchemy==1.0.4',
     'transaction',
     'pyramid_tm',
-    'pyramid_debugtoolbar',
+    # 'pyramid_debugtoolbar',
     'pyramid_auth',
     'pyramid_exclog',
     'zope.sqlalchemy',
