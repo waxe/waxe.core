@@ -131,10 +131,10 @@ class BaseView(JSONView):
             editors = models.get_editors()
             for user in (editors + contributors):
                 lis += [user.login]
-        elif self.user_is_editor():
-            contributors = models.get_contributors()
-            for user in contributors:
-                lis += [user.login]
+        else:
+            # editors & contractors
+            for ug in self.logged_user.groups.usergroups:
+                lis += [ug.user.login]
 
         return sorted(set(lis))
 

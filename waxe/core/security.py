@@ -69,7 +69,6 @@ def get_user_permissions(login, request):
     if not user:
         return []
     permissions = ['role:%s' % role.name for role in user.roles]
-    permissions += ['group:%s' % group.name for group in user.groups]
     return permissions
 
 

@@ -8,6 +8,7 @@ from sqlalchemy import (
     Table,
     Boolean,
     UniqueConstraint,
+    PrimaryKeyConstraint,
 )
 
 from sqlalchemy.orm import (
@@ -48,13 +49,17 @@ user_role = Table(
 )
 
 
-user_group = Table(
-    'user_group',
-    Base.metadata,
-    Column('iduser', Integer, ForeignKey('user.iduser')),
-    Column('idgroup', Integer, ForeignKey('group.idgroup')),
-    UniqueConstraint('iduser', 'idgroup', name='uc_user_group_iduser_idgroup')
-)
+
+class UserGroup(Base):
+    __tablename__ = 'user_group'
+    __table_args__ = (
+             PrimaryKeyConstraint('iduser', 'idgroup'),
+             {},
+         )
+    iduser = Column(Integer, ForeignKey('user.iduser'))
+    idgroup = Column(Integer, ForeignKey('group.idgroup'))
+
+    user = relationship('User', uselist=False)
 
 
 class Group(Base):
@@ -67,6 +72,9 @@ class Group(Base):
                      primary_key=True)
     name = Column(String(255),
                   nullable=False)
+    owner_iduser = Column(Integer, ForeignKey('user.iduser'))
+
+    usergroups = relationship('UserGroup', backref='group')
 
 
 class Role(Base):
@@ -109,8 +117,8 @@ class User(Base):
                          secondary=user_role,
                          backref='users')
     groups = relationship('Group',
-                          secondary=user_group,
-                          backref='users')
+                          primaryjoin='Group.owner_iduser==User.iduser',
+                          backref='user', uselist=False)
     config = relationship('UserConfig',
                           backref=backref("user", uselist=False))
     versioning_paths = relationship('VersioningPath',

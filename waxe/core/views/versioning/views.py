@@ -68,10 +68,15 @@ class VersioningView(BaseUserView):
         if self.user_is_admin():
             return True
 
-        if self.user_is_editor():
+        if self.user_is_supervisor():
             return True
 
-        assert self.user_is_contributor(), 'You are not a contributor'
+        if self.user_is_editor():
+            if path.startswith(self.logged_user.config.root_path):
+                # editor can whatever he wants in his account
+                return True
+
+        assert self.user_is_editor() or self.user_is_contributor()
 
         if not os.path.isdir(path):
             path = os.path.dirname(path)
