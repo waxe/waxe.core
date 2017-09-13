@@ -112,13 +112,14 @@ class User(Base):
     idconfig = Column(Integer,
                       ForeignKey('user_config.idconfig'),
                       nullable=True)
+    trashed = Column(Boolean, nullable=False, default=False)
 
     roles = relationship('Role',
                          secondary=user_role,
                          backref='users')
     groups = relationship('Group',
                           primaryjoin='Group.owner_iduser==User.iduser',
-                          backref='user', uselist=False)
+                          backref='user')
     config = relationship('UserConfig',
                           backref=backref("user", uselist=False))
     versioning_paths = relationship('VersioningPath',
@@ -255,9 +256,11 @@ class UserCommitedFile(Base):
 
 def get_editors():
     role = DBSession.query(Role).filter_by(name=ROLE_EDITOR).one()
-    return [u for u in role.users if u.config and u.config.root_path]
+    return [u for u in role.users
+            if not u.trashed and u.config and u.config.root_path]
 
 
 def get_contributors():
     role = DBSession.query(Role).filter_by(name=ROLE_CONTRIBUTOR).one()
-    return [u for u in role.users if u.config and u.config.root_path]
+    return [u for u in role.users
+            if not u.trashed and u.config and u.config.root_path]

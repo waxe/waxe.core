@@ -133,8 +133,10 @@ class BaseView(JSONView):
                 lis += [user.login]
         else:
             # editors & contractors
-            for ug in self.logged_user.groups.usergroups:
-                lis += [ug.user.login]
+            for g in self.logged_user.groups:
+                for ug in g.usergroups:
+                    if not ug.user.trashed:
+                        lis += [ug.user.login]
 
         return sorted(set(lis))
 
@@ -174,6 +176,9 @@ class BaseUserView(BaseView):
     # TODO: improve the error messages
     def __init__(self, request):
         super(BaseUserView, self).__init__(request)
+
+        if self.logged_user.trashed:
+            raise exc.HTTPClientError("This account doesn't exist")
 
         login = self.request.matchdict.get('login')
         if self.logged_user_login != login:
