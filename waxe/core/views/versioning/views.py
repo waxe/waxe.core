@@ -72,7 +72,8 @@ class VersioningView(BaseUserView):
             return True
 
         if self.user_is_editor():
-            if path.startswith(self.logged_user.config.root_path):
+            if (self.logged_user.config.root_path and
+                    path.startswith(self.logged_user.config.root_path)):
                 # editor can whatever he wants in his account
                 return True
 
