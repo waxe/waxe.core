@@ -130,7 +130,8 @@ class BaseView(JSONView):
             contributors = models.get_contributors()
             editors = models.get_editors()
             for user in (editors + contributors):
-                lis += [user.login]
+                if not user.trashed:
+                    lis += [user.login]
         else:
             # editors & contractors
             for g in self.logged_user.groups:
