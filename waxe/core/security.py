@@ -56,7 +56,7 @@ def validate_password(request, login, password):
         # A define and valid password can't be empty
         return False
     try:
-        if (bcrypt.hashpw(password, user.password) == user.password):
+        if bcrypt.checkpw(password.encode('utf8'), user.password.encode('utf8')):
             return user
     except ValueError:
         # Can fail if the value in the DB is not bcrypted.
